@@ -63,4 +63,9 @@ docker compose --profile demo up -d --build
 ```
 
 ## Próximo paso concreto
-Planificar la actualización de dependencias por `npm audit` (pendiente 1) y decidir el despliegue en la nube (requiere autorización del usuario). Para repetir CP-12: resolver la alerta crítica activa del sensor (una alerta por situación) y lanzar de nuevo el escenario B.
+**Al retomar (sesión cerrada el 2026-11-04 con Docker Desktop apagado; datos conservados en los volúmenes):**
+1. Abrir Docker Desktop y ejecutar `docker compose --profile demo up -d --build` en esta carpeta (el `--build` aplica el último ajuste de la pantalla «Contraseña actualizada», que aún no se reconstruyó en Docker).
+2. Desactivar en Administrador → Usuarios el usuario de prueba `prueba-olvido@aquaplants.cl` (sigue activo; `prueba-aviso@aquaplants.cl` ya está desactivado).
+3. Confirmar en simon.bueguenio@gmail.com la recepción de los correos de prueba «Tu contraseña fue cambiada» y «Restablecer tu contraseña» y anotarlo en `docs/PRUEBAS.md`.
+
+Después: planificar la actualización de dependencias por `npm audit` (pendiente 1) y decidir el despliegue en la nube (requiere autorización del usuario). Para repetir CP-12: resolver la alerta crítica activa del sensor (una alerta por situación) y lanzar de nuevo el escenario B.

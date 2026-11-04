@@ -7,7 +7,7 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 - **CI**: verde desde el commit `c94b0f6` (1.ª ejecución falló por el defecto 6 de `PRUEBAS.md`, corregido).
 - **Docker Compose**: verificado **desde cero** con `verificar.ps1` (TimescaleDB 2.17.2 con hipertabla `medicion`, MongoDB 7 con usuario de app, simulador, Nginx en http://localhost:8080, E2E A–G 8/8). Defectos 7–11 corregidos.
 - **Pruebas**: 66/66 automatizadas contra TimescaleDB + MongoDB reales (local y CI).
-- **SMTP (CP-12)**: **envío aprobado** con Gmail (alerta crítica #7 `enviada` en ~16 s). Los avisos van solo a `simon.bueguenio@gmail.com` mediante `NOTIFICACIONES_SOLO_A` (solo demo). Recepción en la bandeja: por confirmar por el usuario.
+- **SMTP (CP-12)**: **aprobado** con Gmail (alerta crítica #7 `enviada` en ~16 s; el usuario confirmó la recepción). Los avisos van solo a `simon.bueguenio@gmail.com` mediante `NOTIFICACIONES_SOLO_A` (solo demo).
 - Detalle en `docs/PRUEBAS.md`.
 
 ## Arquitectura y stack reales
@@ -28,11 +28,10 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 - Pruebas: 66 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
 
 ## Pendiente (por prioridad)
-1. **CP-12**: confirmar que el correo `[DEMO] [AquaPlants] Alerta CRÍTICA en …` llegó a simon.bueguenio@gmail.com (el envío ya fue aceptado por Gmail). Para repetir: resolver la alerta crítica activa del sensor (una alerta por situación) y volver a lanzar el escenario B.
-2. **`npm audit --omit=dev`**: 9 vulnerabilidades (8 altas: express/qs/path-to-regexp, zod). Requieren subir express 4.22.x y zod 4 (cambio mayor): planificar y probar.
-3. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-29 restauración con acta; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
-4. Despliegue en la nube: **no autorizado aún** por el usuario.
-5. CI: `actions/checkout@v4` y `setup-node@v4` avisan de Node 20 obsoleto en runners; actualizar a versiones que usen Node 24.
+1. **`npm audit --omit=dev`**: 9 vulnerabilidades (8 altas: express/qs/path-to-regexp, zod). Requieren subir express 4.22.x y zod 4 (cambio mayor): planificar y probar.
+2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-29 restauración con acta; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
+3. Despliegue en la nube: **no autorizado aún** por el usuario.
+4. CI: `actions/checkout@v4` y `setup-node@v4` avisan de Node 20 obsoleto en runners; actualizar a versiones que usen Node 24.
 4. Políticas Timescale de compresión/retención + tabla de evidencia de mediciones con alerta antes de borrar chunks (Tabla 40).
 5. Respaldo automático cifrado de MongoDB y subida a almacenamiento externo.
 6. Roles PostgreSQL de mínimo privilegio con LOGIN (hoy se crean como NOLOGIN y la app usa el usuario del compose).
@@ -62,4 +61,4 @@ docker compose --profile demo up -d --build
 ```
 
 ## Próximo paso concreto
-Registrar la confirmación de recepción de CP-12 en `docs/PRUEBAS.md`. Después: planificar la actualización de dependencias por `npm audit` (pendiente 2) y decidir el despliegue en la nube (requiere autorización del usuario).
+Planificar la actualización de dependencias por `npm audit` (pendiente 1) y decidir el despliegue en la nube (requiere autorización del usuario). Para repetir CP-12: resolver la alerta crítica activa del sensor (una alerta por situación) y lanzar de nuevo el escenario B.

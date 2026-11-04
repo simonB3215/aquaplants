@@ -2,13 +2,15 @@
 #   cp .env.example .env   # y cambie TODOS los secretos
 #   docker compose up -d --build                    # BD + API + worker + web (http://localhost:8080)
 #   docker compose --profile demo up -d --build     # + simulador AquaBrain
-#   docker compose --profile backup run --rm backup # respaldo manual
+#   docker compose --profile backup run --rm backup # respaldo cifrado (cron del host, 02:00)
+#   docker compose --profile restauracion run --rm restaurar  # prueba de restauración CP-29
 # Redes: «edge» (web↔api) y «data» (interna, sin salida; BD sin puertos publicados).
 name: aquaplants
 
 x-api-env: &api-env
   NODE_ENV: ${NODE_ENV:-development}
-  DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  # Mínimo privilegio (ES2 §3.4): API y worker usan app_rw, nunca el superusuario.
+  DATABASE_URL: postgres://app_rw:${DB_APP_PASSWORD:?Defina DB_APP_PASSWORD en .env}@postgres:5432/${POSTGRES_DB}
   MONGO_URL: mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo:27017/aquaplants?authSource=aquaplants
   MONGO_DB: aquaplants
   JWT_SECRET: ${JWT_SECRET}
@@ -52,14 +54,16 @@ services:
   mongo:
     image: mongo:7.0
     restart: unless-stopped
+    volumes:
+      - mongodata:/data/db
+      - ./infrastructure/mongo/init-usuario.js:/docker-entrypoint-initdb.d/init-usuario.js:ro
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
       MONGO_APP_USER: ${MONGO_APP_USER}
       MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
-    volumes:
-      - mongodata:/data/db
-      - ./infrastructure/mongo/init-usuario.js:/docker-entrypoint-initdb.d/init-usuario.js:ro
+      MONGO_BACKUP_USER: ${MONGO_BACKUP_USER:-respaldo}
+      MONGO_BACKUP_PASSWORD: ${MONGO_BACKUP_PASSWORD:-}
     networks: [data]
     healthcheck:
       # --host $(hostname): el mongod temporal de inicialización solo escucha en 127.0.0.1.
@@ -68,11 +72,34 @@ services:
       timeout: 5s
       retries: 20
 
+  # Asegura los usuarios de MongoDB también en volúmenes ya inicializados (idempotente).
+  mongo-usuarios:
+    image: mongo:7.0
+    command: ["sh", "-c", "mongosh --quiet \"mongodb://$$MONGO_INITDB_ROOT_USERNAME:$$MONGO_INITDB_ROOT_PASSWORD@mongo:27017/admin\" /init-usuario.js"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_APP_USER: ${MONGO_APP_USER}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
+      MONGO_BACKUP_USER: ${MONGO_BACKUP_USER:-respaldo}
+      MONGO_BACKUP_PASSWORD: ${MONGO_BACKUP_PASSWORD:-}
+    volumes:
+      - ./infrastructure/mongo/init-usuario.js:/init-usuario.js:ro
+    depends_on:
+      mongo: { condition: service_healthy }
+    networks: [data]
+    restart: "no"
+
   migrate:
     build: { context: ., target: api }
     command: ["sh", "-c", "npx tsx packages/backend/src/scripts/migrate.ts && if [ \"$$SEMBRAR\" = \"true\" ]; then npx tsx packages/backend/src/scripts/seed.ts && chown -R 1000:1000 /simconfig; fi"]
     environment:
       <<: *api-env
+      # Solo las migraciones usan el superusuario: crean el esquema y asignan LOGIN a los roles.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+      DB_RO_PASSWORD: ${DB_RO_PASSWORD:-}
+      DB_BACKUP_PASSWORD: ${DB_BACKUP_PASSWORD:-}
       SEMBRAR: ${SEMBRAR_DATOS_PRUEBA:-false}
       SEED_INTERVALO_S: ${SEED_INTERVALO_S:-60}
       SIM_CONFIG_PATH: /simconfig/dispositivos.json
@@ -92,7 +119,7 @@ services:
     environment: *api-env
     depends_on:
       migrate: { condition: service_completed_successfully }
-      mongo: { condition: service_healthy }
+      mongo-usuarios: { condition: service_completed_successfully }
     networks: [edge, data]
 
   worker:
@@ -102,7 +129,7 @@ services:
     environment: *api-env
     depends_on:
       migrate: { condition: service_completed_successfully }
-      mongo: { condition: service_healthy }
+      mongo-usuarios: { condition: service_completed_successfully }
     networks: [data, salida]
     healthcheck: { disable: true }
 
@@ -135,17 +162,61 @@ services:
 
   backup:
     profiles: [backup]
-    image: timescale/timescaledb:2.17.2-pg16
+    build: ./infrastructure/backup
+    image: aquaplants-respaldo
     entrypoint: ["/bin/sh", "/scripts/respaldar.sh"]
     environment:
       PGHOST: postgres
-      PGUSER: ${POSTGRES_USER}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGUSER: backup_ro
+      PGPASSWORD: ${DB_BACKUP_PASSWORD:-}
       PGDATABASE: ${POSTGRES_DB}
+      MONGO_BACKUP_URI: mongodb://${MONGO_BACKUP_USER:-respaldo}:${MONGO_BACKUP_PASSWORD:-}@mongo:27017/aquaplants?authSource=aquaplants
+      AGE_RECIPIENT: ${AGE_RECIPIENT:-}   # clave PÚBLICA: el servidor puede cifrar pero no descifrar
     volumes:
       - ./infrastructure/backup:/scripts:ro
       - ./respaldos:/respaldos
     networks: [data]
+
+  # ---- Prueba de restauración CP-29: contenedores limpios, efímeros (tmpfs) y aislados.
+  pg-prueba:
+    profiles: [restauracion]
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust   # red interna «restauracion» sin otros servicios; datos en tmpfs
+    tmpfs: [/var/lib/postgresql/data]
+    networks: [restauracion]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 3s
+      retries: 30
+
+  mongo-prueba:
+    profiles: [restauracion]
+    image: mongo:7.0
+    tmpfs: [/data/db]
+    networks: [restauracion]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\""]
+      interval: 3s
+      retries: 30
+
+  restaurar:
+    profiles: [restauracion]
+    image: aquaplants-respaldo
+    build: ./infrastructure/backup
+    entrypoint: ["/bin/sh", "/scripts/restaurar.sh"]
+    environment:
+      AGE_IDENTITY: /claves/age-respaldo.key
+      ROL_PROPIETARIO: ${POSTGRES_USER}
+    volumes:
+      - ./infrastructure/backup:/scripts:ro
+      - ./respaldos:/respaldos
+      # Clave PRIVADA age: en producción vive fuera del servidor y solo se monta para restaurar.
+      - ${AGE_IDENTITY_DIR:-./secretos}:/claves:ro
+    depends_on:
+      pg-prueba: { condition: service_healthy }
+      mongo-prueba: { condition: service_healthy }
+    networks: [restauracion]
 
 volumes:
   pgdata:
@@ -158,3 +229,5 @@ networks:
   data:
     internal: true
   salida:   # solo el worker sale a Internet (SMTP)
+  restauracion:
+    internal: true

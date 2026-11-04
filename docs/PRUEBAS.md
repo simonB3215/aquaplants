@@ -72,7 +72,7 @@ Entorno de ejecución: contenedor Linux, Node 22.23, **PostgreSQL 16.15 sin Time
 | CP-26 | Pantallas sin desplazamiento horizontal | 360, 390, 768, 1024, 1440 px | Aprobada |
 | CP-27 | Carga 50 dispositivos (k6) | — | **No ejecutada** |
 | CP-28 | Despliegue desde cero (local, Docker Compose) | Volúmenes vacíos → build, migraciones, seed, salud ok, E2E 8/8 | **Aprobada en local** (sesión 2); despliegue en servidor/nube no realizado (sin autorización) |
-| CP-29 | Restauración de respaldo | Scripts entregados | **No ejecutada** |
+| CP-29 | Restauración de respaldo | Respaldo cifrado → contenedores limpios → conteos por tabla y última medición frente al respaldo; tiempo frente a RTO 2 h | **Aprobada en local** (sesión 3): 22/22 tablas idénticas, última medición idéntica, 1 736 documentos MongoDB, políticas TimescaleDB restauradas, 2 s. Acta `respaldos/actas/CP-29_20261104T161127Z.md` (local, no versionada). Subida a Spaces: pendiente (nube) |
 | CC-01 | Mismo lote ×10 en paralelo | 1×201 + 9×200 duplicado, una copia | Aprobada |
 | CC-02 | Dos workers sobre el outbox | Una alerta, outbox vacío | Aprobada |
 | CC-05 / CC-09 | BD caída durante envío | MongoDB caído → 503 + Retry-After, nada en PostgreSQL; simulador reintenta | Aprobada (MongoDB); PostgreSQL caído probado indirectamente (arranque del simulador antes que la API) |
@@ -110,3 +110,25 @@ Sesión 2 (al ejecutar por primera vez con TimescaleDB, MongoDB 7 y Docker Compo
 | Build del frontend (Vite) | ✔ |
 | `verificar.ps1` (imágenes reconstruidas, datos conservados) | Salud ok, hipertabla `medicion`, **E2E A–G 8/8 ✔** |
 | SMTP con nodemailer 10 (`transport.verify()` contra Gmail) | ✔ |
+
+## Sesión 3 — bloque 2: base de datos (2026-11-04)
+| Verificación | Cómo | Resultado |
+|---|---|---|
+| Migraciones 005–008 sobre la base **con datos** del usuario | `docker compose up -d --build` (copia previa `respaldos/pre-bloque2.dump`) | ✔ aplicadas; permisos con LOGIN para `app_rw` y `backup_ro`; `/health` ok |
+| API y worker sin superusuario | `pg_stat_activity` | ✔ conexiones como `app_rw` (el superusuario solo en `migrate`) |
+| Evidencia de alertas (Tabla 40, D-24) | Jest `datos.test.ts` | ✔ la alerta copia su medición a `medicion_evidencia`; FK hacia la evidencia; evidencia inmutable (P0001); alerta sin medición → 23503 |
+| Compresión / retención / agregado (Tabla 40) | Jest + prueba manual en base desechable | ✔ trabajos: compresión 7 d, retención 2 años, `medicion_hora` 5 años. Al ejecutar la retención, un chunk de hace 3 años se elimina y su alerta conserva el valor en la evidencia. Chunks comprimidos (104 kB → 64 kB) siguen aceptando inserciones y `ON CONFLICT` de `app_rw` |
+| Roles de mínimo privilegio (ES2 §3.4) | Jest (`SET ROLE`) | ✔ `app_rw` no puede modificar auditoría/evidencia ni borrar mediciones/usuarios ni crear tablas (42501); `backup_ro` lee todo y solo inserta en `respaldo_registro`; `app_ro` solo lee |
+| Anonimización (Tabla 40, D-25) | Jest | ✔ desactivado hace 13 meses → anonimizado (id conservado, auditoría `anonimizar_usuario`), desactivado hace 1 mes → intacto; idempotente; login 401; reactivar → 409 `USUARIO_ANONIMIZADO` |
+| Respaldo cifrado (Tabla 16) | `docker compose --profile backup run --rm backup` | ✔ `postgres.dump.age` + `mongo.archive.gz.age` (cabecera `age-encryption.org/v1`), `conteos.tsv` en la misma instantánea, `SHA256SUMS`, fila `ok` en `respaldo_registro` (2,3 MB) |
+| Respaldo fallido → aviso | credencial MongoDB incorrecta | ✔ fila `fallido` con el error real; el worker programó y envió `respaldo_fallido` al Administrador (redirigido a simon.bueguenio@gmail.com) |
+| CP-29 restauración | `docker compose --profile restauracion run --rm restaurar` | ✔ **APROBADA** (ver tabla de trazabilidad) |
+| `npm test` (4 paquetes) | TimescaleDB 2.17.2 + MongoDB 7 | **84/84 ✔**: shared 6, backend 66 (57 + 9 nuevas), simulador 6, frontend 6 |
+| Build del frontend (Vite) | `npm run build -w packages/frontend` | ✔ |
+| `verificar.ps1` con la API como `app_rw` | Docker Compose | Salud ok, **E2E A–G 8/8 ✔** |
+
+Defectos encontrados y corregidos en el bloque 2:
+
+12. **Scripts de respaldo con CRLF** (escritos en Windows): `set: illegal option -`. Corregido a LF (`.gitattributes` ya lo fuerza al versionar).
+13. **Restauración en contenedor limpio**: la imagen de TimescaleDB ya crea la extensión (`CREATE EXTENSION IF NOT EXISTS`), y `bgw_job` guarda el rol propietario de los trabajos: hay que crear los roles antes de `pg_restore`. Se restauran también propietarios y permisos.
+14. **Detalle del fallo de respaldo**: incluía avisos inocuos de `pg_dump` y, sin `--quiet`, la URI de MongoDB **con la contraseña**. Ahora el registro se limpia por etapa y se ocultan `usuario:clave@` antes de guardar o enviar.

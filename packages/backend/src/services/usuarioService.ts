@@ -22,7 +22,7 @@ export class UsuarioService {
 
   async listar() {
     const r = await this.db.query(
-      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.activo, u.debe_cambiar_password, u.creado_en,
+      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.activo, u.debe_cambiar_password, u.creado_en, (u.anonimizado_en IS NOT NULL) AS anonimizado,
               (u.bloqueado_hasta IS NOT NULL AND u.bloqueado_hasta > now()) AS bloqueado,
               COALESCE((SELECT json_agg(ui.id_instalacion ORDER BY ui.id_instalacion) FROM usuario_instalacion ui WHERE ui.id_usuario = u.id_usuario), '[]') AS torres
          FROM usuario u JOIN rol r ON r.id_rol = u.id_rol ORDER BY u.activo DESC, u.nombre`,
@@ -61,12 +61,14 @@ export class UsuarioService {
 
   async editar(u: UsuarioCtx, id: number, d: { nombre?: string; rol?: Rol; activo?: boolean; torres?: number[] }) {
     const res = await this.db.transaccion(async (tx) => {
-      const r = await tx.query<{ nombre: string; rol: Rol; activo: boolean }>(
-        `SELECT u.nombre, r.nombre AS rol, u.activo FROM usuario u JOIN rol r ON r.id_rol = u.id_rol WHERE u.id_usuario = $1 FOR UPDATE OF u`,
+      const r = await tx.query<{ nombre: string; rol: Rol; activo: boolean; anonimizado: boolean }>(
+        `SELECT u.nombre, r.nombre AS rol, u.activo, (u.anonimizado_en IS NOT NULL) AS anonimizado FROM usuario u JOIN rol r ON r.id_rol = u.id_rol WHERE u.id_usuario = $1 FOR UPDATE OF u`,
         [id],
       );
       const prev = r.rows[0];
       if (!prev) throw new NoEncontradoError('Usuario no encontrado');
+      // Tabla 40: un usuario anonimizado ya no tiene nombre ni email reales; no se reactiva ni se edita.
+      if (prev.anonimizado) throw new ConflictoError('El usuario fue anonimizado (Tabla 40) y no puede modificarse ni reactivarse', 'USUARIO_ANONIMIZADO');
       if (id === u.id_usuario && ((d.rol && d.rol !== prev.rol) || d.activo === false)) {
         throw new ConflictoError('No puede cambiar su propio rol ni desactivarse a sí mismo', 'AUTOPROTECCION');
       }

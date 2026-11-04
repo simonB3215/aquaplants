@@ -10,3 +10,4 @@ respaldos/
 coverage/
 *.log
 __pycache__/
+secretos/

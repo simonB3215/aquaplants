@@ -55,12 +55,51 @@ export async function migrar(url: string, opciones: { reset?: boolean; silencios
         throw new Error(`Falló ${f}: ${(e as Error).message}`);
       }
     }
+    await aplicarPermisos(c, log);
   } finally {
     await c.end();
   }
 }
 
-const esPrincipal = process.argv[1] && /migrate\.(t|j)s$/.test(process.argv[1]);
+/** Roles con contraseña desde el entorno → LOGIN. Sin contraseña quedan NOLOGIN. */
+const ROLES_LOGIN = [
+  ['app_rw', 'DB_APP_PASSWORD'],
+  ['app_ro', 'DB_RO_PASSWORD'],
+  ['backup_ro', 'DB_BACKUP_PASSWORD'],
+] as const;
+
+/**
+ * Aplica database/permisos.sql (idempotente) y asigna LOGIN + contraseña a los
+ * roles de mínimo privilegio (ES2 §3.4). Se ejecuta en cada migración para que
+ * las tablas nuevas también queden cubiertas.
+ */
+async function aplicarPermisos(c: pg.Client, log: (...a: unknown[]) => void) {
+  const archivo = path.resolve(DIR!, '..', 'permisos.sql');
+  if (!existsSync(archivo)) throw new Error(`No se encontró ${archivo}`);
+  await c.query('BEGIN');
+  try {
+    await c.query(await readFile(archivo, 'utf8'));
+    for (const [rol, variable] of ROLES_LOGIN) {
+      const clave = process.env[variable];
+      if (clave) {
+        if (clave.length < 16) throw new Error(`${variable} debe tener al menos 16 caracteres`);
+        // format('%I', '%L') escapa identificador y literal: la contraseña nunca se concatena.
+        const q = await c.query<{ sql: string }>(`SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', $1::text, $2::text) AS sql`, [rol, clave]);
+        await c.query(q.rows[0].sql);
+      } else {
+        await c.query(`ALTER ROLE ${rol} WITH NOLOGIN`);
+      }
+    }
+    await c.query('COMMIT');
+    const con = ROLES_LOGIN.filter(([, v]) => process.env[v]).map(([r]) => r);
+    log(`[migrate] permisos aplicados (LOGIN: ${con.length ? con.join(', ') : 'ninguno'})`);
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw new Error(`Falló permisos.sql: ${(e as Error).message}`);
+  }
+}
+
+const esPrincipal =process.argv[1] && /migrate\.(t|j)s$/.test(process.argv[1]);
 if (esPrincipal) {
   const url = process.env.DATABASE_URL;
   if (!url) {

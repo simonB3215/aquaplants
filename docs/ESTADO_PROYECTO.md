@@ -1,6 +1,6 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-04 (sesión 3, bloque 2, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 2 — resultado
 - **Repositorio**: https://github.com/simonB3215/aquaplants (privado, rama `main`). `.env`, `node_modules`, `packages/simulador/data` y `*.log` excluidos; `.gitattributes` fuerza LF (los scripts de contenedor no se rompen en Windows).
@@ -27,16 +27,17 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 - Continuidad: «sin señal» configurable (causa desconocida), reconexión, reinicio informado, lotes recuperados, descartes, panel dedicado.
 - Simulador: cola en disco atómica, capacidad con registro de pérdidas, backoff exponencial con jitter/Retry-After, cortes de red y de energía, reinicio, prueba de credencial inválida, escenarios A–F.
 - Frontend: dashboards por rol (Encargado, Supervisor, Administrador) con el mismo sistema visual de UI UX Pro Max; gestión de usuarios, infraestructura, umbrales, auditoría, cultivos; históricos con banda de umbral y huecos; comparar/exportar; modo demo; responsive; PWA (manifest, íconos, SW, actualización, offline).
-- Pruebas: 66 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
+- Base de datos (bloque 2): migraciones 005–008, roles de mínimo privilegio, respaldo cifrado y restauración CP-29 con acta.
+- Pruebas: 84 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
 
 ## Pendiente (por prioridad)
 1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
-2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-29 restauración con acta; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
+2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
 3. Despliegue en la nube: **no autorizado aún** por el usuario.
 4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
-5. Políticas Timescale de compresión/retención + tabla de evidencia de mediciones con alerta antes de borrar chunks (Tabla 40).
-6. Respaldo automático cifrado de MongoDB y subida a almacenamiento externo.
-7. Roles PostgreSQL de mínimo privilegio con LOGIN (hoy se crean como NOLOGIN y la app usa el usuario del compose).
+5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).
+6. Parcial (D-26): respaldo cifrado con age de PostgreSQL + MongoDB, SHA-256, rotación 7/4/3, aviso por correo si falla y CP-29 aprobado en local. **Falta**: subida a almacenamiento externo (Spaces u otro, depende de la nube) y programar el cron 02:00 en el servidor.
+7. Resuelto en sesión 3 (D-27): API y worker usan `app_rw`, respaldo `backup_ro`; superusuario solo en `migrate`. `database/permisos.sql` se reaplica en cada migración.
 8. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI; sesión persistente opcional (refresh token httpOnly) si se aprueba cambiar el ES2.
 
 ## Problemas y riesgos conocidos
@@ -47,7 +48,7 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-23).
+Ver `docs/DECISIONES.md` (D-01…D-27). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.
@@ -63,8 +64,12 @@ docker compose --profile demo up -d --build
 ```
 
 ## Próximo paso concreto
-**Sesión 3 (2026-11-04)**: bloque 1 (seguridad y calidad) terminado: dependencias (D-23), CI con acciones v7, D-21/D-22 registradas. Usuario de prueba `prueba-olvido@aquaplants.cl` desactivado e imagen web reconstruida. Pendiente: confirmar en simon.bueguenio@gmail.com los correos de prueba «Tu contraseña fue cambiada» y «Restablecer tu contraseña».
+**Sesión 3 (2026-11-04)**: bloque 1 (seguridad y calidad) y **bloque 2 (base de datos)** terminados. Resultados en `docs/PRUEBAS.md` (84/84, E2E 8/8, CP-29 APROBADA). La clave privada age está en `secretos/age-respaldo.key` (fuera de git; en producción debe guardarse **fuera del servidor**). Copia previa a las migraciones: `respaldos/pre-bloque2.dump`.
 
-**Siguiente: bloque 2** (políticas TimescaleDB de compresión/retención con evidencia de alertas — Tabla 40; roles PostgreSQL de mínimo privilegio; respaldo cifrado + CP-29 en local). Luego bloque 3 (k6 CP-27/CP-13, PWA offline) y bloque 4 (cierre).
+Comandos nuevos:
+```bash
+docker compose --profile backup run --rm backup
+docker compose --profile restauracion run --rm restaurar
+```
 
-Después: planificar la actualización de dependencias por `npm audit` (pendiente 1) y decidir el despliegue en la nube (requiere autorización del usuario). Para repetir CP-12: resolver la alerta crítica activa del sensor (una alerta por situación) y lanzar de nuevo el escenario B.
+**Siguiente: bloque 3** (k6 CP-27 con 50 dispositivos × 10 min y CP-13 histórico de 30 días ≤ 3 s; PWA offline re-verificada). Luego bloque 4 (CP-08, documentación final, pantalla de especies opcional). Despliegue en la nube: solo con autorización del usuario.

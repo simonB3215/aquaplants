@@ -1,16 +1,16 @@
 {
   "api": "http://web:8080/api/v1",
-  "ejecutado_en": "2026-11-04T15:39:50.871Z",
+  "ejecutado_en": "2026-11-04T16:18:08.110Z",
   "resultados": [
     {
       "id": "A",
       "descripcion": "Operación normal: mediciones reales llegan a la API",
       "resultado": "APROBADA",
       "evidencia": {
-        "antes": "2026-11-04T15:37:46.503Z",
-        "despues": "2026-11-04T15:38:16.843Z"
+        "antes": "2026-11-04T16:16:07.554Z",
+        "despues": "2026-11-04T16:16:38.009Z"
       },
-      "ts": "2026-11-04T15:38:20.989Z"
+      "ts": "2026-11-04T16:16:38.393Z"
     },
     {
       "id": "B",
@@ -21,21 +21,21 @@
           "id": 7,
           "severidad": "critica",
           "valor": 4.5,
-          "ocurrencias": 4
+          "ocurrencias": 10
         }
       },
-      "ts": "2026-11-04T15:38:27.171Z"
+      "ts": "2026-11-04T16:16:44.552Z"
     },
     {
       "id": "C",
       "descripcion": "Corte de Internet: lotes en cola local persistente y servidor marca «sin señal» (causa desconocida)",
       "resultado": "APROBADA",
       "evidencia": {
-        "cola_lotes": 3,
-        "cola_bytes": 1138,
+        "cola_lotes": 4,
+        "cola_bytes": 1519,
         "conectividad_servidor": "sin_senal"
       },
-      "ts": "2026-11-04T15:39:02.532Z"
+      "ts": "2026-11-04T16:17:19.723Z"
     },
     {
       "id": "E",
@@ -43,19 +43,19 @@
       "resultado": "APROBADA",
       "evidencia": {
         "energia": false,
-        "cola_lotes": 3
+        "cola_lotes": 4
       },
-      "ts": "2026-11-04T15:39:37.592Z"
+      "ts": "2026-11-04T16:17:54.795Z"
     },
     {
       "id": "F",
       "descripcion": "Reinicio: reabre la cola persistida desde disco",
       "resultado": "APROBADA",
       "evidencia": {
-        "cola_lotes_tras_reinicio": 4,
-        "cola_al_apagar": 3
+        "cola_lotes_tras_reinicio": 5,
+        "cola_al_apagar": 4
       },
-      "ts": "2026-11-04T15:39:40.791Z"
+      "ts": "2026-11-04T16:17:57.982Z"
     },
     {
       "id": "D",
@@ -66,23 +66,23 @@
         "reenvio": {
           "status": 200,
           "duplicado": true,
-          "id_lote": "3b978e8b-9b94-47da-a641-d6874d02c909"
+          "id_lote": "54c671a3-e2dc-467a-af98-73b094e4b581"
         },
-        "lotes_recuperados_24h": 27,
+        "lotes_recuperados_24h": 45,
         "eventos": [
           "reconexion",
           "reconexion_local",
           "reinicio",
           "sin_senal",
           "reconexion",
-          "reinicio",
           "sin_senal",
           "reconexion",
+          "reconexion_local",
           "reinicio",
           "sin_senal"
         ]
       },
-      "ts": "2026-11-04T15:39:50.547Z"
+      "ts": "2026-11-04T16:18:07.787Z"
     },
     {
       "id": "E/F",
@@ -90,21 +90,21 @@
       "resultado": "APROBADA",
       "evidencia": {
         "sin_energia": {
-          "desde": "2026-11-04T15:39:02.533Z",
-          "hasta": "2026-11-04T15:39:37.592Z"
+          "desde": "2026-11-04T16:17:19.723Z",
+          "hasta": "2026-11-04T16:17:54.795Z"
         },
         "hueco": {
-          "desde": "2026-11-04T15:38:57.000Z",
-          "hasta": "2026-11-04T15:39:38.000Z"
+          "desde": "2026-11-04T16:17:18.000Z",
+          "hasta": "2026-11-04T16:17:55.000Z"
         },
         "huecos": [
           {
-            "desde": "2026-11-04T15:38:57.000Z",
-            "hasta": "2026-11-04T15:39:38.000Z"
+            "desde": "2026-11-04T16:17:18.000Z",
+            "hasta": "2026-11-04T16:17:55.000Z"
           }
         ]
       },
-      "ts": "2026-11-04T15:39:50.630Z"
+      "ts": "2026-11-04T16:18:07.798Z"
     },
     {
       "id": "G",
@@ -122,7 +122,7 @@
         "resultado_esperado": 403,
         "correcto": true
       },
-      "ts": "2026-11-04T15:39:50.836Z"
+      "ts": "2026-11-04T16:18:07.991Z"
     }
   ]
 }

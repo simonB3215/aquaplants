@@ -22,6 +22,10 @@ const Env = z.object({
   WORKER_SIN_SENAL_CADA_S: z.coerce.number().positive().default(60),
   WORKER_OUTBOX_CADA_MS: z.coerce.number().int().positive().default(1000),
   WORKER_RECONCILIAR_CADA_S: z.coerce.number().positive().default(300),
+  /** Mantenimiento (anonimización, avisos de respaldo): cada cuánto revisa el worker. */
+  WORKER_MANTENIMIENTO_CADA_S: z.coerce.number().positive().default(3600),
+  /** Tabla 40: anonimizar nombre y email de usuarios desactivados tras este plazo. */
+  ANONIMIZAR_TRAS_DIAS: z.coerce.number().int().positive().default(365),
   /** Tolerancia de marca temporal (Tabla 12). */
   TS_FUTURO_MAX_S: z.coerce.number().int().positive().default(120),
   TS_ANTIGUEDAD_MAX_H: z.coerce.number().positive().default(48),

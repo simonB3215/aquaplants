@@ -5,6 +5,10 @@ import {
   AsignacionSchema,
   BajaSchema,
   CambiarPasswordSchema,
+  ConfirmarRegistroSchema,
+  InvitacionSchema,
+  RegistroSchema,
+  TokenInvitacionSchema,
   OlvidePasswordSchema,
   RestablecerPasswordSchema,
   CerrarCultivoSchema,
@@ -106,6 +110,19 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     validar(RestablecerPasswordSchema),
     h(async (req, res) => void res.json(await s.auth.restablecerPassword(req.body.token, req.body.nueva, ipDe(req)))),
   );
+  // D-28: registro con enlace de invitación (públicas, mismo límite por IP que el login).
+  r.post('/auth/invitacion', tasaLogin, validar(TokenInvitacionSchema), h(async (req, res) => void res.json(await s.invitaciones.consultar(req.body.token))));
+  r.post(
+    '/auth/registro',
+    tasaLogin,
+    validar(RegistroSchema),
+    h(async (req, res) => {
+      await s.invitaciones.registrar(req.body.token, req.body, ipDe(req));
+      // Misma respuesta exista o no una cuenta con ese email.
+      res.status(202).json({ mensaje: 'Revise su correo: le enviamos un enlace para confirmar su email y activar la cuenta.' });
+    }),
+  );
+  r.post('/auth/registro/confirmar', tasaLogin, validar(ConfirmarRegistroSchema), h(async (req, res) => void res.status(201).json(await s.invitaciones.confirmar(req.body.token, ipDe(req)))));
   r.post(
     '/auth/logout',
     auth,
@@ -284,6 +301,9 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
   r.post('/usuarios', auth, adminUsuarios, validar(UsuarioSchema), h(async (req, res) => void res.status(201).json(await s.usuarios.crear(ctx(req), req.body))));
   r.patch('/usuarios/:id', auth, adminUsuarios, validar(EditarUsuarioSchema), h(async (req, res) => void res.json(await s.usuarios.editar(ctx(req), idParam(req), req.body))));
   r.post('/usuarios/:id/restablecer-password', auth, adminUsuarios, h(async (req, res) => void res.json(await s.usuarios.restablecerPassword(ctx(req), idParam(req)))));
+  r.get('/invitaciones', auth, adminUsuarios, h(async (_req, res) => void res.json(await s.invitaciones.listar())));
+  r.post('/invitaciones', auth, adminUsuarios, validar(InvitacionSchema), h(async (req, res) => void res.status(201).json(await s.invitaciones.crear(ctx(req), req.body))));
+  r.patch('/invitaciones/:id/anular', auth, adminUsuarios, h(async (req, res) => void res.json(await s.invitaciones.anular(ctx(req), idParam(req)))));
   r.get(
     '/auditoria',
     auth,

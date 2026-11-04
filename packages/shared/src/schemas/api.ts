@@ -164,6 +164,23 @@ export const EditarUsuarioSchema = z.object({
   torres: z.array(z.number().int().positive()).max(50).optional(),
 });
 
+// ---------- D-28 Registro con enlace de invitación (amplía CU-09) ----------
+const tokenEnlace = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'Enlace inválido');
+export const InvitacionSchema = z.object({
+  torres: z.array(z.number().int().positive()).min(1, 'Elija al menos una torre').max(50),
+  dias: z.number().int().min(1).max(30).default(7),
+  max_usos: z.number().int().min(1).max(500).default(20),
+  descripcion: z.string().trim().max(120).optional(),
+});
+export const TokenInvitacionSchema = z.object({ token: tokenEnlace });
+export const RegistroSchema = z.object({
+  token: tokenEnlace,
+  nombre: texto(120),
+  email: z.string().trim().toLowerCase().email('Email con formato inválido').max(160),
+  password: PasswordSchema,
+});
+export const ConfirmarRegistroSchema = z.object({ token: tokenEnlace });
+
 export const FiltroAuditoriaSchema = z.object({
   usuario: id.optional(),
   accion: z.string().trim().max(60).optional(),

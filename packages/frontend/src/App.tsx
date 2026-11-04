@@ -13,6 +13,7 @@ import { Alertas } from './paginas/Alertas';
 import { Continuidad } from './paginas/Continuidad';
 import { Auditoria, Infraestructura, Perfil, Umbrales, Usuarios } from './paginas/Gestion';
 import { OlvideContrasena, RestablecerContrasena } from './paginas/Recuperar';
+import { ConfirmarRegistro, Registro } from './paginas/Registro';
 import { Demo } from './paginas/Demo';
 import { Vacio } from './componentes/ui';
 import { api } from './api/cliente';
@@ -39,6 +40,8 @@ function Rutas() {
       <Routes>
         <Route path="olvide-contrasena" element={<OlvideContrasena />} />
         <Route path="restablecer-contrasena" element={<RestablecerContrasena />} />
+        <Route path="registro" element={<Registro />} />
+        <Route path="confirmar-registro" element={<ConfirmarRegistro />} />
         <Route path="*" element={<Login />} />
       </Routes>
     );

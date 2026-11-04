@@ -19,6 +19,26 @@ export class MantenimientoService {
   }
 
   /**
+   * D-28: borra las solicitudes de registro que nadie confirmó (un día después de
+   * vencer) y quita el email de sus correos. Devuelve cuántas se borraron.
+   */
+  async purgarRegistrosVencidos(): Promise<number> {
+    return this.db.transaccion(async (tx) => {
+      await tx.query(
+        `UPDATE notificacion_correo n SET destinatario = 'eliminado', texto = '(solicitud de registro vencida y eliminada)'
+           FROM registro_pendiente p
+          WHERE n.id_registro = p.id_registro AND p.confirmado_en IS NULL AND p.expira_en < now() - interval '1 day' AND n.estado <> 'pendiente'`,
+      );
+      const r = await tx.query(
+        `DELETE FROM registro_pendiente p
+          WHERE p.confirmado_en IS NULL AND p.expira_en < now() - interval '1 day'
+            AND NOT EXISTS (SELECT 1 FROM notificacion_correo n WHERE n.id_registro = p.id_registro AND n.estado = 'pendiente')`,
+      );
+      return r.rowCount ?? 0;
+    });
+  }
+
+  /**
    * Por cada respaldo fallido sin avisar programa un correo a cada Administrador
    * activo (lo envía el ciclo `correos_cuenta`) y lo marca como notificado.
    */

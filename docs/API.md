@@ -23,6 +23,8 @@ Errores uniformes (Tabla 11): `{ "codigo": "...", "mensaje": "...", "campos": [{
 | `GET /torres`, `GET /dispositivos`, `GET /catalogos` | 08 | lectura (sus torres) | lectura | ✔ |
 | `POST/PATCH /torres…`, `/dispositivos…` (alta con credencial, baja, regenerar), `POST /sensores`, `PATCH /sensores/{id}/baja`, `PUT /torres/{id}/usuarios` | 08 | 403 | 403 | ✔ |
 | `GET/POST /usuarios`, `PATCH /usuarios/{id}`, `POST /usuarios/{id}/restablecer-password`, `GET /roles` | 09 | 403 | 403 | ✔ |
+| `GET/POST /invitaciones`, `PATCH /invitaciones/{id}/anular` (D-28) | 09 | 403 | 403 | ✔ |
+| `POST /auth/invitacion`, `POST /auth/registro`, `POST /auth/registro/confirmar` (D-28, públicas, límite por IP) | 09 | ✔ | ✔ | ✔ |
 | `GET /auditoria` | 09 | 403 | 403 | ✔ |
 | `PUT/DELETE /auditoria/{id}` | 09 | 405 | 405 | 405 (RN-07) |
 | `GET /cultivos`, `POST /cultivos`, `PATCH /cultivos/{id}`, `PATCH /cultivos/{id}/cerrar` | 10 | sus torres | lectura | ✔ |

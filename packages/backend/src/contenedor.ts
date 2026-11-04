@@ -15,6 +15,7 @@ import { HistoricoService } from './services/historicoService.js';
 import { UmbralService } from './services/umbralService.js';
 import { InfraService } from './services/infraService.js';
 import { UsuarioService } from './services/usuarioService.js';
+import { InvitacionService } from './services/invitacionService.js';
 import { CultivoService } from './services/cultivoService.js';
 import { ContinuidadService } from './services/continuidadService.js';
 import { DemoService } from './services/demoService.js';
@@ -41,6 +42,7 @@ export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?:
     umbrales: new UmbralService(db),
     infra: new InfraService(db),
     usuarios: new UsuarioService(db, (id) => auth.invalidarCache(id)),
+    invitaciones: new InvitacionService(db, cfg),
     cultivos: new CultivoService(db),
     continuidad: new ContinuidadService(db, payloads, cfg),
     demo: new DemoService(cfg),

@@ -55,6 +55,44 @@ export class CorreosCuentaService {
     );
   }
 
+  /** D-28: enlace para confirmar el email y terminar de crear la cuenta (aún no existe el usuario). */
+  static async programarConfirmacionRegistro(tx: Consulta, r: { id_registro: string; nombre: string; email: string }, enlace: string, horas: number) {
+    const texto = [
+      `Hola ${r.nombre}:`,
+      '',
+      `Recibimos una solicitud para crear una cuenta de AquaPlants con este email (${r.email}).`,
+      '',
+      `Para confirmar tu email y activar la cuenta, abre este enlace (válido por ${horas} horas y un solo uso):`,
+      enlace,
+      '',
+      'Si no fuiste tú, ignora este correo: la cuenta no se creará.',
+      '',
+      '— AquaPlants (mensaje automático, no respondas este correo)',
+    ].join('\n');
+    await tx.query(
+      `INSERT INTO notificacion_correo (id_registro, tipo, destinatario, asunto, texto) VALUES ($1, 'confirmar_registro', $2, $3, $4)`,
+      [r.id_registro, r.email, '[AquaPlants] Confirma tu email para activar tu cuenta', texto],
+    );
+  }
+
+  /** D-28: alguien intentó registrarse con un email que ya tiene cuenta (no se revela en la API). */
+  static async programarCuentaExistente(tx: Consulta, u: { id_usuario: number; nombre: string; email: string }) {
+    const texto = [
+      `Hola ${u.nombre}:`,
+      '',
+      `Alguien intentó crear una cuenta de AquaPlants con tu email (${u.email}), pero ya tienes una.`,
+      '',
+      'Si fuiste tú, inicia sesión con tu contraseña o usa «¿Olvidó su contraseña?» en la pantalla de acceso.',
+      'Si no fuiste tú, puedes ignorar este correo: no se hizo ningún cambio en tu cuenta.',
+      '',
+      '— AquaPlants (mensaje automático, no respondas este correo)',
+    ].join('\n');
+    await tx.query(
+      `INSERT INTO notificacion_correo (id_usuario, tipo, destinatario, asunto, texto) VALUES ($1, 'cuenta_existente', $2, $3, $4)`,
+      [u.id_usuario, u.email, '[AquaPlants] Intento de registro con tu email', texto],
+    );
+  }
+
   /** Envía los avisos pendientes; cada uno se bloquea (SKIP LOCKED) para que dos workers no lo dupliquen. */
   async procesarPendientes(limite = 20): Promise<number> {
     let enviadas = 0;
@@ -66,8 +104,8 @@ export class CorreosCuentaService {
         );
         const n = r.rows[0];
         if (!n) return false;
-        // El correo de restablecimiento lleva el enlace secreto: se borra al quedar en un estado final.
-        const borrarTexto = `CASE WHEN tipo = 'restablecer_password' AND estado <> 'pendiente' THEN '(enlace de restablecimiento eliminado tras el envío)' ELSE texto END`;
+        // Los correos de restablecimiento y de confirmación llevan un enlace secreto: se borra al quedar en un estado final.
+        const borrarTexto = `CASE WHEN tipo IN ('restablecer_password', 'confirmar_registro') AND estado <> 'pendiente' THEN '(enlace eliminado tras el envío)' ELSE texto END`;
         if (!this.notificador.configurado) {
           await tx.query(`UPDATE notificacion_correo SET estado = 'no_configurada' WHERE id_notificacion = $1`, [n.id_notificacion]);
           await tx.query(`UPDATE notificacion_correo SET texto = ${borrarTexto} WHERE id_notificacion = $1`, [n.id_notificacion]);

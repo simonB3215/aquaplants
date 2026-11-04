@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { KeyRound, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+import { Ban, KeyRound, Link2, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { ETIQUETA_ROL, ROLES, type Rol } from '@aquaplants/shared';
 import { api, qs, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
@@ -152,6 +152,8 @@ export function Usuarios() {
         )}
       </Tarjeta>
 
+      <PanelInvitaciones torres={torres.datos ?? []} alRegistrar={() => void lista.refrescar()} />
+
       <Modal titulo={edit?.id_usuario ? 'Editar usuario' : 'Nuevo usuario'} abierto={!!edit} onCerrar={() => setEdit(null)}>
         {edit && (
           <form className="formulario" onSubmit={guardar} noValidate>
@@ -210,6 +212,199 @@ export function Usuarios() {
             Copiar
           </Boton>
           <Boton onClick={() => setSecreto(null)}>Entendido</Boton>
+        </div>
+      </Modal>
+    </>
+  );
+}
+
+/* =================================================================== Invitaciones (D-28) */
+interface InvitacionFila {
+  id_invitacion: number;
+  descripcion: string;
+  creada_en: string;
+  vence_en: string;
+  max_usos: number;
+  usos: number;
+  por_confirmar: number;
+  estado: 'vigente' | 'vencida' | 'agotada' | 'anulada';
+  creada_por: string;
+  torres: { id_instalacion: number; nombre: string }[];
+}
+const ETIQUETA_INVITACION: Record<InvitacionFila['estado'], { texto: string; clase: string }> = {
+  vigente: { texto: 'Vigente', clase: 'e-normal' },
+  vencida: { texto: 'Vencida', clase: 'e-neutro' },
+  agotada: { texto: 'Sin cupos', clase: 'e-advertencia' },
+  anulada: { texto: 'Anulada', clase: 'e-neutro' },
+};
+
+/**
+ * Enlaces de invitación por torre: quien se registra con uno queda como Encargado
+ * de esas torres tras confirmar su email. Rol fijo, vencimiento y cupo (D-28).
+ */
+function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alRegistrar: () => void }) {
+  const avisar = useAvisos();
+  const lista = useDatos<InvitacionFila[]>((s) => api.get('/invitaciones', s), []);
+  const [form, setForm] = useState<{ torres: number[]; dias: string; max_usos: string; descripcion: string } | null>(null);
+  const [errores, setErrores] = useState<Record<string, string>>({});
+  const [enviando, setEnviando] = useState(false);
+  const [enlace, setEnlace] = useState<{ url: string; vence_en: string; torres: string } | null>(null);
+
+  async function crear(e: FormEvent) {
+    e.preventDefault();
+    if (!form) return;
+    const dias = Number(form.dias);
+    const cupo = Number(form.max_usos);
+    const err: Record<string, string> = {};
+    if (!form.torres.length) err.torres = 'Elija al menos una torre';
+    if (!Number.isInteger(dias) || dias < 1 || dias > 30) err.dias = 'Entre 1 y 30 días';
+    if (!Number.isInteger(cupo) || cupo < 1 || cupo > 500) err.max_usos = 'Entre 1 y 500 personas';
+    setErrores(err);
+    if (Object.keys(err).length) return;
+    setEnviando(true);
+    try {
+      const r = await api.post<{ enlace: string; vence_en: string }>('/invitaciones', { torres: form.torres, dias, max_usos: cupo, descripcion: form.descripcion.trim() || undefined });
+      const nombres = torres.filter((t) => form.torres.includes(t.id_instalacion)).map((t) => t.nombre).join(', ');
+      setEnlace({ url: r.enlace, vence_en: r.vence_en, torres: nombres });
+      setForm(null);
+      void lista.refrescar();
+    } catch (x) {
+      setErrores({ general: (x as ApiError).message });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function anular(i: InvitacionFila) {
+    if (!window.confirm('¿Anular este enlace? Nadie más podrá registrarse con él. Las cuentas ya creadas se mantienen.')) return;
+    try {
+      await api.patch(`/invitaciones/${i.id_invitacion}/anular`);
+      avisar('Enlace anulado');
+      void lista.refrescar();
+      alRegistrar();
+    } catch (x) {
+      avisar((x as ApiError).message);
+    }
+  }
+
+  return (
+    <>
+      <Tarjeta
+        etiqueta="Enlaces de invitación"
+        titulo="Enlaces de invitación"
+        descripcion="Comparta un enlace por torre: cada persona crea su cuenta y confirma su email. Siempre entran como Encargado de cultivo."
+        acciones={
+          <Boton variante="primario" icono={Link2} onClick={() => (setErrores({}), setForm({ torres: [], dias: '7', max_usos: '20', descripcion: '' }))}>
+            Nuevo enlace
+          </Boton>
+        }
+      >
+        <MensajeError error={lista.error} />
+        {!lista.datos ? (
+          <Esqueleto n={2} alto={44} />
+        ) : !lista.datos.length ? (
+          <Vacio titulo="Sin enlaces todavía">Cree un enlace para que el personal de una torre se registre solo.</Vacio>
+        ) : (
+          <div className="tabla-contenedor">
+            <table className="tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Torres</th>
+                  <th scope="col">Descripción</th>
+                  <th scope="col">Registrados</th>
+                  <th scope="col">Vence</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.datos.map((i) => (
+                  <tr key={i.id_invitacion}>
+                    <td className="pequeno">{i.torres.map((t) => t.nombre).join(', ')}</td>
+                    <td className="pequeno">{i.descripcion || <span className="muted">—</span>}</td>
+                    <td>
+                      {i.usos} / {i.max_usos}
+                      {i.por_confirmar > 0 && <span className="muted pequeno"> · {i.por_confirmar} por confirmar</span>}
+                    </td>
+                    <td className="pequeno">{fechaHora(i.vence_en)}</td>
+                    <td>
+                      <span className={`insignia ${ETIQUETA_INVITACION[i.estado].clase}`}>{ETIQUETA_INVITACION[i.estado].texto}</span>
+                    </td>
+                    <td>
+                      {i.estado !== 'anulada' && (
+                        <Boton pequeno variante="fantasma" icono={Ban} onClick={() => void anular(i)}>
+                          Anular
+                        </Boton>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Tarjeta>
+
+      <Modal titulo="Nuevo enlace de invitación" abierto={!!form} onCerrar={() => setForm(null)}>
+        {form && (
+          <form className="formulario" onSubmit={crear} noValidate>
+            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 6 }}>Torres a las que tendrán acceso</legend>
+              <div style={{ display: 'grid', gap: 6 }}>
+                {torres
+                  .filter((t) => t.estado === 'activo')
+                  .map((t) => (
+                    <label key={t.id_instalacion} style={{ display: 'flex', gap: 8, alignItems: 'center', minHeight: 32 }}>
+                      <input
+                        type="checkbox"
+                        checked={form.torres.includes(t.id_instalacion)}
+                        onChange={(e) => setForm({ ...form, torres: e.target.checked ? [...form.torres, t.id_instalacion] : form.torres.filter((x) => x !== t.id_instalacion) })}
+                      />
+                      {t.nombre}
+                    </label>
+                  ))}
+              </div>
+              {errores.torres && (
+                <p className="campo-error" role="alert">
+                  {errores.torres}
+                </p>
+              )}
+            </fieldset>
+            <Campo etiqueta="Válido por (días)" type="number" min={1} max={30} inputMode="numeric" value={form.dias} onChange={(e) => setForm({ ...form, dias: e.target.value })} error={errores.dias} />
+            <Campo etiqueta="Máximo de personas" type="number" min={1} max={500} inputMode="numeric" value={form.max_usos} onChange={(e) => setForm({ ...form, max_usos: e.target.value })} error={errores.max_usos} ayuda="Cuando se llena el cupo, el enlace deja de funcionar." />
+            <Campo etiqueta="Descripción (opcional)" maxLength={120} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} ayuda="Por ejemplo: «Turno mañana, temporada 2027»." />
+            <p className="muted pequeno">Rol que se otorga: Encargado de cultivo (fijo). Para Supervisores o Administradores use «Nuevo usuario».</p>
+            {errores.general && (
+              <div className="aviso fondo-critico" role="alert">
+                <p>{errores.general}</p>
+              </div>
+            )}
+            <div className="acciones">
+              <Boton type="button" variante="fantasma" onClick={() => setForm(null)}>
+                Cancelar
+              </Boton>
+              <Boton type="submit" variante="primario" cargando={enviando}>
+                Crear enlace
+              </Boton>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal titulo="Enlace de invitación" abierto={!!enlace} onCerrar={() => setEnlace(null)}>
+        <p style={{ marginBottom: 8 }}>
+          Comparta este enlace con el personal de <strong>{enlace?.torres}</strong> (WhatsApp, correo…). Vence el {enlace ? fechaHora(enlace.vence_en) : ''}. <strong>Se muestra una sola vez.</strong>
+        </p>
+        <div className="credencial-unica" style={{ wordBreak: 'break-all' }}>
+          {enlace?.url}
+        </div>
+        <div className="acciones" style={{ marginTop: 12 }}>
+          <Boton variante="verde" onClick={() => void navigator.clipboard?.writeText(enlace?.url ?? '').then(() => avisar('Enlace copiado'))}>
+            Copiar enlace
+          </Boton>
+          <Boton onClick={() => setEnlace(null)}>Entendido</Boton>
         </div>
       </Modal>
     </>

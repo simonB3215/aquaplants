@@ -132,3 +132,17 @@ Defectos encontrados y corregidos en el bloque 2:
 12. **Scripts de respaldo con CRLF** (escritos en Windows): `set: illegal option -`. Corregido a LF (`.gitattributes` ya lo fuerza al versionar).
 13. **Restauración en contenedor limpio**: la imagen de TimescaleDB ya crea la extensión (`CREATE EXTENSION IF NOT EXISTS`), y `bgw_job` guarda el rol propietario de los trabajos: hay que crear los roles antes de `pg_restore`. Se restauran también propietarios y permisos.
 14. **Detalle del fallo de respaldo**: incluía avisos inocuos de `pg_dump` y, sin `--quiet`, la URI de MongoDB **con la contraseña**. Ahora el registro se limpia por etapa y se ocultan `usuario:clave@` antes de guardar o enviar.
+
+## Sesión 3 — enlaces de invitación (D-28, 2026-11-04)
+| Verificación | Cómo | Resultado |
+|---|---|---|
+| Solo el Administrador crea/lista/anula enlaces (Tabla 48) | Jest `invitaciones.test.ts` | ✔ Supervisor y Encargado → 403; torres vacías o inexistentes → 422; enviar `rol: administrador` se ignora (siempre Encargado) |
+| Flujo completo | Jest | ✔ consultar → registrarse (202) → sin confirmar el login da 401 → confirmar (201, un solo uso) → Encargado solo de las torres del enlace (RN-10: otra torre → 403); auditoría sin email; hash de la contraseña borrado de la solicitud; el texto del correo con el enlace se borra tras el envío |
+| Email ya registrado | Jest | ✔ misma respuesta 202, no se crea cuenta, aviso `cuenta_existente` al titular (uno cada 10 min) |
+| Cupo, anulación, vencimiento, tokens inválidos, política de contraseña | Jest | ✔ cupo 1: la 2.ª confirmación → 422 `INVITACION_NO_DISPONIBLE`; anulada/vencida/inventada → 422; contraseña débil → 422 |
+| Minimización | Jest | ✔ solicitudes no confirmadas se borran un día después de vencer, con su email en los correos |
+| `npm test` (4 paquetes) | TimescaleDB 2.17.2 + MongoDB 7 | **89/89 ✔**: shared 6, backend 71 (66 + 5 nuevas), simulador 6, frontend 6. Una 1.ª corrida dio 55 *timeouts* del `beforeAll` por correr a la vez que `docker compose up --build` (CPU); repetida sin carga: verde |
+| Build del frontend | Vite | ✔ |
+| Migración 009 sobre la base con datos | `docker compose --profile demo up -d --build` | ✔ aplicada; permisos reaplicados |
+| Prueba real en el navegador (stack Docker) | Admin crea enlace «Torre C» → pestaña nueva abre `/registro#invitacion=…` (el token se quita de la barra) → formulario → «Revise su correo» → `/confirmar-registro#token=…` → «Activar mi cuenta» → «Cuenta activada» | ✔ la cuenta nueva entra como Encargado y solo ve Torre C; reusar la confirmación → 422; panel: 1/20. Correo `confirmar_registro` **enviado** (redirigido a simon.bueguenio@gmail.com). Luego se anuló el enlace y se desactivó `prueba-invitacion@aquaplants.cl` |
+| E2E A–G | `escenarios.mjs` en la red Docker | **8/8 ✔** |

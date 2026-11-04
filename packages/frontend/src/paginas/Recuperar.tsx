@@ -5,7 +5,7 @@ import { api, ApiError } from '../api/cliente';
 import { Aviso, Boton, Campo } from '../componentes/ui';
 
 /** Tarjeta de acceso compartida (mismo aspecto que «Iniciar sesión»). */
-function TarjetaAcceso({ titulo, descripcion, children }: { titulo: string; descripcion: string; children: ReactNode }) {
+export function TarjetaAcceso({ titulo, descripcion, children }: { titulo: string; descripcion: string; children: ReactNode }) {
   return (
     <main className="login">
       <div className="login-tarjeta vidrio">
@@ -28,7 +28,7 @@ function TarjetaAcceso({ titulo, descripcion, children }: { titulo: string; desc
   );
 }
 
-function VolverAlLogin() {
+export function VolverAlLogin() {
   return (
     <Link to="/" className="enlace-acceso">
       <ArrowLeft size={16} aria-hidden />
@@ -37,7 +37,7 @@ function VolverAlLogin() {
   );
 }
 
-const errorDeRed = (a: ApiError) => (a.status === 0 ? 'Sin conexión con el servidor. Intente nuevamente.' : a.message);
+export const errorDeRed = (a: ApiError) => (a.status === 0 ? 'Sin conexión con el servidor. Intente nuevamente.' : a.message);
 
 /** Paso 1: pedir el enlace por correo. La respuesta es la misma exista o no la cuenta. */
 export function OlvideContrasena() {

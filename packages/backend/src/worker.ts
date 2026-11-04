@@ -33,6 +33,8 @@ export function iniciarWorker(cfg: Config, s: Servicios) {
     ciclo('anonimizacion', cfg.WORKER_MANTENIMIENTO_CADA_S * 1000, async () => {
       const n = await s.mantenimiento.anonimizarDesactivados();
       if (n) console.log(`[worker:anonimizacion] ${n} usuario(s) anonimizado(s) (Tabla 40)`);
+      const p = await s.mantenimiento.purgarRegistrosVencidos();
+      if (p) console.log(`[worker:anonimizacion] ${p} solicitud(es) de registro vencida(s) eliminada(s) (D-28)`);
     }),
   ];
   console.log('[worker] iniciado');

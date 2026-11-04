@@ -28,7 +28,8 @@ _Última actualización: 2026-11-04 (sesión 3, bloque 2, PC Windows del usuario
 - Simulador: cola en disco atómica, capacidad con registro de pérdidas, backoff exponencial con jitter/Retry-After, cortes de red y de energía, reinicio, prueba de credencial inválida, escenarios A–F.
 - Frontend: dashboards por rol (Encargado, Supervisor, Administrador) con el mismo sistema visual de UI UX Pro Max; gestión de usuarios, infraestructura, umbrales, auditoría, cultivos; históricos con banda de umbral y huecos; comparar/exportar; modo demo; responsive; PWA (manifest, íconos, SW, actualización, offline).
 - Base de datos (bloque 2): migraciones 005–008, roles de mínimo privilegio, respaldo cifrado y restauración CP-29 con acta.
-- Pruebas: 84 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
+- Registro con **enlace de invitación por torre** (D-28): el Administrador comparte un enlace (vence, tiene cupo, se puede anular); la persona crea su cuenta, confirma su email y queda como Encargado de esas torres.
+- Pruebas: 89 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
 
 ## Pendiente (por prioridad)
 1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
@@ -48,7 +49,7 @@ _Última actualización: 2026-11-04 (sesión 3, bloque 2, PC Windows del usuario
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-27). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
+Ver `docs/DECISIONES.md` (D-01…D-28). **D-28 diverge del ES2 (CU-09)**: mencionarlo en el informe. Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.
@@ -71,5 +72,7 @@ Comandos nuevos:
 docker compose --profile backup run --rm backup
 docker compose --profile restauracion run --rm restaurar
 ```
+
+Además: **enlaces de invitación (D-28)** probados con Jest (5 nuevas, 89/89) y en el navegador sobre Docker (migración 009 aplicada).
 
 **Siguiente: bloque 3** (k6 CP-27 con 50 dispositivos × 10 min y CP-13 histórico de 30 días ≤ 3 s; PWA offline re-verificada). Luego bloque 4 (CP-08, documentación final, pantalla de especies opcional). Despliegue en la nube: solo con autorización del usuario.

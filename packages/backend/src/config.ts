@@ -49,6 +49,7 @@ const Env = z.object({
   APP_URL: z.string().url().default('http://localhost:8080'),
   /** Validez del enlace de «¿Olvidaste tu contraseña?». */
   RESTABLECER_MINUTOS: z.coerce.number().int().positive().max(120).default(30),
+  REGISTRO_CONFIRMAR_HORAS: z.coerce.number().int().positive().max(72).default(24),
   /** Modo demostración académica: aislado de producción. */
   DEMO_MODE: z
     .string()

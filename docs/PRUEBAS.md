@@ -15,12 +15,13 @@ Primera ejecución con las bases reales: **TimescaleDB 2.17.2 (PostgreSQL 16) y 
 | Escenarios E2E A–G dentro de la red Docker | `tests/e2e/escenarios.mjs` vía `http://web:8080/api/v1` | **8/8 ✔** (tras corregir defectos 7–9) | `evidencias/escenarios-e2e.json` |
 | App en http://localhost:8080 | navegador integrado | **✔** login de Administrador y panel con datos reales del simulador | — |
 | PWA (Service Worker) en Docker | navegador integrado | **No verificada**: `sw.js` se sirve bien (200, `application/javascript`, `no-cache`) pero el navegador integrado no permite registrar Service Workers | — |
-| CP-12 Correo de alerta crítica | — | **Pendiente**: preparado (ver abajo), falta que el usuario ponga sus credenciales SMTP en `.env` | — |
+| CP-12 Correo de alerta crítica | Docker, worker → `smtp.gmail.com:587` (STARTTLS, contraseña de aplicación) | **✔ envío aceptado por Gmail**: autenticación verificada; escenario B → alerta crítica #7 generada 01:19:59 UTC y `notificacion_estado = enviada` al 1.er intento (~16 s, límite 5 min). Destino único `simon.bueguenio@gmail.com`. **Recepción en la bandeja: por confirmar por el usuario** | tabla `alerta` (#7) |
 | `npm audit --omit=dev` | local | **9 vulnerabilidades (1 moderada, 8 altas)** en express/qs/path-to-regexp y zod; no corregidas (requieren actualizaciones mayores) | — |
 
 ### Preparación de CP-12 (SMTP)
 - Nueva variable solo de demo `NOTIFICACIONES_SOLO_A`: si se define, **todos** los avisos van únicamente a esa dirección (asunto con prefijo `[DEMO]` y el texto indica a quién habría correspondido). Motivo: los usuarios sembrados tienen correos ficticios `@aquaplants.cl`; con SMTP real los avisos saldrían a un dominio ajeno. Prueba unitaria en `packages/backend/test/notificador.test.ts`.
-- En el `.env` local (no versionado): `NOTIFICACIONES_SOLO_A=simon.bueguenio@gmail.com`. Las credenciales `SMTP_*` las pone el usuario.
+- En el `.env` local (no versionado): `NOTIFICACIONES_SOLO_A=simon.bueguenio@gmail.com`; remitente la misma cuenta. La contraseña de aplicación la puso el usuario (nunca pasó por el chat ni por archivos versionados).
+- Procedimiento ejecutado: `docker compose up -d api worker` → `transport.verify()` OK → el Supervisor resuelve la alerta crítica activa #1 (una alerta por situación) → escenario B en AquaBrain-B (pH, sensor 6) → alerta #7 `enviada` → escenario A para volver a la normalidad.
 
 ## Sesión 1 — 2026-11-03 (entorno de desarrollo de la sesión anterior)
 
@@ -51,7 +52,7 @@ Entorno de ejecución: contenedor Linux, Node 22.23, **PostgreSQL 16.15 sin Time
 | CP-09 / CP-21 | «Sin señal» y reconexión | Evento con causa «desconocida» y reconexión | Aprobada |
 | CP-10 / CC-04 | Corte de red y sincronización | Orden FIFO, ts original, sin duplicados (simulador y E2E) | Aprobada (corte de 35 s, no de 30 min) |
 | CP-11 / CC-03 | Resolución y concurrencia | 200 + 409, responsable y auditoría | Aprobada |
-| CP-12 | Correo crítico ≤ 5 min | Sin SMTP: estado «no_configurada», nunca «enviada» (confirmado otra vez en Docker, sesión 2) | **Pendiente** de credenciales SMTP del usuario (preparado en sesión 2) |
+| CP-12 | Correo crítico ≤ 5 min | Sin SMTP: «no_configurada» (alerta #1). Con Gmail SMTP: alerta #7 «enviada» en ~16 s | **Aprobada (envío)**; recepción en bandeja por confirmar por el usuario |
 | CP-13 | Histórico 30 días ≤ 3 s | Agregación, umbrales, huecos, >90 días → 422 | Funcional aprobada; **rendimiento no medido** |
 | CP-14 / CP-15 | Comparar y exportar CSV | Series comparables; CSV «;», BOM UTF-8, auditado con nº de filas | Aprobada |
 | CP-16 / CP-17 / CP-18 / CP-19 / CP-22 / CP-23 | Usuarios, auditoría, bajas, cultivos, salud | Ver `pruebas-backend.json` | Aprobadas |

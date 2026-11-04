@@ -1,16 +1,16 @@
 {
   "api": "http://web:8080/api/v1",
-  "ejecutado_en": "2026-11-04T01:00:25.920Z",
+  "ejecutado_en": "2026-11-04T15:39:50.871Z",
   "resultados": [
     {
       "id": "A",
       "descripcion": "Operación normal: mediciones reales llegan a la API",
       "resultado": "APROBADA",
       "evidencia": {
-        "antes": "2026-11-04T00:58:25.464Z",
-        "despues": "2026-11-04T00:58:46.144Z"
+        "antes": "2026-11-04T15:37:46.503Z",
+        "despues": "2026-11-04T15:38:16.843Z"
       },
-      "ts": "2026-11-04T00:58:55.783Z"
+      "ts": "2026-11-04T15:38:20.989Z"
     },
     {
       "id": "B",
@@ -18,13 +18,13 @@
       "resultado": "APROBADA",
       "evidencia": {
         "alerta": {
-          "id": 1,
+          "id": 7,
           "severidad": "critica",
-          "valor": 4.467,
-          "ocurrencias": 2
+          "valor": 4.5,
+          "ocurrencias": 4
         }
       },
-      "ts": "2026-11-04T00:59:02.206Z"
+      "ts": "2026-11-04T15:38:27.171Z"
     },
     {
       "id": "C",
@@ -35,7 +35,7 @@
         "cola_bytes": 1138,
         "conectividad_servidor": "sin_senal"
       },
-      "ts": "2026-11-04T00:59:37.619Z"
+      "ts": "2026-11-04T15:39:02.532Z"
     },
     {
       "id": "E",
@@ -45,7 +45,7 @@
         "energia": false,
         "cola_lotes": 3
       },
-      "ts": "2026-11-04T01:00:12.777Z"
+      "ts": "2026-11-04T15:39:37.592Z"
     },
     {
       "id": "F",
@@ -55,7 +55,7 @@
         "cola_lotes_tras_reinicio": 4,
         "cola_al_apagar": 3
       },
-      "ts": "2026-11-04T01:00:15.889Z"
+      "ts": "2026-11-04T15:39:40.791Z"
     },
     {
       "id": "D",
@@ -66,19 +66,23 @@
         "reenvio": {
           "status": 200,
           "duplicado": true,
-          "id_lote": "6fa2baa7-dce5-491f-b5b5-ca6ed5a40cf6"
+          "id_lote": "3b978e8b-9b94-47da-a641-d6874d02c909"
         },
-        "lotes_recuperados_24h": 4,
+        "lotes_recuperados_24h": 27,
         "eventos": [
           "reconexion",
           "reconexion_local",
           "reinicio",
           "sin_senal",
+          "reconexion",
           "reinicio",
-          "alta"
+          "sin_senal",
+          "reconexion",
+          "reinicio",
+          "sin_senal"
         ]
       },
-      "ts": "2026-11-04T01:00:25.689Z"
+      "ts": "2026-11-04T15:39:50.547Z"
     },
     {
       "id": "E/F",
@@ -86,25 +90,21 @@
       "resultado": "APROBADA",
       "evidencia": {
         "sin_energia": {
-          "desde": "2026-11-04T00:59:37.620Z",
-          "hasta": "2026-11-04T01:00:12.777Z"
+          "desde": "2026-11-04T15:39:02.533Z",
+          "hasta": "2026-11-04T15:39:37.592Z"
         },
         "hueco": {
-          "desde": "2026-11-04T00:59:27.000Z",
-          "hasta": "2026-11-04T01:00:13.000Z"
+          "desde": "2026-11-04T15:38:57.000Z",
+          "hasta": "2026-11-04T15:39:38.000Z"
         },
         "huecos": [
           {
-            "desde": "2026-11-04T00:47:00.000Z",
-            "hasta": "2026-11-04T00:57:44.000Z"
-          },
-          {
-            "desde": "2026-11-04T00:59:27.000Z",
-            "hasta": "2026-11-04T01:00:13.000Z"
+            "desde": "2026-11-04T15:38:57.000Z",
+            "hasta": "2026-11-04T15:39:38.000Z"
           }
         ]
       },
-      "ts": "2026-11-04T01:00:25.700Z"
+      "ts": "2026-11-04T15:39:50.630Z"
     },
     {
       "id": "G",
@@ -122,7 +122,7 @@
         "resultado_esperado": 403,
         "correcto": true
       },
-      "ts": "2026-11-04T01:00:25.886Z"
+      "ts": "2026-11-04T15:39:50.836Z"
     }
   ]
 }

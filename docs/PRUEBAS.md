@@ -100,3 +100,13 @@ Sesión 2 (al ejecutar por primera vez con TimescaleDB, MongoDB 7 y Docker Compo
 ### «¿Olvidó su contraseña?» (nuevo, sesión 2)
 - Integración (Jest, 5 casos): misma respuesta 202 exista o no el email; solo se guarda el SHA-256 del token; máximo 1 enlace/min por cuenta; restablecer aplica la política, desbloquea la cuenta, revoca sesiones, es de un solo uso; enlace vencido/anterior/inventado → 422; el worker envía y borra el texto con el enlace. Frontend (Vitest, 2 casos). Total `npm test`: **75/75**.
 - Real (Docker + Gmail, migración 004): usuario temporal `prueba-olvido@aquaplants.cl` → enlace en el login → «Enviar enlace» → pantalla «Revise su correo» → enlace abierto (el token se quita de la barra) → contraseña nueva → «Contraseña actualizada» → login con la nueva = 200. Correos `restablecer_password` y `cambio_password` `enviada` (redirigidos a simon.bueguenio@gmail.com); recepción por confirmar. El usuario temporal sigue activo (desactivarlo en Usuarios).
+
+## Sesión 3 — 2026-11-04 (dependencias y CI)
+| Verificación | Resultado |
+|---|---|
+| `npm audit --omit=dev` | Antes 9 (8 altas, incl. nodemailer «correo a dominio no deseado»); **ahora 2 moderadas** (react-router, requiere v7) |
+| `npm run typecheck` (4 paquetes) con zod 4.6.7, express 4.22.3, nodemailer 10.3.1, react-router-dom 6.30.6, tsx 4.23.15, vitest 2.1.9 | ✔ |
+| `npm test` contra TimescaleDB 2.17.2 + MongoDB 7 | **75/75 ✔** |
+| Build del frontend (Vite) | ✔ |
+| `verificar.ps1` (imágenes reconstruidas, datos conservados) | Salud ok, hipertabla `medicion`, **E2E A–G 8/8 ✔** |
+| SMTP con nodemailer 10 (`transport.verify()` contra Gmail) | ✔ |

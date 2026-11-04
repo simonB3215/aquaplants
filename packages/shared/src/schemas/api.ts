@@ -142,7 +142,7 @@ export const SensorSchema = z.object({
 
 export const BajaSchema = z.object({
   motivo: texto(300),
-  confirmar: z.literal(true, { errorMap: () => ({ message: 'Debe confirmar la baja' }) }),
+  confirmar: z.literal(true, { error: 'Debe confirmar la baja' }),
 });
 
 export const AsignacionSchema = z.object({

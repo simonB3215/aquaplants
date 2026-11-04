@@ -30,10 +30,10 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 - Pruebas: 66 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
 
 ## Pendiente (por prioridad)
-1. **`npm audit --omit=dev`**: 9 vulnerabilidades (8 altas: express/qs/path-to-regexp, zod). Requieren subir express 4.22.x y zod 4 (cambio mayor): planificar y probar.
+1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
 2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-29 restauración con acta; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
 3. Despliegue en la nube: **no autorizado aún** por el usuario.
-4. CI: `actions/checkout@v4` y `setup-node@v4` avisan de Node 20 obsoleto en runners; actualizar a versiones que usen Node 24.
+4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
 5. Políticas Timescale de compresión/retención + tabla de evidencia de mediciones con alerta antes de borrar chunks (Tabla 40).
 6. Respaldo automático cifrado de MongoDB y subida a almacenamiento externo.
 7. Roles PostgreSQL de mínimo privilegio con LOGIN (hoy se crean como NOLOGIN y la app usa el usuario del compose).
@@ -47,7 +47,7 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-20).
+Ver `docs/DECISIONES.md` (D-01…D-23).
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.
@@ -63,9 +63,8 @@ docker compose --profile demo up -d --build
 ```
 
 ## Próximo paso concreto
-**Al retomar (sesión cerrada el 2026-11-04 con Docker Desktop apagado; datos conservados en los volúmenes):**
-1. Abrir Docker Desktop y ejecutar `docker compose --profile demo up -d --build` en esta carpeta (el `--build` aplica el último ajuste de la pantalla «Contraseña actualizada», que aún no se reconstruyó en Docker).
-2. Desactivar en Administrador → Usuarios el usuario de prueba `prueba-olvido@aquaplants.cl` (sigue activo; `prueba-aviso@aquaplants.cl` ya está desactivado).
-3. Confirmar en simon.bueguenio@gmail.com la recepción de los correos de prueba «Tu contraseña fue cambiada» y «Restablecer tu contraseña» y anotarlo en `docs/PRUEBAS.md`.
+**Sesión 3 (2026-11-04)**: bloque 1 (seguridad y calidad) terminado: dependencias (D-23), CI con acciones v7, D-21/D-22 registradas. Usuario de prueba `prueba-olvido@aquaplants.cl` desactivado e imagen web reconstruida. Pendiente: confirmar en simon.bueguenio@gmail.com los correos de prueba «Tu contraseña fue cambiada» y «Restablecer tu contraseña».
+
+**Siguiente: bloque 2** (políticas TimescaleDB de compresión/retención con evidencia de alertas — Tabla 40; roles PostgreSQL de mínimo privilegio; respaldo cifrado + CP-29 en local). Luego bloque 3 (k6 CP-27/CP-13, PWA offline) y bloque 4 (cierre).
 
 Después: planificar la actualización de dependencias por `npm audit` (pendiente 1) y decidir el despliegue en la nube (requiere autorización del usuario). Para repetir CP-12: resolver la alerta crítica activa del sensor (una alerta por situación) y lanzar de nuevo el escenario B.

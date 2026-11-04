@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { ZodError, type ZodTypeAny, type z } from 'zod';
+import { ZodError, type ZodType, type z } from 'zod';
 import { autorizado, type Accion, type Funcionalidad } from '@aquaplants/shared';
 import { ErrorApp, NoAutenticadoError, NoAutorizadoError } from '../errores.js';
 import type { AuthService, DispositivoAutenticado, UsuarioToken } from '../services/authService.js';
@@ -72,7 +72,7 @@ export function permitir(funcionalidad: Funcionalidad, accion: Accion = 'escribi
 }
 
 /** validar(esquema): body/query con Zod; 422 con lista de campos. */
-export function validar<S extends ZodTypeAny>(esquema: S, origen: 'body' | 'query' = 'body'): RequestHandler {
+export function validar<S extends ZodType>(esquema: S, origen: 'body' | 'query' = 'body'): RequestHandler {
   return (req, _res, next) => {
     const r = esquema.safeParse(req[origen]);
     if (!r.success) return next(r.error);
@@ -81,7 +81,7 @@ export function validar<S extends ZodTypeAny>(esquema: S, origen: 'body' | 'quer
   };
 }
 export const q = <T>(req: Request) => (req as unknown as { datosQuery: T }).datosQuery;
-export type Inferir<S extends ZodTypeAny> = z.infer<S>;
+export type Inferir<S extends ZodType> = z.infer<S>;
 
 export function idParam(req: Request, nombre = 'id'): number {
   const n = Number(req.params[nombre]);

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+lib/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+packages/simulador/data/
+respaldos/
+coverage/
+*.log
+__pycache__/

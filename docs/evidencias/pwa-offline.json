@@ -1,0 +1,8 @@
+{
+ "service_worker_activo": true,
+ "manifest_display": "standalone",
+ "recursos_en_cache": 14,
+ "api_en_cache": false,
+ "offline_muestra_login": true,
+ "offline_indica_sin_internet": true
+}

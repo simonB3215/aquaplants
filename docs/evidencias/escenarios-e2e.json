@@ -1,0 +1,117 @@
+{
+  "api": "http://localhost:3000/api/v1",
+  "ejecutado_en": "2026-11-03T23:50:39.038Z",
+  "resultados": [
+    {
+      "id": "A",
+      "descripcion": "Operación normal: mediciones reales llegan a la API",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "antes": "2026-11-03T23:48:46.668Z",
+        "despues": "2026-11-03T23:49:33.131Z"
+      },
+      "ts": "2026-11-03T23:49:33.249Z"
+    },
+    {
+      "id": "B",
+      "descripcion": "Valor fuera de umbral crea alerta (una por situación)",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "alerta": {
+          "id": 1,
+          "severidad": "critica",
+          "valor": 4.461,
+          "ocurrencias": 3
+        }
+      },
+      "ts": "2026-11-03T23:49:39.277Z"
+    },
+    {
+      "id": "C",
+      "descripcion": "Corte de Internet: lotes en cola local persistente y servidor marca «sin señal» (causa desconocida)",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "cola_lotes": 4,
+        "cola_bytes": 1515,
+        "conectividad_servidor": "sin_senal"
+      },
+      "ts": "2026-11-03T23:50:14.307Z"
+    },
+    {
+      "id": "E",
+      "descripcion": "Corte eléctrico: no se generan mediciones; la cola en disco se conserva",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "energia": false,
+        "cola_lotes": 4
+      },
+      "ts": "2026-11-03T23:50:26.333Z"
+    },
+    {
+      "id": "F",
+      "descripcion": "Reinicio: reabre la cola persistida desde disco",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "cola_lotes_tras_reinicio": 5,
+        "cola_al_apagar": 4
+      },
+      "ts": "2026-11-03T23:50:29.362Z"
+    },
+    {
+      "id": "D",
+      "descripcion": "Reconexión: sincroniza pendientes sin duplicados (reenvío deliberado → duplicado)",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "cola_final": 0,
+        "reenvio": {
+          "status": 200,
+          "duplicado": true,
+          "id_lote": "5e056d5e-4fc7-48c6-9957-d7566658f8d1"
+        },
+        "lotes_recuperados_24h": 7,
+        "eventos": [
+          "reconexion",
+          "reconexion_local",
+          "reinicio",
+          "sin_senal",
+          "reconexion_local",
+          "reinicio",
+          "alta"
+        ]
+      },
+      "ts": "2026-11-03T23:50:38.907Z"
+    },
+    {
+      "id": "E/F",
+      "descripcion": "El periodo sin energía aparece como hueco en el histórico",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "huecos": [
+          {
+            "desde": "2026-11-03T23:37:50.000Z",
+            "hasta": "2026-11-03T23:48:03.000Z"
+          }
+        ]
+      },
+      "ts": "2026-11-03T23:50:38.913Z"
+    },
+    {
+      "id": "G",
+      "descripcion": "Encargado intenta crear un usuario → 403",
+      "resultado": "APROBADA",
+      "evidencia": {
+        "codigo": "G",
+        "descripcion": "Un Encargado intenta crear un usuario (operación de Administrador) y recibe 403",
+        "solicitud": "POST /api/v1/usuarios (con el token del Encargado de demostración)",
+        "status": 403,
+        "respuesta": {
+          "codigo": "PROHIBIDO",
+          "mensaje": "No tiene permisos para esta operación"
+        },
+        "resultado_esperado": 403,
+        "correcto": true
+      },
+      "ts": "2026-11-03T23:50:39.028Z"
+    }
+  ]
+}

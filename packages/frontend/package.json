@@ -1,0 +1,37 @@
+{
+  "name": "@aquaplants/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview --host",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aquaplants/shared": "0.1.0",
+    "@fontsource/fira-code": "5.1.1",
+    "@fontsource/fira-sans": "5.1.1",
+    "chart.js": "4.4.6",
+    "chartjs-adapter-date-fns": "3.0.0",
+    "date-fns": "4.1.0",
+    "lucide-react": "0.460.0",
+    "react": "18.3.1",
+    "react-chartjs-2": "5.2.0",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.28.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.0.1",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "jsdom": "25.0.1",
+    "typescript": "5.6.3",
+    "vite": "5.4.21",
+    "vitest": "2.1.5"
+  }
+}

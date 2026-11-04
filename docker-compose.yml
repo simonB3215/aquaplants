@@ -1,0 +1,154 @@
+# AquaPlants / AquaBrain — entorno reproducible (desarrollo, demostración y base de producción).
+#   cp .env.example .env   # y cambie TODOS los secretos
+#   docker compose up -d --build                    # BD + API + worker + web (http://localhost:8080)
+#   docker compose --profile demo up -d --build     # + simulador AquaBrain
+#   docker compose --profile backup run --rm backup # respaldo manual
+# Redes: «edge» (web↔api) y «data» (interna, sin salida; BD sin puertos publicados).
+name: aquaplants
+
+x-api-env: &api-env
+  NODE_ENV: ${NODE_ENV:-development}
+  DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  MONGO_URL: mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo:27017/aquaplants?authSource=aquaplants
+  MONGO_DB: aquaplants
+  JWT_SECRET: ${JWT_SECRET}
+  TRUST_PROXY: "true"
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+  DEVICE_RATE_LIMIT_PER_MIN: ${DEVICE_RATE_LIMIT_PER_MIN:-30}
+  SIN_SENAL_FACTOR: ${SIN_SENAL_FACTOR:-3}
+  WORKER_SIN_SENAL_CADA_S: ${WORKER_SIN_SENAL_CADA_S:-60}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_FROM: ${SMTP_FROM:-}
+  DEMO_MODE: ${DEMO_MODE:-false}
+  SIM_CONTROL_URL: http://simulador:4100
+  SIM_CONTROL_TOKEN: ${SIM_CONTROL_TOKEN:-}
+  DEMO_ENCARGADO_EMAIL: ${DEMO_ENCARGADO_EMAIL:-}
+  DEMO_ENCARGADO_PASSWORD: ${DEMO_ENCARGADO_PASSWORD:-}
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_APP_USER: ${MONGO_APP_USER}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
+    volumes:
+      - mongodata:/data/db
+      - ./infrastructure/mongo/init-usuario.js:/docker-entrypoint-initdb.d/init-usuario.js:ro
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    build: { context: ., target: api }
+    command: ["sh", "-c", "npx tsx packages/backend/src/scripts/migrate.ts && if [ \"$SEMBRAR\" = \"true\" ]; then npx tsx packages/backend/src/scripts/seed.ts && chown -R 1000:1000 /simconfig; fi"]
+    environment:
+      <<: *api-env
+      SEMBRAR: ${SEMBRAR_DATOS_PRUEBA:-false}
+      SEED_INTERVALO_S: ${SEED_INTERVALO_S:-60}
+      SIM_CONFIG_PATH: /simconfig/dispositivos.json
+      SEED_PASSWORD_ADMIN: ${SEED_PASSWORD_ADMIN:-}
+      SEED_PASSWORD_SUPERVISOR: ${SEED_PASSWORD_SUPERVISOR:-}
+      SEED_PASSWORD_ENCARGADO: ${SEED_PASSWORD_ENCARGADO:-}
+    user: root
+    volumes: [simconfig:/simconfig]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [data]
+    restart: "no"
+
+  api:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      mongo: { condition: service_healthy }
+    networks: [edge, data]
+
+  worker:
+    build: { context: ., target: api }
+    command: ["node", "packages/backend/dist/worker.js"]
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      mongo: { condition: service_healthy }
+    networks: [data, salida]
+    healthcheck: { disable: true }
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    ports: ["${WEB_PORT:-8080}:8080"]
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [edge]
+
+  simulador:
+    profiles: [demo]
+    build: { context: ., target: simulador }
+    restart: unless-stopped
+    environment:
+      API_URL: http://web:8080/api/v1
+      SIM_CONFIG_PATH: /simconfig/dispositivos.json
+      SIM_DATA_DIR: /datos
+      SIM_CONTROL_HOST: 0.0.0.0
+      SIM_CONTROL_TOKEN: ${SIM_CONTROL_TOKEN}
+      SIM_COLA_BYTES: ${SIM_COLA_BYTES:-524288}
+      SIM_BACKOFF_BASE_MS: ${SIM_BACKOFF_BASE_MS:-5000}
+    volumes:
+      - simconfig:/simconfig:ro
+      - simdatos:/datos    # cola persistente: sobrevive a reinicios del contenedor (corte eléctrico simulado)
+    depends_on:
+      web: { condition: service_started }
+    networks: [edge]
+
+  backup:
+    profiles: [backup]
+    image: timescale/timescaledb:2.17.2-pg16
+    entrypoint: ["/bin/sh", "/scripts/respaldar.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - ./infrastructure/backup:/scripts:ro
+      - ./respaldos:/respaldos
+    networks: [data]
+
+volumes:
+  pgdata:
+  mongodata:
+  simconfig:
+  simdatos:
+
+networks:
+  edge:
+  data:
+    internal: true
+  salida:   # solo el worker sale a Internet (SMTP)

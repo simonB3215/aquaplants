@@ -1,0 +1,133 @@
+[
+ {
+  "rol": "encargado",
+  "ancho": 1440,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 1440,
+  "ruta": "/alertas",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 1440,
+  "ruta": "/continuidad",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 1440,
+  "errores_consola": []
+ },
+ {
+  "rol": "encargado",
+  "ancho": 390,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 390,
+  "ruta": "/historicos",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 390,
+  "errores_consola": []
+ },
+ {
+  "rol": "encargado",
+  "ancho": 360,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 360,
+  "errores_consola": []
+ },
+ {
+  "rol": "encargado",
+  "ancho": 768,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 768,
+  "errores_consola": []
+ },
+ {
+  "rol": "encargado",
+  "ancho": 1024,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "encargado",
+  "ancho": 1024,
+  "errores_consola": []
+ },
+ {
+  "rol": "supervisor",
+  "ancho": 1440,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "supervisor",
+  "ancho": 1440,
+  "ruta": "/historicos?modo=comparar",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "supervisor",
+  "ancho": 1440,
+  "errores_consola": []
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "ruta": "/",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "ruta": "/infraestructura",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "ruta": "/umbrales",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "ruta": "/usuarios",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "ruta": "/demo",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "ruta": "/auditoria",
+  "desborde_horizontal_px": 0
+ },
+ {
+  "rol": "admin",
+  "ancho": 1440,
+  "errores_consola": []
+ }
+]

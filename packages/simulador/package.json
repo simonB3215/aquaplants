@@ -1,0 +1,23 @@
+{
+  "name": "@aquaplants/simulador",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Simulador AquaBrain: dispositivos virtuales con cola local persistente que envían telemetría a la API real",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "tsx src/index.ts",
+    "start:prod": "node dist/index.js",
+    "test": "node --import tsx --test --test-timeout=30000 test/*.test.ts"
+  },
+  "dependencies": {
+    "@aquaplants/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.9.0",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}

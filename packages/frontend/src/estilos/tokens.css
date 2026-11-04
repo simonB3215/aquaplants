@@ -1,0 +1,86 @@
+/*
+ * Tokens del sistema de diseño AquaPlants.
+ * Fuente: design-system/aquaplants/MASTER.md (UI UX Pro Max) +
+ *         design-system/aquaplants/pages/dashboard.md (overrides del dashboard).
+ * Los componentes usan SOLO estas variables (nada de hex sueltos).
+ */
+:root {
+  /* Paleta MASTER */
+  --color-primary: #15803d;
+  --color-on-primary: #ffffff;
+  --color-secondary: #22c55e;
+  --color-on-secondary: #0f172a;
+  --color-accent: #a16207;
+  --color-on-accent: #ffffff;
+  --color-background: #f0fdf4;
+  --color-foreground: #14532d;
+  --color-card: #ffffff;
+  --color-card-foreground: #14532d;
+  --color-muted: #e8f0f1;
+  --color-muted-foreground: #475569;
+  --color-border: #bbf7d0;
+  --color-destructive: #dc2626;
+  --color-on-destructive: #ffffff;
+  --color-ring: #15803d;
+  --color-texto: #0f2a1a;
+  --color-info: #0369a1;
+
+  /* Estados semánticos (override dashboard): siempre con ícono + texto */
+  --estado-normal: #15803d;
+  --estado-advertencia: #a16207;
+  --estado-critico: #b91c1c;
+  --estado-sin-senal: #475569;
+  --estado-sincronizando: #1d4ed8;
+  --estado-servidor: #7c2d12;
+  --estado-neutro: #64748b;
+
+  /* Vidrio sutil (override dashboard) */
+  --vidrio-fondo: rgba(255, 255, 255, 0.74);
+  --vidrio-fondo-fuerte: rgba(255, 255, 255, 0.9);
+  --vidrio-borde: rgba(255, 255, 255, 0.65);
+  --vidrio-blur: 14px;
+
+  /* Tipografía MASTER */
+  --fuente-titulos: 'Fira Code', ui-monospace, monospace;
+  --fuente-cuerpo: 'Fira Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fuente-datos: 'Fira Code', ui-monospace, monospace;
+
+  /* Espaciado MASTER (densidad 7/10) */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  /* Sombras MASTER */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-vidrio: 0 8px 32px rgba(20, 83, 45, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* Radios (Organic Biophilic: 16–24px) */
+  --radio-sm: 8px;
+  --radio-md: 12px;
+  --radio-lg: 20px;
+  --radio-pill: 999px;
+
+  /* Movimiento (sutil, 150–300 ms) */
+  --dur-rapida: 150ms;
+  --dur-media: 220ms;
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --icono-sm: 16px;
+  --icono-md: 20px;
+  --icono-lg: 24px;
+  --toque-min: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-rapida: 0ms;
+    --dur-media: 0ms;
+  }
+}

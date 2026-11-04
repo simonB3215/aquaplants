@@ -22,6 +22,7 @@ x-api-env: &api-env
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASS: ${SMTP_PASS:-}
   SMTP_FROM: ${SMTP_FROM:-}
+  NOTIFICACIONES_SOLO_A: ${NOTIFICACIONES_SOLO_A:-}
   DEMO_MODE: ${DEMO_MODE:-false}
   SIM_CONTROL_URL: http://simulador:4100
   SIM_CONTROL_TOKEN: ${SIM_CONTROL_TOKEN:-}
@@ -39,7 +40,9 @@ services:
     volumes: [pgdata:/var/lib/postgresql/data]
     networks: [data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      # -h 127.0.0.1: durante la inicialización el servidor temporal solo escucha por socket;
+      # así el contenedor no se declara sano hasta que acepta conexiones TCP reales.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -57,14 +60,15 @@ services:
       - ./infrastructure/mongo/init-usuario.js:/docker-entrypoint-initdb.d/init-usuario.js:ro
     networks: [data]
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      # --host $(hostname): el mongod temporal de inicialización solo escucha en 127.0.0.1.
+      test: ["CMD-SHELL", "mongosh --quiet --host \"$$(hostname)\" --eval \"db.adminCommand('ping').ok\""]
       interval: 5s
       timeout: 5s
       retries: 20
 
   migrate:
     build: { context: ., target: api }
-    command: ["sh", "-c", "npx tsx packages/backend/src/scripts/migrate.ts && if [ \"$SEMBRAR\" = \"true\" ]; then npx tsx packages/backend/src/scripts/seed.ts && chown -R 1000:1000 /simconfig; fi"]
+    command: ["sh", "-c", "npx tsx packages/backend/src/scripts/migrate.ts && if [ \"$$SEMBRAR\" = \"true\" ]; then npx tsx packages/backend/src/scripts/seed.ts && chown -R 1000:1000 /simconfig; fi"]
     environment:
       <<: *api-env
       SEMBRAR: ${SEMBRAR_DATOS_PRUEBA:-false}

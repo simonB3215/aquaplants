@@ -36,6 +36,11 @@ const Env = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
+  /**
+   * Solo desarrollo/demostración: si se define, TODOS los avisos se envían únicamente a esta
+   * dirección (los usuarios sembrados tienen correos ficticios @aquaplants.cl).
+   */
+  NOTIFICACIONES_SOLO_A: z.string().optional(),
   /** Modo demostración académica: aislado de producción. */
   DEMO_MODE: z
     .string()

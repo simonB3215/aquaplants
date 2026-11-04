@@ -48,13 +48,16 @@ registrar('C', 'Corte de Internet: lotes en cola local persistente y servidor ma
 const enCola = dC.cola_lotes;
 
 // E (con la red aún cortada: corte eléctrico + router)
+// El corte debe superar 3 × intervalo de muestreo (umbral de «hueco» del histórico): 35 s con intervalo de 10 s.
+const tApagado = Date.now();
 await llamar('POST', '/demo/escenarios/E', { id_dispositivo: ID });
-await espera(12_000);
+await espera(35_000);
 const dE = await disp(ID);
 registrar('E', 'Corte eléctrico: no se generan mediciones; la cola en disco se conserva', !dE.energia && dE.cola_lotes >= enCola, { energia: dE.energia, cola_lotes: dE.cola_lotes });
 const colaApagado = dE.cola_lotes;
 
 // F (vuelve la energía, red aún cortada) y D (vuelve la red)
+const tEncendido = Date.now();
 await llamar('POST', '/demo/escenarios/F', { id_dispositivo: ID });
 await espera(3000);
 const dF = await disp(ID);
@@ -74,7 +77,13 @@ registrar(
 // Huecos del corte eléctrico visibles en el histórico (sin valores inventados)
 const sensor = b.body.id_sensor;
 const h = await llamar('GET', `/mediciones/historico?sensor=${sensor}&desde=${new Date(Date.now() - 15 * 60_000).toISOString()}&hasta=${new Date().toISOString()}`);
-registrar('E/F', 'El periodo sin energía aparece como hueco en el histórico', h.body.huecos.length >= 1, { huecos: h.body.huecos });
+// Solo cuenta un hueco que se solape con el periodo real sin energía (evita falsos positivos por otros huecos).
+const huecoDelCorte = h.body.huecos.find((x) => Date.parse(x.desde) <= tEncendido && Date.parse(x.hasta) >= tApagado);
+registrar('E/F', 'El periodo sin energía aparece como hueco en el histórico', !!huecoDelCorte, {
+  sin_energia: { desde: new Date(tApagado).toISOString(), hasta: new Date(tEncendido).toISOString() },
+  hueco: huecoDelCorte ?? null,
+  huecos: h.body.huecos,
+});
 
 // G
 const g = await llamar('POST', '/demo/escenarios/G');

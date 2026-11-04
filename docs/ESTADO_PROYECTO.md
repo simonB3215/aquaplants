@@ -1,6 +1,14 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-03 (sesión 1). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+
+## Sesión 2 — resultado
+- **Repositorio**: https://github.com/simonB3215/aquaplants (privado, rama `main`). `.env`, `node_modules`, `packages/simulador/data` y `*.log` excluidos; `.gitattributes` fuerza LF (los scripts de contenedor no se rompen en Windows).
+- **CI**: verde desde el commit `c94b0f6` (1.ª ejecución falló por el defecto 6 de `PRUEBAS.md`, corregido).
+- **Docker Compose**: verificado **desde cero** con `verificar.ps1` (TimescaleDB 2.17.2 con hipertabla `medicion`, MongoDB 7 con usuario de app, simulador, Nginx en http://localhost:8080, E2E A–G 8/8). Defectos 7–11 corregidos.
+- **Pruebas**: 66/66 automatizadas contra TimescaleDB + MongoDB reales (local y CI).
+- **SMTP (CP-12)**: preparado, **no ejecutado** todavía: faltan las credenciales del usuario en `.env`. Los avisos se redirigen solo a `simon.bueguenio@gmail.com` mediante `NOTIFICACIONES_SOLO_A` (solo demo).
+- Detalle en `docs/PRUEBAS.md`.
 
 ## Arquitectura y stack reales
 - Monorepo npm workspaces: `shared` (Zod, Tabla 48) → `backend` (Express 4, pg, mongodb, JWT, bcryptjs) / `simulador` (Node, sin dependencias externas) / `frontend` (React 18, Vite 5, Chart.js 4, React Router 6, Lucide).
@@ -17,25 +25,28 @@ _Última actualización: 2026-11-03 (sesión 1). Abrir este archivo al comenzar 
 - Continuidad: «sin señal» configurable (causa desconocida), reconexión, reinicio informado, lotes recuperados, descartes, panel dedicado.
 - Simulador: cola en disco atómica, capacidad con registro de pérdidas, backoff exponencial con jitter/Retry-After, cortes de red y de energía, reinicio, prueba de credencial inválida, escenarios A–F.
 - Frontend: dashboards por rol (Encargado, Supervisor, Administrador) con el mismo sistema visual de UI UX Pro Max; gestión de usuarios, infraestructura, umbrales, auditoría, cultivos; históricos con banda de umbral y huecos; comparar/exportar; modo demo; responsive; PWA (manifest, íconos, SW, actualización, offline).
-- Pruebas: 64 automatizadas + 8 E2E aprobadas (`docs/PRUEBAS.md`).
+- Pruebas: 66 automatizadas + 8 E2E aprobadas contra TimescaleDB y MongoDB reales (`docs/PRUEBAS.md`).
 
 ## Pendiente (por prioridad)
-1. **Ejecutar en Docker Compose real** (`docker compose --profile demo up --build`): Dockerfile y compose están escritos pero no se pudieron construir aquí (Docker Hub bloqueado). Verificar también que `002_timescale.sql` crea la hipertabla con la FK de `alerta`.
-2. Ejecutar CI en GitHub (requiere crear el repositorio remoto).
-3. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-28/29 despliegue y restauración con acta.
+1. **CP-12 correo real**: el usuario completa `SMTP_HOST/PORT/USER/PASS/FROM` en `.env` (contraseña de aplicación de Google), `docker compose up -d`, escenario B desde Administrador → Demostración (resolviendo antes la alerta crítica activa del mismo sensor, porque se genera una sola alerta por situación) y confirmar correo recibido + `notificacion_estado = enviada`.
+2. **`npm audit --omit=dev`**: 9 vulnerabilidades (8 altas: express/qs/path-to-regexp, zod). Requieren subir express 4.22.x y zod 4 (cambio mayor): planificar y probar.
+3. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-29 restauración con acta; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
+4. Despliegue en la nube: **no autorizado aún** por el usuario.
+5. CI: `actions/checkout@v4` y `setup-node@v4` avisan de Node 20 obsoleto en runners; actualizar a versiones que usen Node 24.
 4. Políticas Timescale de compresión/retención + tabla de evidencia de mediciones con alerta antes de borrar chunks (Tabla 40).
 5. Respaldo automático cifrado de MongoDB y subida a almacenamiento externo.
 6. Roles PostgreSQL de mínimo privilegio con LOGIN (hoy se crean como NOLOGIN y la app usa el usuario del compose).
 7. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI; sesión persistente opcional (refresh token httpOnly) si se aprueba cambiar el ES2.
 
 ## Problemas y riesgos conocidos
-- Pruebas ejecutadas con FerretDB en lugar de MongoDB y sin TimescaleDB (ver PRUEBAS.md).
+- (Resuelto en sesión 2) Las pruebas ya corren con MongoDB 7 y TimescaleDB 2.17.2 reales.
+- `WORKER_SIN_SENAL_CADA_S` debe ser menor que `SIN_SENAL_FACTOR × intervalo` o los cortes breves no se registran.
 - Al recargar la página se pierde la sesión (JWT en memoria, decisión del ES2).
 - En red local por HTTP la PWA no se instala (requiere HTTPS).
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-19).
+Ver `docs/DECISIONES.md` (D-01…D-20).
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.
@@ -51,4 +62,4 @@ docker compose --profile demo up -d --build
 ```
 
 ## Próximo paso concreto
-En el PC del usuario: `cp .env.example .env`, ajustar secretos, `docker compose --profile demo up -d --build`, abrir http://localhost:8080, ejecutar `node tests/e2e/escenarios.mjs http://localhost:8080/api/v1` y registrar el resultado aquí. Dependencia: Docker Desktop instalado.
+Completar CP-12 (pendiente 1): el usuario pone sus credenciales SMTP en `.env`; luego `docker compose --profile demo up -d`, ejecutar el escenario B y comprobar el correo en simon.bueguenio@gmail.com y `notificacion_estado = 'enviada'` en `alerta`. Registrar el resultado en `docs/PRUEBAS.md`.

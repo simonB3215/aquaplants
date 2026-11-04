@@ -23,6 +23,7 @@ Precedencia aplicada: desafío original (contexto) → ES2 corregido (diseño) �
 | D-17 | Seeds | — | Historial sintético marcado `lote_ingesta.origen = 'seed'` | Datos de prueba identificados; nunca se presentan como del simulador. |
 | D-18 | Tipografía | Google Fonts (MASTER.md) | Fira Sans / Fira Code **auto-alojadas** (@fontsource) | Funciona sin conexión (PWA) y evita solicitudes a terceros. |
 | D-19 | Comentario al resolver | Opcional (CU-04) / obligatorio en críticas (Tabla 29) | Obligatorio solo en críticas | Tabla 29 es más específica. |
+| D-20 | Destinatarios de avisos en demo | Supervisor y Encargados de la torre | Igual; `NOTIFICACIONES_SOLO_A` (solo demo) redirige **todos** los avisos a una única dirección | Los usuarios sembrados tienen correos ficticios `@aquaplants.cl`; con SMTP real los avisos saldrían a un dominio ajeno. |
 
 ## Supuestos a verificar con hardware real
 - 512 KB de cola ≈ 40 h sin conexión: depende del tamaño de lote y del intervalo (en el simulador, ~ 360 B por lote de 4–5 lecturas).

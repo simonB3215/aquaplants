@@ -17,13 +17,19 @@ const DIR = candidatos.find((c) => c && existsSync(c));
 export async function migrar(url: string, opciones: { reset?: boolean; silencioso?: boolean } = {}) {
   if (!DIR) throw new Error('No se encontró database/migrations (defina MIGRATIONS_DIR)');
   const log = opciones.silencioso ? () => undefined : console.log;
-  const c = new pg.Client({ connectionString: url });
+  let c = new pg.Client({ connectionString: url });
   await c.connect();
   try {
     if (opciones.reset) {
       if (process.env.NODE_ENV === 'production') throw new Error('--reset no está permitido en producción');
       log('[migrate] reinicio del esquema (desarrollo)');
       await c.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+      // El DROP elimina la extensión timescaledb, pero su biblioteca sigue cargada en esta
+      // sesión: volver a crearla en la misma conexión falla («already been loaded with
+      // another version»). Se abre una sesión nueva antes de aplicar las migraciones.
+      await c.end();
+      c = new pg.Client({ connectionString: url });
+      await c.connect();
     }
     await c.query(`CREATE TABLE IF NOT EXISTS schema_migraciones (version text PRIMARY KEY, aplicada_en timestamptz NOT NULL DEFAULT now(), nota text)`);
     const aplicadas = new Set((await c.query<{ version: string }>('SELECT version FROM schema_migraciones')).rows.map((r) => r.version));

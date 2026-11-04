@@ -4,6 +4,7 @@ import { cerrar, config, login, lote, preparar, tsUnico, type Siembra } from './
 import { crearServicios, type Servicios } from '../src/contenedor.js';
 import { crearApp } from '../src/app.js';
 import { MongoPayloadStore } from '../src/adapters/mongo/payloadStore.js';
+import { CorreosCuentaService } from '../src/services/correosCuentaService.js';
 import request from 'supertest';
 
 let s: Servicios;
@@ -301,6 +302,47 @@ describe('CU-02 / CU-09 Sesión y usuarios', () => {
     for (let i = 0; i < 5; i++) ultimo = (await api().post('/api/v1/auth/login').send({ email: 'encargado2@aquaplants.cl', password: 'incorrecta' })).status;
     expect(ultimo).toBe(423);
     expect((await api().post('/api/v1/auth/login').send({ email: 'encargado2@aquaplants.cl', password: semilla.passwords.encargado })).status).toBe(423);
+  });
+
+  test('cambio de contraseña: aviso por correo al titular (sin la contraseña) y el worker lo envía una vez', async () => {
+    const h = { authorization: `Bearer ${tok.admin}` };
+    const alta = await api().post('/api/v1/usuarios').set(h).send({ nombre: 'Titular Aviso', email: 'aviso@aquaplants.cl', rol: 'supervisor' });
+    const t = await login(app, 'aviso@aquaplants.cl', alta.body.password_temporal);
+    const nueva = 'NuevaClave2026x';
+    const r = await api().post('/api/v1/auth/cambiar-password').set('authorization', `Bearer ${t}`).send({ actual: alta.body.password_temporal, nueva });
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ aviso_correo: false }); // entorno de pruebas sin SMTP
+    const n = await s.db.query<{ destinatario: string; asunto: string; texto: string; estado: string }>(
+      `SELECT destinatario, asunto, texto, estado FROM notificacion_correo WHERE destinatario = 'aviso@aquaplants.cl'`,
+    );
+    expect(n.rows).toHaveLength(1);
+    expect(n.rows[0].estado).toBe('pendiente');
+    expect(n.rows[0].texto).toContain('Titular Aviso');
+    expect(n.rows[0].texto).not.toContain(nueva);
+    expect(n.rows[0].texto).not.toContain(alta.body.password_temporal);
+
+    const enviados: { destinatarios: string[]; asunto: string }[] = [];
+    const correos = new CorreosCuentaService(s.db, { configurado: true, enviar: async (m) => void enviados.push(m) });
+    // Dos «workers» en paralelo: el aviso se envía una sola vez (SKIP LOCKED).
+    await Promise.all([correos.procesarPendientes(), correos.procesarPendientes()]);
+    expect(enviados.filter((m) => m.destinatarios.includes('aviso@aquaplants.cl'))).toHaveLength(1);
+    const fin = await s.db.query<{ estado: string }>(`SELECT estado FROM notificacion_correo WHERE destinatario = 'aviso@aquaplants.cl'`);
+    expect(fin.rows[0].estado).toBe('enviada');
+
+    // Contraseña incorrecta → 422 y ningún aviso nuevo.
+    const t2 = await login(app, 'aviso@aquaplants.cl', nueva);
+    expect((await api().post('/api/v1/auth/cambiar-password').set('authorization', `Bearer ${t2}`).send({ actual: 'incorrecta1', nueva: 'OtraClave2026y' })).status).toBe(422);
+    expect((await s.db.query(`SELECT 1 FROM notificacion_correo WHERE destinatario = 'aviso@aquaplants.cl'`)).rowCount).toBe(1);
+  });
+
+  test('aviso de cambio de contraseña sin SMTP queda «no_configurada» (nunca «enviada»)', async () => {
+    const correos = new CorreosCuentaService(s.db, { configurado: false, enviar: async () => undefined });
+    await s.db.query(
+      `INSERT INTO notificacion_correo (id_usuario, tipo, destinatario, asunto, texto) SELECT id_usuario, 'cambio_password', email, 'a', 'b' FROM usuario WHERE email = 'aviso@aquaplants.cl'`,
+    );
+    expect(await correos.procesarPendientes()).toBe(0);
+    const r = await s.db.query<{ estado: string }>(`SELECT estado FROM notificacion_correo WHERE destinatario = 'aviso@aquaplants.cl' ORDER BY id_notificacion DESC LIMIT 1`);
+    expect(r.rows[0].estado).toBe('no_configurada');
   });
 
   test('cierre de sesión invalida el token (jti en lista de bloqueo)', async () => {

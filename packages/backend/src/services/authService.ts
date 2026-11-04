@@ -6,6 +6,7 @@ import type { IBaseDatos } from '../ports/index.js';
 import type { Config } from '../config.js';
 import { ErrorApp, NoAutenticadoError, ReglaNegocioError } from '../errores.js';
 import { auditar, registrarEvento } from './auditoria.js';
+import { CorreosCuentaService } from './correosCuentaService.js';
 
 export interface UsuarioToken {
   id_usuario: number;
@@ -156,8 +157,12 @@ export class AuthService {
     return r.rows[0];
   }
 
-  async cambiarPassword(id: number, actual: string, nueva: string, ip: string | null): Promise<void> {
-    const r = await this.db.query<{ hash_password: string }>(`SELECT hash_password FROM usuario WHERE id_usuario = $1`, [id]);
+  /** Devuelve si se programó el aviso por correo (solo hay aviso si SMTP está configurado). */
+  async cambiarPassword(id: number, actual: string, nueva: string, ip: string | null): Promise<{ aviso_correo: boolean }> {
+    const r = await this.db.query<{ hash_password: string; nombre: string; email: string }>(
+      `SELECT hash_password, nombre, email FROM usuario WHERE id_usuario = $1`,
+      [id],
+    );
     if (!r.rows[0] || !(await bcrypt.compare(actual, r.rows[0].hash_password))) {
       throw new ReglaNegocioError('La contraseña actual no es correcta', [{ campo: 'actual', mensaje: 'Contraseña incorrecta' }]);
     }
@@ -169,8 +174,11 @@ export class AuthService {
         [id, hash],
       );
       await auditar(tx, { id_usuario: id, ip }, 'cambiar_password', 'usuario', id);
+      // Aviso de seguridad al titular de la cuenta; lo envía el worker (sin la contraseña).
+      await CorreosCuentaService.programarCambioPassword(tx, { id_usuario: id, nombre: r.rows[0].nombre, email: r.rows[0].email }, ip);
     });
     this.invalidarCache(id);
+    return { aviso_correo: Boolean(this.cfg.SMTP_HOST) };
   }
 
   /** CU-01 paso 3: credencial de dispositivo contra su resumen SHA-256, no de baja. */

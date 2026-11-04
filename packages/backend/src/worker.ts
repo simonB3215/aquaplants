@@ -26,6 +26,7 @@ export function iniciarWorker(cfg: Config, s: Servicios) {
   const timers = [
     ciclo('alertas', cfg.WORKER_OUTBOX_CADA_MS, () => s.motor.procesarPendientes()),
     ciclo('notificaciones', 15_000, () => s.motor.procesarNotificaciones()),
+    ciclo('correos_cuenta', 15_000, () => s.correosCuenta.procesarPendientes()),
     ciclo('sin_senal', cfg.WORKER_SIN_SENAL_CADA_S * 1000, () => s.continuidad.detectarSinSenal()),
     ciclo('reconciliacion', cfg.WORKER_RECONCILIAR_CADA_S * 1000, () => s.continuidad.reconciliar(s.ingesta)),
   ];

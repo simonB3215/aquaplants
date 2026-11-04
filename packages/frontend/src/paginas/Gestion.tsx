@@ -699,8 +699,12 @@ export function Perfil() {
     if (Object.keys(err).length) return;
     setEnviando(true);
     try {
-      await api.post('/auth/cambiar-password', { actual: f.actual, nueva: f.nueva });
-      avisar('Contraseña actualizada. Vuelva a iniciar sesión en otros equipos.');
+      const r = await api.post<{ aviso_correo?: boolean }>('/auth/cambiar-password', { actual: f.actual, nueva: f.nueva });
+      avisar(
+        r?.aviso_correo
+          ? 'Contraseña actualizada y aviso enviado por correo. Inicie sesión con la nueva contraseña.'
+          : 'Contraseña actualizada. Inicie sesión con la nueva contraseña.',
+      );
       actualizar({ debe_cambiar_password: false });
       setF({ actual: '', nueva: '', repetir: '' });
     } catch (x) {

@@ -7,6 +7,7 @@ import { crearNotificador } from './adapters/notificador.js';
 import { AuthService } from './services/authService.js';
 import { IngestaService } from './services/ingestaService.js';
 import { MotorAlertas } from './services/motorAlertas.js';
+import { CorreosCuentaService } from './services/correosCuentaService.js';
 import { EstadoService } from './services/estadoService.js';
 import { AlertasService } from './services/alertasService.js';
 import { HistoricoService } from './services/historicoService.js';
@@ -31,6 +32,7 @@ export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?:
     auth,
     ingesta: new IngestaService(db, mediciones, outbox, payloads, cfg),
     motor: new MotorAlertas(db, mediciones, new PgAlertaRepo(), outbox, notificador),
+    correosCuenta: new CorreosCuentaService(db, notificador),
     estado: new EstadoService(db, cfg),
     alertas: new AlertasService(db),
     historico: new HistoricoService(db),

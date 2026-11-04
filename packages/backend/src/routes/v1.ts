@@ -107,8 +107,7 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     auth,
     validar(CambiarPasswordSchema),
     h(async (req, res) => {
-      await s.auth.cambiarPassword(req.usuario!.id_usuario, req.body.actual, req.body.nueva, ipDe(req));
-      res.status(204).end();
+      res.json(await s.auth.cambiarPassword(req.usuario!.id_usuario, req.body.actual, req.body.nueva, ipDe(req)));
     }),
   );
 

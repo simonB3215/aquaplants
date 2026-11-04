@@ -12,7 +12,7 @@ Errores uniformes (Tabla 11): `{ "codigo": "...", "mensaje": "...", "campos": [{
 | Método y ruta | CU | Encargado | Supervisor | Admin |
 |---|---|---|---|---|
 | `POST /telemetria`, `POST /telemetria/eventos` | 01 | — (solo dispositivo) | — | — |
-| `POST /auth/login`, `/auth/logout`, `GET /auth/me`, `POST /auth/cambiar-password` | 02 | ✔ | ✔ | ✔ |
+| `POST /auth/login`, `/auth/logout`, `GET /auth/me`, `POST /auth/cambiar-password` (200 `{aviso_correo}`; programa aviso por correo al titular) | 02 | ✔ | ✔ | ✔ |
 | `GET /torres/estado`, `GET /torres/{id}/estado` | 03 | sus torres | ✔ | ✔ |
 | `GET /alertas` | 04 | sus torres | ✔ | ✔ |
 | `PATCH /alertas/{id}/resolver` (alias `PATCH /alertas/{id}`) | 04 | advertencias | ✔ (crítica: comentario obligatorio) | ✔ |

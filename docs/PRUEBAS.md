@@ -23,6 +23,17 @@ Primera ejecución con las bases reales: **TimescaleDB 2.17.2 (PostgreSQL 16) y 
 - En el `.env` local (no versionado): `NOTIFICACIONES_SOLO_A=simon.bueguenio@gmail.com`; remitente la misma cuenta. La contraseña de aplicación la puso el usuario (nunca pasó por el chat ni por archivos versionados).
 - Procedimiento ejecutado: `docker compose up -d api worker` → `transport.verify()` OK → el Supervisor resuelve la alerta crítica activa #1 (una alerta por situación) → escenario B en AquaBrain-B (pH, sensor 6) → alerta #7 `enviada` → escenario A para volver a la normalidad.
 
+### Aviso por correo al cambiar la contraseña (nuevo, sesión 2)
+| Prueba | Resultado |
+|---|---|
+| Integración (Jest): cambio de contraseña → 200 `{aviso_correo}`; un aviso `pendiente` con el nombre del titular y **sin** la contraseña nueva ni la anterior | ✔ |
+| Integración: dos procesos del worker en paralelo → el aviso se envía **una sola vez** (`FOR UPDATE SKIP LOCKED`) y queda `enviada` | ✔ |
+| Integración: contraseña actual incorrecta → 422 y ningún aviso nuevo | ✔ |
+| Integración: sin SMTP → `no_configurada`, nunca `enviada` | ✔ |
+| Real (Docker + Gmail): migración `003` aplicada sobre la base existente; usuario temporal `prueba-aviso@aquaplants.cl` cambia su contraseña desde la UI (Perfil) → aviso en pantalla, `notificacion_correo` #1 `enviada` al 1.er intento, redirigido a simon.bueguenio@gmail.com por `NOTIFICACIONES_SOLO_A`. El usuario temporal se desactivó después | ✔ (envío aceptado por Gmail; recepción por confirmar) |
+
+Total `npm test`: **68/68** (shared 6, backend 52, simulador 6, frontend 4).
+
 ## Sesión 1 — 2026-11-03 (entorno de desarrollo de la sesión anterior)
 
 Entorno de ejecución: contenedor Linux, Node 22.23, **PostgreSQL 16.15 sin TimescaleDB** (no descargable en ese entorno) y **FerretDB 1.24** como servidor compatible con el protocolo MongoDB (la imagen oficial de MongoDB no era descargable). Evidencias en `docs/evidencias/` (los archivos `escenarios-e2e.json` y `pruebas-backend.json` fueron reemplazados por los de la sesión 2).

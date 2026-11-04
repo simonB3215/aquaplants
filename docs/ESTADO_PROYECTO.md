@@ -32,10 +32,10 @@ _Última actualización: 2026-11-03 (sesión 2, PC Windows del usuario). Abrir e
 2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; CP-29 restauración con acta; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
 3. Despliegue en la nube: **no autorizado aún** por el usuario.
 4. CI: `actions/checkout@v4` y `setup-node@v4` avisan de Node 20 obsoleto en runners; actualizar a versiones que usen Node 24.
-4. Políticas Timescale de compresión/retención + tabla de evidencia de mediciones con alerta antes de borrar chunks (Tabla 40).
-5. Respaldo automático cifrado de MongoDB y subida a almacenamiento externo.
-6. Roles PostgreSQL de mínimo privilegio con LOGIN (hoy se crean como NOLOGIN y la app usa el usuario del compose).
-7. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI; sesión persistente opcional (refresh token httpOnly) si se aprueba cambiar el ES2.
+5. Políticas Timescale de compresión/retención + tabla de evidencia de mediciones con alerta antes de borrar chunks (Tabla 40).
+6. Respaldo automático cifrado de MongoDB y subida a almacenamiento externo.
+7. Roles PostgreSQL de mínimo privilegio con LOGIN (hoy se crean como NOLOGIN y la app usa el usuario del compose).
+8. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI; sesión persistente opcional (refresh token httpOnly) si se aprueba cambiar el ES2.
 
 ## Problemas y riesgos conocidos
 - (Resuelto en sesión 2) Las pruebas ya corren con MongoDB 7 y TimescaleDB 2.17.2 reales.

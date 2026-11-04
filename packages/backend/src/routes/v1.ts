@@ -5,6 +5,8 @@ import {
   AsignacionSchema,
   BajaSchema,
   CambiarPasswordSchema,
+  OlvidePasswordSchema,
+  RestablecerPasswordSchema,
   CerrarCultivoSchema,
   CompararSchema,
   CultivoSchema,
@@ -86,6 +88,23 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     h(async (req, res) => {
       res.json(await s.auth.login(req.body.email, req.body.password, ipDe(req)));
     }),
+  );
+  // «¿Olvidaste tu contraseña?» (públicas, con el mismo límite por IP que el login).
+  r.post(
+    '/auth/olvide-password',
+    tasaLogin,
+    validar(OlvidePasswordSchema),
+    h(async (req, res) => {
+      await s.auth.solicitarRestablecimiento(req.body.email, ipDe(req));
+      // Misma respuesta exista o no la cuenta (no permite descubrir emails registrados).
+      res.status(202).json({ mensaje: 'Si el email corresponde a una cuenta activa, enviamos un enlace para restablecer la contraseña.' });
+    }),
+  );
+  r.post(
+    '/auth/restablecer-password',
+    tasaLogin,
+    validar(RestablecerPasswordSchema),
+    h(async (req, res) => void res.json(await s.auth.restablecerPassword(req.body.token, req.body.nueva, ipDe(req)))),
   );
   r.post(
     '/auth/logout',

@@ -345,6 +345,90 @@ describe('CU-02 / CU-09 Sesión y usuarios', () => {
     expect(r.rows[0].estado).toBe('no_configurada');
   });
 
+  describe('¿Olvidaste tu contraseña?', () => {
+    const email = 'olvido@aquaplants.cl';
+    let temporal: string;
+    let token: string;
+    const tokenDe = async () => {
+      const r = await s.db.query<{ texto: string }>(
+        `SELECT texto FROM notificacion_correo WHERE destinatario = $1 AND tipo = 'restablecer_password' ORDER BY id_notificacion DESC LIMIT 1`,
+        [email],
+      );
+      return /#token=([A-Za-z0-9_-]{43})/.exec(r.rows[0].texto)![1];
+    };
+
+    beforeAll(async () => {
+      const alta = await api().post('/api/v1/usuarios').set('authorization', `Bearer ${tok.admin}`).send({ nombre: 'Usuario Olvidadizo', email, rol: 'supervisor' });
+      temporal = alta.body.password_temporal;
+    });
+
+    test('email inexistente y existente reciben la misma respuesta (no revela cuentas)', async () => {
+      const no = await api().post('/api/v1/auth/olvide-password').send({ email: 'nadie@aquaplants.cl' });
+      const si = await api().post('/api/v1/auth/olvide-password').send({ email: email.toUpperCase() });
+      expect(no.status).toBe(202);
+      expect(si.status).toBe(202);
+      expect(si.body).toEqual(no.body);
+      expect((await s.db.query(`SELECT 1 FROM notificacion_correo WHERE destinatario = 'nadie@aquaplants.cl'`)).rowCount).toBe(0);
+    });
+
+    test('se guarda solo el resumen del token; el correo lleva el enlace; máximo uno por minuto', async () => {
+      token = await tokenDe();
+      const t = await s.db.query<{ hash_token: string }>(
+        `SELECT hash_token FROM token_restablecimiento t JOIN usuario u USING (id_usuario) WHERE u.email = $1`,
+        [email],
+      );
+      expect(t.rows).toHaveLength(1);
+      expect(t.rows[0].hash_token).not.toContain(token);
+      expect((await api().post('/api/v1/auth/olvide-password').send({ email })).status).toBe(202);
+      expect((await s.db.query(`SELECT 1 FROM token_restablecimiento t JOIN usuario u USING (id_usuario) WHERE u.email = $1`, [email])).rowCount).toBe(1);
+    });
+
+    test('restablecer: política de contraseña, desbloquea la cuenta, revoca sesiones y el enlace es de un solo uso', async () => {
+      const sesion = await login(app, email, temporal);
+      for (let i = 0; i < 5; i++) await api().post('/api/v1/auth/login').send({ email, password: 'incorrecta' });
+      expect((await api().post('/api/v1/auth/login').send({ email, password: temporal })).status).toBe(423);
+
+      expect((await api().post('/api/v1/auth/restablecer-password').send({ token, nueva: 'corta' })).status).toBe(422);
+      const ok = await api().post('/api/v1/auth/restablecer-password').send({ token, nueva: 'Recuperada2026a' });
+      expect(ok.status).toBe(200);
+      expect(ok.body).toEqual({ aviso_correo: false });
+
+      expect((await api().get('/api/v1/auth/me').set('authorization', `Bearer ${sesion}`)).status).toBe(401);
+      expect((await api().post('/api/v1/auth/login').send({ email, password: temporal })).status).toBe(401);
+      const nuevo = await login(app, email, 'Recuperada2026a');
+      expect((await api().get('/api/v1/auth/me').set('authorization', `Bearer ${nuevo}`)).body.debe_cambiar_password).toBe(false);
+
+      const otraVez = await api().post('/api/v1/auth/restablecer-password').send({ token, nueva: 'OtraDistinta2026b' });
+      expect(otraVez.status).toBe(422);
+      expect(otraVez.body.campos[0].campo).toBe('token');
+      const avisos = await s.db.query<{ tipo: string }>(`SELECT tipo FROM notificacion_correo WHERE destinatario = $1 ORDER BY id_notificacion`, [email]);
+      expect(avisos.rows.map((r) => r.tipo)).toEqual(['restablecer_password', 'cambio_password']);
+    });
+
+    test('enlace vencido o inventado → 422; un enlace nuevo invalida el anterior', async () => {
+      await s.db.query(`UPDATE token_restablecimiento SET creado_en = creado_en - interval '2 minutes'`);
+      await api().post('/api/v1/auth/olvide-password').send({ email });
+      const primero = await tokenDe();
+      await s.db.query(`UPDATE token_restablecimiento SET creado_en = creado_en - interval '2 minutes'`);
+      await api().post('/api/v1/auth/olvide-password').send({ email });
+      const segundo = await tokenDe();
+      expect(segundo).not.toBe(primero);
+      expect((await api().post('/api/v1/auth/restablecer-password').send({ token: primero, nueva: 'Valida2026ccc' })).status).toBe(422);
+      await s.db.query(`UPDATE token_restablecimiento SET expira_en = now() - interval '1 second' WHERE usado_en IS NULL`);
+      expect((await api().post('/api/v1/auth/restablecer-password').send({ token: segundo, nueva: 'Valida2026ccc' })).status).toBe(422);
+      expect((await api().post('/api/v1/auth/restablecer-password').send({ token: 'x'.repeat(43), nueva: 'Valida2026ccc' })).status).toBe(422);
+    });
+
+    test('el worker envía el enlace y luego borra el texto que lo contiene', async () => {
+      const enviados: { texto: string }[] = [];
+      const correos = new CorreosCuentaService(s.db, { configurado: true, enviar: async (m) => void enviados.push(m) });
+      await correos.procesarPendientes(100);
+      expect(enviados.some((m) => /#token=[A-Za-z0-9_-]{43}/.test(m.texto))).toBe(true);
+      const r = await s.db.query<{ texto: string; estado: string }>(`SELECT texto, estado FROM notificacion_correo WHERE tipo = 'restablecer_password'`);
+      expect(r.rows.every((x) => x.estado === 'enviada' && !x.texto.includes('#token='))).toBe(true);
+    });
+  });
+
   test('cierre de sesión invalida el token (jti en lista de bloqueo)', async () => {
     const t = await login(app, 'supervisor@aquaplants.cl', semilla.passwords.supervisor);
     expect((await api().post('/api/v1/auth/logout').set('authorization', `Bearer ${t}`)).status).toBe(204);

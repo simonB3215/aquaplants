@@ -12,6 +12,7 @@ import { Historicos } from './paginas/Historicos';
 import { Alertas } from './paginas/Alertas';
 import { Continuidad } from './paginas/Continuidad';
 import { Auditoria, Infraestructura, Perfil, Umbrales, Usuarios } from './paginas/Gestion';
+import { OlvideContrasena, RestablecerContrasena } from './paginas/Recuperar';
 import { Demo } from './paginas/Demo';
 import { Vacio } from './componentes/ui';
 import { api } from './api/cliente';
@@ -33,7 +34,14 @@ function Rutas() {
       .catch(() => setDemo(false));
   }, [usuario]);
 
-  if (!usuario) return <Login />;
+  if (!usuario)
+    return (
+      <Routes>
+        <Route path="olvide-contrasena" element={<OlvideContrasena />} />
+        <Route path="restablecer-contrasena" element={<RestablecerContrasena />} />
+        <Route path="*" element={<Login />} />
+      </Routes>
+    );
   if (usuario.debe_cambiar_password)
     return (
       <Routes>

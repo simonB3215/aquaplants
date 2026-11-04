@@ -23,6 +23,16 @@ export const CambiarPasswordSchema = z.object({
   nueva: PasswordSchema,
 });
 
+/** «¿Olvidaste tu contraseña?»: la respuesta es la misma exista o no el email. */
+export const OlvidePasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email con formato inválido').max(160),
+});
+
+export const RestablecerPasswordSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'Enlace inválido'),
+  nueva: PasswordSchema,
+});
+
 // ---------- CU-04 Alertas ----------
 export const ESTADOS_ALERTA = ['activa', 'resuelta'] as const;
 export const SEVERIDADES = ['advertencia', 'critica'] as const;

@@ -36,19 +36,41 @@ export class CorreosCuentaService {
     );
   }
 
+  static async programarRestablecimiento(tx: Consulta, u: { id_usuario: number; nombre: string; email: string }, enlace: string, minutos: number, ip: string | null) {
+    const texto = [
+      `Hola ${u.nombre}:`,
+      '',
+      `Recibimos una solicitud para restablecer la contraseña de tu cuenta de AquaPlants (${u.email})${ip ? ` desde la dirección IP ${ip}` : ''}.`,
+      '',
+      `Para elegir una contraseña nueva, abre este enlace (válido por ${minutos} minutos y un solo uso):`,
+      enlace,
+      '',
+      'Si no lo solicitaste, ignora este correo: tu contraseña actual sigue funcionando.',
+      '',
+      '— AquaPlants (mensaje automático, no respondas este correo)',
+    ].join('\n');
+    await tx.query(
+      `INSERT INTO notificacion_correo (id_usuario, tipo, destinatario, asunto, texto) VALUES ($1, 'restablecer_password', $2, $3, $4)`,
+      [u.id_usuario, u.email, '[AquaPlants] Restablecer tu contraseña', texto],
+    );
+  }
+
   /** Envía los avisos pendientes; cada uno se bloquea (SKIP LOCKED) para que dos workers no lo dupliquen. */
   async procesarPendientes(limite = 20): Promise<number> {
     let enviadas = 0;
     for (let i = 0; i < limite; i++) {
       const hubo = await this.db.transaccion(async (tx) => {
-        const r = await tx.query<{ id_notificacion: string; destinatario: string; asunto: string; texto: string; intentos: number }>(
-          `SELECT id_notificacion, destinatario, asunto, texto, intentos FROM notificacion_correo
+        const r = await tx.query<{ id_notificacion: string; tipo: string; destinatario: string; asunto: string; texto: string; intentos: number }>(
+          `SELECT id_notificacion, tipo, destinatario, asunto, texto, intentos FROM notificacion_correo
             WHERE estado = 'pendiente' ORDER BY creado_en LIMIT 1 FOR UPDATE SKIP LOCKED`,
         );
         const n = r.rows[0];
         if (!n) return false;
+        // El correo de restablecimiento lleva el enlace secreto: se borra al quedar en un estado final.
+        const borrarTexto = `CASE WHEN tipo = 'restablecer_password' AND estado <> 'pendiente' THEN '(enlace de restablecimiento eliminado tras el envío)' ELSE texto END`;
         if (!this.notificador.configurado) {
           await tx.query(`UPDATE notificacion_correo SET estado = 'no_configurada' WHERE id_notificacion = $1`, [n.id_notificacion]);
+          await tx.query(`UPDATE notificacion_correo SET texto = ${borrarTexto} WHERE id_notificacion = $1`, [n.id_notificacion]);
           return true;
         }
         try {
@@ -65,8 +87,10 @@ export class CorreosCuentaService {
               WHERE id_notificacion = $1`,
             [n.id_notificacion, String((e as Error).message).slice(0, 500), MAX_INTENTOS],
           );
+          await tx.query(`UPDATE notificacion_correo SET texto = ${borrarTexto} WHERE id_notificacion = $1`, [n.id_notificacion]);
           return false; // no insistir en este ciclo: el siguiente reintenta
         }
+        await tx.query(`UPDATE notificacion_correo SET texto = ${borrarTexto} WHERE id_notificacion = $1`, [n.id_notificacion]);
         return true;
       });
       if (!hubo) break;

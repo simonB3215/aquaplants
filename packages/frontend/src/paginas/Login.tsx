@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Droplets, LogIn } from 'lucide-react';
 import { useSesion } from '../estado/sesion';
 import { ApiError } from '../api/cliente';
@@ -59,6 +60,9 @@ export function Login() {
         <form className="formulario" onSubmit={enviar} noValidate>
           <Campo etiqueta="Email" type="email" autoComplete="username" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errores.email} />
           <Campo etiqueta="Contraseña" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={errores.password} />
+          <Link to="/olvide-contrasena" className="enlace-acceso" style={{ marginTop: -8 }}>
+            ¿Olvidó su contraseña?
+          </Link>
           {errores.general && (
             <div className="aviso fondo-critico" role="alert">
               <p>{errores.general}</p>

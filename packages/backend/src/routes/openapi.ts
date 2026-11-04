@@ -68,6 +68,8 @@ export const openapi = {
     '/auth/login': { post: { summary: 'CU-02 Iniciar sesión', responses: { 200: ok('Token JWT'), 401: err('Credenciales inválidas'), 422: err('Campos'), 423: err('Cuenta bloqueada'), 429: err('Exceso de intentos') } } },
     '/auth/logout': { post: { summary: 'Cerrar sesión', security: seg, responses: { 204: ok('Sesión cerrada') } } },
     '/auth/me': { get: { summary: 'Usuario actual', security: seg, responses: { 200: ok('Usuario') } } },
+    '/auth/olvide-password': { post: { summary: '¿Olvidaste tu contraseña? Envía un enlace de un solo uso (misma respuesta exista o no el email)', responses: { 202: ok('Solicitud recibida'), 429: err('Límite por IP') } } },
+    '/auth/restablecer-password': { post: { summary: 'Restablecer contraseña con el token del enlace', responses: { 200: ok('{ aviso_correo: boolean }'), 422: err('Enlace inválido/expirado o política') } } },
     '/auth/cambiar-password': { post: { summary: 'Cambiar contraseña (programa aviso por correo al titular)', security: seg, responses: { 200: ok('{ aviso_correo: boolean }'), 422: err('Política') } } },
     '/torres/estado': { get: { summary: 'CU-03 Estado actual de las torres visibles', security: seg, responses: { 200: ok('EstadoTorre[]'), 401: err('Sesión') } } },
     '/torres/{id}/estado': { get: { summary: 'CU-03 Estado de una torre', security: seg, responses: { 200: ok('Estado'), 403: err('Torre no asignada (RN-10)') } } },

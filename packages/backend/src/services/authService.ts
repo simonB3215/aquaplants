@@ -181,6 +181,68 @@ export class AuthService {
     return { aviso_correo: Boolean(this.cfg.SMTP_HOST) };
   }
 
+  /**
+   * «¿Olvidaste tu contraseña?» paso 1. No revela si el email existe: el llamador
+   * responde siempre lo mismo. Solo para cuentas activas; como máximo un enlace por
+   * minuto y cuenta (evita llenar la bandeja); el enlace nuevo invalida los anteriores.
+   */
+  async solicitarRestablecimiento(email: string, ip: string | null): Promise<void> {
+    const r = await this.db.query<{ id_usuario: number; nombre: string; email: string }>(
+      `SELECT id_usuario, nombre, email FROM usuario WHERE lower(email) = lower($1) AND activo`,
+      [email],
+    );
+    const u = r.rows[0];
+    if (!u) return;
+    const reciente = await this.db.query(
+      `SELECT 1 FROM token_restablecimiento WHERE id_usuario = $1 AND creado_en > now() - interval '60 seconds'`,
+      [u.id_usuario],
+    );
+    if (reciente.rowCount) return;
+    const token = randomBytes(32).toString('base64url');
+    const enlace = `${this.cfg.APP_URL.replace(/\/+$/, '')}/restablecer-contrasena#token=${token}`;
+    await this.db.transaccion(async (tx) => {
+      await tx.query(`UPDATE token_restablecimiento SET usado_en = now() WHERE id_usuario = $1 AND usado_en IS NULL`, [u.id_usuario]);
+      await tx.query(
+        `INSERT INTO token_restablecimiento (id_usuario, hash_token, expira_en, ip_solicitud)
+         VALUES ($1, $2, now() + make_interval(mins => $3), $4)`,
+        [u.id_usuario, createHash('sha256').update(token).digest('hex'), this.cfg.RESTABLECER_MINUTOS, ip],
+      );
+      await CorreosCuentaService.programarRestablecimiento(tx, u, enlace, this.cfg.RESTABLECER_MINUTOS, ip);
+      await auditar(tx, { id_usuario: u.id_usuario, ip }, 'solicitar_restablecimiento', 'usuario', u.id_usuario);
+    });
+  }
+
+  /** «¿Olvidaste tu contraseña?» paso 2: enlace válido, vigente y sin usar → nueva contraseña. */
+  async restablecerPassword(token: string, nueva: string, ip: string | null): Promise<{ aviso_correo: boolean }> {
+    const hash = createHash('sha256').update(token).digest('hex');
+    const nuevoHash = await bcrypt.hash(nueva, BCRYPT_COSTO);
+    const id = await this.db.transaccion(async (tx) => {
+      const r = await tx.query<{ id_token: string; id_usuario: number; nombre: string; email: string }>(
+        `SELECT t.id_token, u.id_usuario, u.nombre, u.email
+           FROM token_restablecimiento t JOIN usuario u ON u.id_usuario = t.id_usuario
+          WHERE t.hash_token = $1 AND t.usado_en IS NULL AND t.expira_en > now() AND u.activo
+          FOR UPDATE OF t`,
+        [hash],
+      );
+      const t = r.rows[0];
+      if (!t) {
+        throw new ReglaNegocioError('El enlace no es válido, ya se usó o expiró. Solicite uno nuevo.', [{ campo: 'token', mensaje: 'Enlace inválido o expirado' }]);
+      }
+      await tx.query(`UPDATE token_restablecimiento SET usado_en = now() WHERE id_token = $1`, [t.id_token]);
+      // Desbloquea la cuenta (el titular demostró controlar su correo) y revoca todas las sesiones.
+      await tx.query(
+        `UPDATE usuario SET hash_password = $2, debe_cambiar_password = false, intentos_fallidos = 0, bloqueado_hasta = NULL,
+                version_token = version_token + 1 WHERE id_usuario = $1`,
+        [t.id_usuario, nuevoHash],
+      );
+      await auditar(tx, { id_usuario: t.id_usuario, ip }, 'restablecer_password', 'usuario', t.id_usuario);
+      await CorreosCuentaService.programarCambioPassword(tx, t, ip);
+      return t.id_usuario;
+    });
+    this.invalidarCache(id);
+    return { aviso_correo: Boolean(this.cfg.SMTP_HOST) };
+  }
+
   /** CU-01 paso 3: credencial de dispositivo contra su resumen SHA-256, no de baja. */
   async autenticarDispositivo(token: string, ip: string | null): Promise<DispositivoAutenticado> {
     const r = await this.db.query<DispositivoAutenticado & { estado: string }>(

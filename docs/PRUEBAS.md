@@ -96,3 +96,7 @@ Sesión 2 (al ejecutar por primera vez con TimescaleDB, MongoDB 7 y Docker Compo
 9. **Escenario D sin eventos `sin_senal`/`reconexion`**: con `WORKER_SIN_SENAL_CADA_S=60` el corte de ~50 s terminaba antes de la revisión del worker. Corrección: 10 s en `.env.example` (debe ser menor que 3 × intervalo de muestreo).
 10. **Falso positivo en E/F (prueba)**: el corte eléctrico duraba 12 s, menos que el umbral de hueco (3 × 10 s), y la prueba aprobaba con cualquier hueco de la ventana. Corrección: corte de 35 s y el hueco debe solaparse con el periodo sin energía.
 11. `verificar.ps1` no registraba en `verificacion-docker.log` la salida de `docker` (PowerShell 5.1); ahora sí.
+
+### «¿Olvidó su contraseña?» (nuevo, sesión 2)
+- Integración (Jest, 5 casos): misma respuesta 202 exista o no el email; solo se guarda el SHA-256 del token; máximo 1 enlace/min por cuenta; restablecer aplica la política, desbloquea la cuenta, revoca sesiones, es de un solo uso; enlace vencido/anterior/inventado → 422; el worker envía y borra el texto con el enlace. Frontend (Vitest, 2 casos). Total `npm test`: **75/75**.
+- Real (Docker + Gmail, migración 004): usuario temporal `prueba-olvido@aquaplants.cl` → enlace en el login → «Enviar enlace» → pantalla «Revise su correo» → enlace abierto (el token se quita de la barra) → contraseña nueva → «Contraseña actualizada» → login con la nueva = 200. Correos `restablecer_password` y `cambio_password` `enviada` (redirigidos a simon.bueguenio@gmail.com); recepción por confirmar. El usuario temporal sigue activo (desactivarlo en Usuarios).

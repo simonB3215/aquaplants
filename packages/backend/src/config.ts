@@ -41,6 +41,10 @@ const Env = z.object({
    * dirección (los usuarios sembrados tienen correos ficticios @aquaplants.cl).
    */
   NOTIFICACIONES_SOLO_A: z.string().optional(),
+  /** URL pública de la aplicación web: base de los enlaces enviados por correo. */
+  APP_URL: z.string().url().default('http://localhost:8080'),
+  /** Validez del enlace de «¿Olvidaste tu contraseña?». */
+  RESTABLECER_MINUTOS: z.coerce.number().int().positive().max(120).default(30),
   /** Modo demostración académica: aislado de producción. */
   DEMO_MODE: z
     .string()

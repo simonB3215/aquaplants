@@ -917,6 +917,24 @@ table.tabla {
   border-radius: 24px;
   padding: var(--space-xl);
 }
+/* Enlaces secundarios de acceso («¿Olvidó su contraseña?», «Volver…»): área táctil mínima y foco visible. */
+.enlace-acceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--toque-min);
+  align-self: flex-start;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: text-decoration-color var(--dur-rapida) var(--curva);
+}
+.enlace-acceso:hover {
+  text-decoration-color: currentColor;
+}
 @media (max-width: 600px) {
   .login-tarjeta {
     padding: var(--space-lg);

@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { EstadoTorre } from '@aquaplants/shared';
 import { InsigniaConectividad, InsigniaEstado } from '../componentes/ui';
 import { TarjetaTorre } from '../componentes/TarjetaTorre';
+import { RestablecerContrasena } from '../paginas/Recuperar';
 
 const torre: EstadoTorre = {
   id_instalacion: 1, nombre: 'Torre A', tipo: 'aeroponica', ubicacion: '', estado_registro: 'activo',
@@ -35,5 +36,20 @@ describe('TarjetaTorre (CU-03)', () => {
     render(<MemoryRouter><TarjetaTorre torre={{ ...torre, dispositivos: [{ ...torre.dispositivos[0], conectividad: 'conectado', datos_desactualizados: false }] }} servidorCaido /></MemoryRouter>);
     expect(screen.getByText(/No hay conexión con el servidor/)).toBeInTheDocument();
     expect(screen.getByText('Conectado')).toBeInTheDocument();
+  });
+});
+
+describe('¿Olvidó su contraseña?', () => {
+  test('sin token en el enlace muestra «Enlace no válido» y ofrece pedir otro', () => {
+    window.history.replaceState(null, '', '/restablecer-contrasena');
+    render(<MemoryRouter><RestablecerContrasena /></MemoryRouter>);
+    expect(screen.getByRole('heading', { name: 'Enlace no válido' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Solicitar un enlace nuevo' })).toHaveAttribute('href', '/olvide-contrasena');
+  });
+  test('con token muestra el formulario y lo quita de la barra de direcciones', () => {
+    window.history.replaceState(null, '', `/restablecer-contrasena#token=${'a'.repeat(43)}`);
+    render(<MemoryRouter><RestablecerContrasena /></MemoryRouter>);
+    expect(screen.getByRole('heading', { name: 'Elegir contraseña nueva' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('');
   });
 });

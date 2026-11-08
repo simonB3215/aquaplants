@@ -1,6 +1,13 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-04 (sesión 3, bloque 2, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-08 (sesión 4, PC Windows de Jesus). Abrir este archivo al comenzar cada sesión._
+
+## Sesión 4 — opción sin Docker (Supabase + Neon) para la presentación
+- **D-29**: base principal en **Supabase** (PostgreSQL 17, sin TimescaleDB: 002 y 008 omitidas) y payloads crudos en **Neon** (`PgPayloadStore`, reemplaza a MongoDB cuando existe `PAYLOADS_DATABASE_URL`). TLS `verify-full`; la CA de Supabase va en `secretos/supabase-ca.crt`.
+- Configuración: copiar `.env.nube.example` a `.env.nube` (fuera de git). Primera vez: `.\iniciar-nube.ps1 -Preparar` (migraciones + seed); luego `.\iniciar-nube.ps1` (API + worker, simulador y web en http://localhost:5173).
+- **Verificado manualmente** contra Supabase y Neon reales: `/health` ok, login, simulador → 39 mediciones en Supabase y 9 lotes procesados en Neon en 2 min; adaptador probado aparte (idempotencia, pendientes, procesado, detalle de evento). Supabase ocupa 58 MB con 48 h de historial (plan gratuito: 500 MB).
+- **No ejecutado**: la suite automatizada (`npm test`) con `PgPayloadStore`; sigue usando MongoDB y PostgreSQL locales.
+- Pendiente menor: en `/health` el almacén de payloads se sigue llamando `mongodb`.
 
 ## Sesión 2 — resultado
 - **Repositorio**: https://github.com/simonB3215/aquaplants (privado, rama `main`). `.env`, `node_modules`, `packages/simulador/data` y `*.log` excluidos; `.gitattributes` fuerza LF (los scripts de contenedor no se rompen en Windows).
@@ -49,7 +56,7 @@ _Última actualización: 2026-11-04 (sesión 3, bloque 2, PC Windows del usuario
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-28). **D-28 diverge del ES2 (CU-09)**: mencionarlo en el informe. Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
+Ver `docs/DECISIONES.md` (D-01…D-29). **D-28 diverge del ES2 (CU-09)** y **D-29 del §4.4** (si se usa en la entrega): mencionarlos en el informe. Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.

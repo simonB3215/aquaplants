@@ -16,7 +16,7 @@ Pasos (cada uno con la cuenta del equipo; las claves nunca se suben a git):
    - `DATABASE_URL`: la de Supabase (**Session pooler**, no «Direct») terminada en `?sslmode=verify-full&sslrootcert=certificados/supabase-ca.crt`; `PAYLOADS_DATABASE_URL`: la de Neon.
    - `CORS_ORIGIN` y `APP_URL`: la URL de Netlify (p. ej. `https://aquaplants-app.netlify.app`).
    - `DEMO_ENCARGADO_PASSWORD`, `SMTP_*` (opcional) y `NOTIFICACIONES_SOLO_A`.
-   - Simulador: `API_URL` = URL de Netlify + `/api/v1`.
+   - Simulador: `API_URL` = `https://aquaplants-api.onrender.com/api/v1` (directo a la API de Render).
 2. **Secret File** en Render (Environment → Secret Files): en `aquaplants-simulador` el archivo `dispositivos.json` (el que generó el seed en `packages/simulador/data/`). El certificado de Supabase ya viene en el repositorio.
 3. **Netlify** → Add new site → Import from Git → este repositorio (toma `netlify.toml`). Si Render asignó otra URL a la API, cambiarla en el `[[redirects]]` de `/api/*`.
 4. Comprobar: `https://<netlify>/api/v1/health` = ok; iniciar sesión; menú Demostración → escenario A.

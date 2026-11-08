@@ -78,7 +78,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
-      # Por Netlify, igual que el navegador (así la API ve siempre 2 proxies).
+      # Directo a la API de Render: https://aquaplants-api.onrender.com/api/v1
       - key: API_URL
         sync: false
       # Credenciales de los dispositivos (packages/simulador/data/dispositivos.json del seed) como Secret File.

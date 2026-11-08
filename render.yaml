@@ -6,6 +6,7 @@ services:
     name: aquaplants-api
     runtime: node
     plan: free
+    region: virginia   # Supabase está en us-east-1 (Virginia) y Neon en us-east-2 (Ohio)
     buildCommand: npm ci && npm run build:shared && npm run build -w packages/backend
     startCommand: node packages/backend/dist/server.js
     healthCheckPath: /api/v1/health
@@ -71,6 +72,7 @@ services:
     name: aquaplants-simulador
     runtime: node
     plan: free
+    region: virginia   # Supabase está en us-east-1 (Virginia) y Neon en us-east-2 (Ohio)
     buildCommand: npm ci && npm run build:shared
     startCommand: npm run start -w packages/simulador
     envVars:

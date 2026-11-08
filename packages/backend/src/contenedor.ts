@@ -3,6 +3,7 @@ import type { IBaseDatos, INotificador, IPayloadStore } from './ports/index.js';
 import { PgBaseDatos } from './adapters/pg/baseDatos.js';
 import { PgAlertaRepo, PgMedicionRepo, PgOutbox } from './adapters/pg/repositorios.js';
 import { MongoPayloadStore } from './adapters/mongo/payloadStore.js';
+import { PgPayloadStore } from './adapters/pg/payloadStore.js';
 import { crearNotificador } from './adapters/notificador.js';
 import { AuthService } from './services/authService.js';
 import { IngestaService } from './services/ingestaService.js';
@@ -23,7 +24,9 @@ import { DemoService } from './services/demoService.js';
 /** Punto único de composición: aquí se inyectan los adaptadores en los servicios. */
 export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?: IPayloadStore; notificador?: INotificador }) {
   const db = deps?.db ?? new PgBaseDatos(cfg.DATABASE_URL);
-  const payloads = deps?.payloads ?? new MongoPayloadStore(cfg.MONGO_URL, cfg.MONGO_DB);
+  const payloads =
+    deps?.payloads ??
+    (cfg.PAYLOADS_DATABASE_URL ? new PgPayloadStore(cfg.PAYLOADS_DATABASE_URL) : new MongoPayloadStore(cfg.MONGO_URL!, cfg.MONGO_DB));
   const notificador = deps?.notificador ?? crearNotificador(cfg);
   const mediciones = new PgMedicionRepo();
   const outbox = new PgOutbox(db);

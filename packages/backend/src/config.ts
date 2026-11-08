@@ -8,8 +8,10 @@ const Env = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().default(3000),
   DATABASE_URL: z.string().min(1),
-  MONGO_URL: z.string().min(1),
+  MONGO_URL: z.string().min(1).optional(),
   MONGO_DB: z.string().default('aquaplants'),
+  /** Si se define, los payloads crudos van a este PostgreSQL (p. ej. Neon) en vez de MongoDB. */
+  PAYLOADS_DATABASE_URL: z.string().min(1).optional(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
   JWT_EXPIRA_HORAS: z.coerce.number().positive().default(8),
   LOGIN_MAX_INTENTOS: z.coerce.number().int().positive().default(5),
@@ -72,6 +74,9 @@ export function cargarConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (!r.success) {
     const detalle = r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`Configuración inválida: ${detalle}`);
+  }
+  if (!r.data.MONGO_URL && !r.data.PAYLOADS_DATABASE_URL) {
+    throw new Error('Configuración inválida: defina MONGO_URL o PAYLOADS_DATABASE_URL (almacén de payloads)');
   }
   if (r.data.NODE_ENV === 'production' && r.data.DEMO_MODE) {
     throw new Error('DEMO_MODE no puede activarse con NODE_ENV=production (modo demo aislado de producción).');

@@ -5,6 +5,7 @@ lib/
 .env
 .env.*
 !.env.example
+!.env.nube.example
 packages/simulador/data/
 respaldos/
 coverage/

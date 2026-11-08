@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { resolverCertificado } from '../conexion.js';
 
 /**
  * Ejecutor de migraciones SQL versionadas (database/migrations/NNN_*.sql).
@@ -101,7 +102,7 @@ async function aplicarPermisos(c: pg.Client, log: (...a: unknown[]) => void) {
 
 const esPrincipal =process.argv[1] && /migrate\.(t|j)s$/.test(process.argv[1]);
 if (esPrincipal) {
-  const url = process.env.DATABASE_URL;
+  const url = resolverCertificado(process.env.DATABASE_URL);
   if (!url) {
     console.error('Defina DATABASE_URL');
     process.exit(1);

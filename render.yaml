@@ -22,7 +22,7 @@ services:
       # Netlify → balanceador de Render: 2 proxies delante de la API.
       - key: TRUST_PROXY
         value: "2"
-      # Supabase. sslrootcert=/etc/secrets/supabase-ca.crt (Secret File de este servicio).
+      # Supabase (Session pooler) terminada en ?sslmode=verify-full&sslrootcert=certificados/supabase-ca.crt
       - key: DATABASE_URL
         sync: false
       # Neon (payloads crudos).

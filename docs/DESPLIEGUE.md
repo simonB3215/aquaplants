@@ -13,11 +13,11 @@
 
 Pasos (cada uno con la cuenta del equipo; las claves nunca se suben a git):
 1. **Render** → New → **Blueprint** → este repositorio. Completar las variables `sync: false`:
-   - `DATABASE_URL`: la de Supabase con `sslrootcert=/etc/secrets/supabase-ca.crt`; `PAYLOADS_DATABASE_URL`: la de Neon.
+   - `DATABASE_URL`: la de Supabase (**Session pooler**, no «Direct») terminada en `?sslmode=verify-full&sslrootcert=certificados/supabase-ca.crt`; `PAYLOADS_DATABASE_URL`: la de Neon.
    - `CORS_ORIGIN` y `APP_URL`: la URL de Netlify (p. ej. `https://aquaplants.netlify.app`).
    - `DEMO_ENCARGADO_PASSWORD`, `SMTP_*` (opcional) y `NOTIFICACIONES_SOLO_A`.
    - Simulador: `API_URL` = URL de Netlify + `/api/v1`.
-2. **Secret Files** en Render (Environment → Secret Files): en `aquaplants-api` el archivo `supabase-ca.crt`; en `aquaplants-simulador` el archivo `dispositivos.json` (el que generó el seed en `packages/simulador/data/`).
+2. **Secret File** en Render (Environment → Secret Files): en `aquaplants-simulador` el archivo `dispositivos.json` (el que generó el seed en `packages/simulador/data/`). El certificado de Supabase ya viene en el repositorio.
 3. **Netlify** → Add new site → Import from Git → este repositorio (toma `netlify.toml`). Si Render asignó otra URL a la API, cambiarla en el `[[redirects]]` de `/api/*`.
 4. Comprobar: `https://<netlify>/api/v1/health` = ok; iniciar sesión; menú Demostración → escenario A.
 
@@ -31,7 +31,8 @@ Límites del plan gratuito (a tener en cuenta en la presentación):
 ## Bases de datos
 - **Supabase** (PostgreSQL 17): esquema con `npm run db:migrate` (`.\iniciar-nube.ps1 -Preparar` la primera vez). Sin TimescaleDB: `002` y `008` se omiten y quedan registradas como omitidas en `schema_migraciones`.
 - **Neon** (PostgreSQL): `PgPayloadStore` crea sus tablas (`payload_telemetria`, `detalle_evento`) al conectarse y borra los payloads de más de 90 días.
-- TLS verificado (`sslmode=verify-full`); la CA de Supabase va en `secretos/supabase-ca.crt` (fuera de git).
+- TLS verificado (`sslmode=verify-full`) con el certificado **público** de Supabase en `certificados/supabase-ca.crt` (raíz «Supabase Root 2021 CA», sin clave privada; vence en 2031). La ruta es relativa: el backend la resuelve desde la raíz del repositorio, así funciona en cualquier computador y en Render. Supabase tiene activado «Enforce SSL».
+- Usar el **Session pooler** (`aws-0-us-east-1.pooler.supabase.com`, usuario `postgres.<ref>`): la conexión «Direct» (`db.<ref>.supabase.co`) es solo IPv6 y no resuelve desde muchas redes ni desde Render.
 
 ## Roles de base de datos (ES2 §3.4)
 | Rol | Lo usa | Privilegios |

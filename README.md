@@ -29,13 +29,11 @@ Requisitos: Node 22+ y conexión a Internet.
 ```powershell
 npm install
 copy .env.nube.example .env.nube      # completar DATABASE_URL (Supabase) y PAYLOADS_DATABASE_URL (Neon)
-# Certificado de Supabase (Project Settings → Database → SSL Configuration → Download certificate):
-#   guardarlo como secretos\supabase-ca.crt
 .\iniciar-nube.ps1 -Preparar          # SOLO la primera vez con una base vacía: migraciones + datos de prueba
 .\iniciar-nube.ps1                    # abre API, simulador y web → http://localhost:5173
 ```
 
-- `.env.nube`, `secretos/` y `packages/simulador/data/` (credenciales de los dispositivos) están fuera de git: se comparten por privado.
+- El certificado público de Supabase ya viene en `certificados/`. `.env.nube`, `secretos/` y `packages/simulador/data/` (credenciales de los dispositivos) están fuera de git: se comparten por privado.
 - Supabase no tiene TimescaleDB: las migraciones 002 y 008 se omiten (sin compresión, retención de 2 años ni agregado horario).
 - Usuarios de prueba: los de la sección siguiente, con las contraseñas `SEED_PASSWORD_*` de `.env.nube`.
 

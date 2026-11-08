@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
 import { generarTokenDispositivo, hashToken } from '../services/authService.js';
+import { resolverCertificado } from '../conexion.js';
 
 /**
  * Datos de prueba REPRODUCIBLES (solo desarrollo/demostración).
@@ -208,7 +209,7 @@ export async function sembrar(url: string, opciones: { historialHoras?: number; 
 
 const esPrincipal = process.argv[1] && /seed\.(t|j)s$/.test(process.argv[1]);
 if (esPrincipal) {
-  const url = process.env.DATABASE_URL;
+  const url = resolverCertificado(process.env.DATABASE_URL);
   if (!url) {
     console.error('Defina DATABASE_URL');
     process.exit(1);

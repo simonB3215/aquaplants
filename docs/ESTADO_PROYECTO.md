@@ -4,6 +4,7 @@ _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir e
 
 ## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Netlify (D-30)
 - **Publicación elegida por el usuario**: web en **Netlify**, API (+ worker) y simulador en **Render**, bases en **Supabase** + **Neon**. Preparados `render.yaml` y `netlify.toml` (pasos en `docs/DESPLIEGUE.md`). **Aún no publicado**: falta crear los servicios con las cuentas del equipo y cargar las claves en Render.
+- El certificado público de Supabase va en el repositorio (`certificados/supabase-ca.crt`) y `sslrootcert` acepta rutas relativas al proyecto: `.env.nube` sirve igual en cualquier computador. Supabase con «Enforce SSL» activado; conexión por Session pooler.
 - `TRUST_PROXY` ahora acepta un número de proxies (Netlify → Render = 2); prueba nueva `config.test.ts` (5/5).
 - **Decisión del usuario**: se borraron `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, `verificar.ps1` e `infrastructure/` (Nginx, usuarios de MongoDB, respaldo/restauración). Quedan en el historial de git (commit `885105d`). Las variables de SMTP y `NOTIFICACIONES_SOLO_A` pasaron a `.env.nube.example`.
 - Se conservan: el adaptador de MongoDB (si no hay `PAYLOADS_DATABASE_URL`) y el CI de GitHub Actions, que levanta PostgreSQL/TimescaleDB y MongoDB de prueba en los servidores de GitHub para correr la suite.
@@ -11,7 +12,7 @@ _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir e
 
 ## Sesión 4 — Supabase + Neon (configuración vigente; Docker ya no se usa)
 - **Decisión del usuario**: el proyecto se ejecuta **solo** con Supabase + Neon. En la sesión 4 los archivos de Docker quedaron como referencia; **en la sesión 5 se eliminaron** (ver arriba). Consecuencias: el respaldo cifrado y la prueba de restauración CP-29 (D-26) y la suite automatizada / CI no están adaptados a la nube (pendiente si el equipo los necesita).
-- **D-29**: base principal en **Supabase** (PostgreSQL 17, sin TimescaleDB: 002 y 008 omitidas) y payloads crudos en **Neon** (`PgPayloadStore`, reemplaza a MongoDB cuando existe `PAYLOADS_DATABASE_URL`). TLS `verify-full`; la CA de Supabase va en `secretos/supabase-ca.crt`.
+- **D-29**: base principal en **Supabase** (PostgreSQL 17, sin TimescaleDB: 002 y 008 omitidas) y payloads crudos en **Neon** (`PgPayloadStore`, reemplaza a MongoDB cuando existe `PAYLOADS_DATABASE_URL`). TLS `verify-full`; certificado público en `certificados/supabase-ca.crt` (sesión 5).
 - Configuración: copiar `.env.nube.example` a `.env.nube` (fuera de git). Primera vez: `.\iniciar-nube.ps1 -Preparar` (migraciones + seed); luego `.\iniciar-nube.ps1` (API + worker, simulador y web en http://localhost:5173).
 - **Verificado manualmente** contra Supabase y Neon reales: `/health` ok, login, simulador → 39 mediciones en Supabase y 9 lotes procesados en Neon en 2 min; adaptador probado aparte (idempotencia, pendientes, procesado, detalle de evento). Supabase ocupa 58 MB con 48 h de historial (plan gratuito: 500 MB).
 - **No ejecutado**: la suite automatizada (`npm test`) con `PgPayloadStore`; sigue usando MongoDB y PostgreSQL locales.

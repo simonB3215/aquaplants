@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { resolverCertificado } from './conexion.js';
 
 /**
  * Configuración por variables de entorno. Ningún secreto tiene valor por
@@ -83,5 +84,7 @@ export function cargarConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (r.data.NODE_ENV === 'production' && r.data.DEMO_MODE) {
     throw new Error('DEMO_MODE no puede activarse con NODE_ENV=production (modo demo aislado de producción).');
   }
+  r.data.DATABASE_URL = resolverCertificado(r.data.DATABASE_URL);
+  r.data.PAYLOADS_DATABASE_URL = resolverCertificado(r.data.PAYLOADS_DATABASE_URL);
   return r.data;
 }

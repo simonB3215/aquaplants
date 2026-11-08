@@ -1,44 +1,506 @@
 {
-  "ejecutado_en": "2026-11-08T21:24:59.541Z",
+  "ejecutado_en": "2026-11-04T18:49:08.572Z",
   "node": "v24.19.0",
-  "total": 5,
-  "aprobadas": 5,
+  "total": 71,
+  "aprobadas": 71,
   "fallidas": 0,
   "casos": [
     {
-      "archivo": "config.test.ts",
-      "suite": "TRUST_PROXY (D-30: Netlify → Render son 2 proxies)",
-      "prueba": "undefined → 0",
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "CP-01 lote válido → 201 y mediciones almacenadas con su marca temporal",
+      "estado": "passed",
+      "ms": 2408
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "CP-02 campo inválido → 422 con campos; JSON malformado → 400",
+      "estado": "passed",
+      "ms": 116
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "CP-03 credencial inválida → 401 y nada persistido",
+      "estado": "passed",
+      "ms": 90
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "NEG-12 un usuario humano con su JWT no puede enviar telemetría (401)",
+      "estado": "passed",
+      "ms": 45
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "RN-01 sensor ajeno al dispositivo → 422, lote completo rechazado y evento sensor_ajeno",
+      "estado": "passed",
+      "ms": 308
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "RN-09 valor fuera del rango físico → 422",
+      "estado": "passed",
+      "ms": 137
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "CC-08 reloj desfasado (+10 min) → 422 RELOJ_DESFASADO y evento",
+      "estado": "passed",
+      "ms": 91
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "CC-01 el mismo lote 10 veces en paralelo → 1×201, 9×200 duplicado, una sola copia",
+      "estado": "passed",
+      "ms": 1684
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-01 Telemetría",
+      "prueba": "CC-09 MongoDB caído → 503 con Retry-After y nada escrito en PostgreSQL",
+      "estado": "passed",
+      "ms": 4326
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "CP-05 / CC-07 lecturas fuera de rango → UNA alerta activa con ocurrencias acumuladas",
+      "estado": "passed",
+      "ms": 4424
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "CC-02 dos motores procesando el mismo outbox → una sola alerta (SKIP LOCKED)",
+      "estado": "passed",
+      "ms": 2468
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "alerta crítica sin proveedor SMTP → notificación «no_configurada» (nunca «enviada»)",
+      "estado": "passed",
+      "ms": 136
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "NEG-01 Encargado no resuelve una crítica (403, sigue activa); CP-11 Supervisor sí, con auditoría",
+      "estado": "passed",
+      "ms": 463
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "CC-03 dos usuarios resuelven la misma advertencia a la vez → 200 y 409",
+      "estado": "passed",
+      "ms": 283
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "CP-06 modificar umbral: auditado con valor anterior/nuevo y aplicado a la siguiente medición",
+      "estado": "passed",
+      "ms": 1304
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-04 Motor de alertas",
+      "prueba": "CU-07 validaciones: min ≥ max → 422; fuera de rango físico → 422; severidad repetida → 409",
+      "estado": "passed",
+      "ms": 145
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-02 Encargado: estado de torre no asignada → 403",
+      "estado": "passed",
+      "ms": 91
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-03 Encargado: exportar CSV → 403",
+      "estado": "passed",
+      "ms": 4
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-04 Encargado: modificar umbral → 403",
+      "estado": "passed",
+      "ms": 3
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-05 Encargado: consultar auditoría → 403",
+      "estado": "passed",
+      "ms": 3
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-06 Supervisor: crear usuario → 403",
+      "estado": "passed",
+      "ms": 3
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-07 Supervisor: baja de dispositivo → 403",
+      "estado": "passed",
+      "ms": 3
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-08 Supervisor: registrar cultivo → 403",
+      "estado": "passed",
+      "ms": 2
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "CP-20 Encargado: alertas de torre no asignada → 403",
+      "estado": "passed",
+      "ms": 49
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "CP-20 Encargado: histórico de sensor de torre no asignada → 403",
+      "estado": "passed",
+      "ms": 136
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "Encargado: comparar torres (CU-06) → 403",
+      "estado": "passed",
+      "ms": 4
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "Supervisor: configurar umbral (solo lectura) → 403",
+      "estado": "passed",
+      "ms": 2
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "Encargado: crear torre (solo lectura) → 403",
+      "estado": "passed",
+      "ms": 3
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "RN-10 el Encargado solo ve sus torres en /torres/estado",
+      "estado": "passed",
+      "ms": 321
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "Lectura permitida: Encargado ve umbrales de su torre; Supervisor lista dispositivos",
+      "estado": "passed",
+      "ms": 227
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-09 / CP-17 la auditoría no se modifica ni elimina (API 405 y trigger en BD)",
+      "estado": "passed",
+      "ms": 105
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-10 el Administrador no cambia su propio rol (409)",
+      "estado": "passed",
+      "ms": 95
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "Autorización (Tabla 48 / Tabla 49) y RN-10",
+      "prueba": "NEG-11 token expirado → 401",
+      "estado": "passed",
+      "ms": 4
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios",
+      "prueba": "CP-16 email duplicado → 409; alta devuelve contraseña temporal una vez",
+      "estado": "passed",
+      "ms": 1423
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios",
+      "prueba": "desactivar usuario revoca sus sesiones (401) y se audita",
+      "estado": "passed",
+      "ms": 1358
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios",
+      "prueba": "CU-02 credenciales incorrectas: mensaje genérico; 5 intentos → 423 bloqueo",
+      "estado": "passed",
+      "ms": 1326
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios",
+      "prueba": "cambio de contraseña: aviso por correo al titular (sin la contraseña) y el worker lo envía una vez",
+      "estado": "passed",
+      "ms": 3931
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios",
+      "prueba": "aviso de cambio de contraseña sin SMTP queda «no_configurada» (nunca «enviada»)",
+      "estado": "passed",
+      "ms": 315
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios › ¿Olvidaste tu contraseña?",
+      "prueba": "email inexistente y existente reciben la misma respuesta (no revela cuentas)",
+      "estado": "passed",
+      "ms": 382
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios › ¿Olvidaste tu contraseña?",
+      "prueba": "se guarda solo el resumen del token; el correo lleva el enlace; máximo uno por minuto",
+      "estado": "passed",
+      "ms": 225
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios › ¿Olvidaste tu contraseña?",
+      "prueba": "restablecer: política de contraseña, desbloquea la cuenta, revoca sesiones y el enlace es de un solo uso",
+      "estado": "passed",
+      "ms": 4511
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios › ¿Olvidaste tu contraseña?",
+      "prueba": "enlace vencido o inventado → 422; un enlace nuevo invalida el anterior",
+      "estado": "passed",
+      "ms": 1753
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios › ¿Olvidaste tu contraseña?",
+      "prueba": "el worker envía el enlace y luego borra el texto que lo contiene",
+      "estado": "passed",
+      "ms": 458
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-02 / CU-09 Sesión y usuarios",
+      "prueba": "cierre de sesión invalida el token (jti en lista de bloqueo)",
+      "estado": "passed",
+      "ms": 308
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-08 / CU-10 Gestión",
+      "prueba": "CU-08 alta de dispositivo: credencial mostrada una vez, solo hash en BD, telemetría funciona",
+      "estado": "passed",
+      "ms": 1676
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-08 / CU-10 Gestión",
+      "prueba": "CU-08 nombre de torre duplicado → 409",
+      "estado": "passed",
+      "ms": 50
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-08 / CU-10 Gestión",
+      "prueba": "CP-19 cultivo: uno en curso por torre (409); en torre de baja (409); cierre válido",
+      "estado": "passed",
+      "ms": 1632
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CP-09 / CP-21 sin señal tras 3 intervalos → estado y evento con causa desconocida; reconexión al volver",
+      "estado": "passed",
+      "ms": 902
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CP-04 estado actual: valor, unidad, ts y clasificación calculada en el servicio",
+      "estado": "passed",
+      "ms": 135
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CP-13 histórico: agrega, adjunta umbrales y detecta huecos; rango > 90 días → 422",
+      "estado": "passed",
+      "ms": 585
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CP-15 exportar CSV (Supervisor): «;», encabezados en español y exportación auditada",
+      "estado": "passed",
+      "ms": 227
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CP-14 comparar torres con la misma granularidad; torre sin datos se informa",
+      "estado": "passed",
+      "ms": 318
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CC-06 reconciliación: documento «recibido» de un lote existente se marca; uno faltante se reprocesa",
+      "estado": "passed",
+      "ms": 443
+    },
+    {
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "CP-23 salud: 200 con API, PostgreSQL y MongoDB",
       "estado": "passed",
       "ms": 6
     },
     {
-      "archivo": "config.test.ts",
-      "suite": "TRUST_PROXY (D-30: Netlify → Render son 2 proxies)",
-      "prueba": "false → 0",
+      "archivo": "api.test.ts",
+      "suite": "CU-03 / CU-05 / CU-06 Consultas y continuidad",
+      "prueba": "continuidad: lotes recuperados y eventos del dispositivo (reinicio, datos descartados) idempotentes",
       "estado": "passed",
-      "ms": 1
+      "ms": 1723
     },
     {
-      "archivo": "config.test.ts",
-      "suite": "TRUST_PROXY (D-30: Netlify → Render son 2 proxies)",
-      "prueba": "true → 1",
+      "archivo": "invitaciones.test.ts",
+      "suite": "D-28 — enlaces de invitación",
+      "prueba": "solo el Administrador crea, lista y anula enlaces (Tabla 48)",
       "estado": "passed",
-      "ms": 1
+      "ms": 856
     },
     {
-      "archivo": "config.test.ts",
-      "suite": "TRUST_PROXY (D-30: Netlify → Render son 2 proxies)",
-      "prueba": "2 → 2",
+      "archivo": "invitaciones.test.ts",
+      "suite": "D-28 — enlaces de invitación",
+      "prueba": "flujo completo: consultar → registrarse → confirmar email → Encargado de esas torres",
       "estado": "passed",
-      "ms": 0
+      "ms": 2747
     },
     {
-      "archivo": "config.test.ts",
-      "suite": "TRUST_PROXY (D-30: Netlify → Render son 2 proxies)",
-      "prueba": "rechaza valores no numéricos",
+      "archivo": "invitaciones.test.ts",
+      "suite": "D-28 — enlaces de invitación",
+      "prueba": "email ya registrado: misma respuesta, no se crea otra cuenta y se avisa al titular",
+      "estado": "passed",
+      "ms": 1102
+    },
+    {
+      "archivo": "invitaciones.test.ts",
+      "suite": "D-28 — enlaces de invitación",
+      "prueba": "cupo, anulación, vencimiento y enlaces inválidos",
+      "estado": "passed",
+      "ms": 3391
+    },
+    {
+      "archivo": "invitaciones.test.ts",
+      "suite": "D-28 — enlaces de invitación",
+      "prueba": "las solicitudes no confirmadas se borran un día después de vencer (minimización)",
+      "estado": "passed",
+      "ms": 1850
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "Tabla 40 — evidencia de mediciones con alerta",
+      "prueba": "al generarse una alerta su medición se copia a medicion_evidencia y la FK apunta a la evidencia",
+      "estado": "passed",
+      "ms": 1040
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "Tabla 40 — evidencia de mediciones con alerta",
+      "prueba": "la evidencia es de solo inserción y una alerta sin medición se rechaza (23503)",
       "estado": "passed",
       "ms": 13
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "Tabla 40 — evidencia de mediciones con alerta",
+      "prueba": "políticas TimescaleDB: compresión 7 d, retención 2 años, agregado horario 5 años",
+      "estado": "passed",
+      "ms": 12
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "Tabla 40 — evidencia de mediciones con alerta",
+      "prueba": "la retención elimina chunks de más de 2 años sin perder la evidencia de su alerta",
+      "estado": "passed",
+      "ms": 583
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "ES2 §3.4 — roles de mínimo privilegio",
+      "prueba": "app_rw: opera el negocio pero no altera auditoría, evidencia ni mediciones, ni crea objetos",
+      "estado": "passed",
+      "ms": 22
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "ES2 §3.4 — roles de mínimo privilegio",
+      "prueba": "backup_ro: lee todo y solo puede registrar respaldos",
+      "estado": "passed",
+      "ms": 10
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "ES2 §3.4 — roles de mínimo privilegio",
+      "prueba": "app_ro: solo lectura",
+      "estado": "passed",
+      "ms": 5
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "Tabla 40 — anonimización de usuarios desactivados (Ley 19.628)",
+      "prueba": "tras 1 año se anonimiza nombre y email, se conserva el id, no puede iniciar sesión ni reactivarse",
+      "estado": "passed",
+      "ms": 907
+    },
+    {
+      "archivo": "datos.test.ts",
+      "suite": "Tabla 16 — aviso por correo cuando falla un respaldo",
+      "prueba": "un respaldo fallido programa un correo a cada Administrador activo, una sola vez",
+      "estado": "passed",
+      "ms": 148
+    },
+    {
+      "archivo": "notificador.test.ts",
+      "suite": "Notificador SMTP: destinatarios",
+      "prueba": "sin NOTIFICACIONES_SOLO_A usa los destinatarios originales",
+      "estado": "passed",
+      "ms": 2
+    },
+    {
+      "archivo": "notificador.test.ts",
+      "suite": "Notificador SMTP: destinatarios",
+      "prueba": "con NOTIFICACIONES_SOLO_A envía únicamente a esa dirección",
+      "estado": "passed",
+      "ms": 1
     }
   ]
 }

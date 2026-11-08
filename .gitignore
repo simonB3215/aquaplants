@@ -4,7 +4,6 @@ lib/
 *.tsbuildinfo
 .env
 .env.*
-!.env.example
 !.env.nube.example
 packages/simulador/data/
 respaldos/

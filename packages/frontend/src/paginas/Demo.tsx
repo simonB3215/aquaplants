@@ -69,7 +69,7 @@ export function Demo() {
           {!r.datos.simulador_disponible && (
             <div style={{ marginBottom: 12 }}>
               <Aviso tono="fondo-critico" titulo="Simulador no disponible">
-                Inicie el simulador con <code>npm run sim</code> (o el servicio «simulador» de Docker Compose).
+                Inicie el simulador con <code>npm run sim</code> (lo abre <code>iniciar-nube.ps1</code>).
               </Aviso>
             </div>
           )}

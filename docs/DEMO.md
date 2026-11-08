@@ -14,8 +14,8 @@ Requiere `DEMO_MODE=true` (se **niega a arrancar** con `NODE_ENV=production`) y 
 
 Secuencia recomendada para la defensa: **A → B → C → E → F → D → G** (corte de Internet y luego de energía, como CC-11).
 
-También se puede simular un corte eléctrico “de verdad” matando el proceso: `docker compose kill simulador` y luego `docker compose start simulador` (la cola vive en el volumen `simdatos`).
+También se puede simular un corte eléctrico “de verdad” cerrando la ventana «AquaPlants simulador» (o Ctrl+C) y volviendo a ejecutar `npm run sim` (la cola vive en disco, en `packages/simulador/data/`).
 
-Prueba automatizada de los mismos escenarios: `node tests/e2e/escenarios.mjs http://localhost:8080/api/v1` (genera `docs/evidencias/escenarios-e2e.json`).
+Prueba automatizada de los mismos escenarios: `node tests/e2e/escenarios.mjs http://localhost:3000/api/v1` (genera `docs/evidencias/escenarios-e2e.json`).
 
 API de control del simulador (solo red interna/localhost, con `SIM_CONTROL_TOKEN`): `GET /estado`, `POST /escenario {codigo, id_dispositivo}`, `POST /dispositivos/{id}/red|energia|intervalo|credencial-invalida`.

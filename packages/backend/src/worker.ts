@@ -4,7 +4,7 @@ import { crearServicios, type Servicios } from './contenedor.js';
 /**
  * Worker: motor de alertas (outbox), notificaciones, detección de «sin señal»
  * (RN-04) y reconciliación MongoDB ↔ PostgreSQL. Se puede ejecutar como proceso
- * separado (docker compose) o dentro de la API con WORKER_EN_API=true.
+ * separado (`npm run dev:worker`) o dentro de la API con WORKER_EN_API=true.
  */
 export function iniciarWorker(cfg: Config, s: Servicios) {
   let detenido = false;

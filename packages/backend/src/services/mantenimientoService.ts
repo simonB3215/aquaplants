@@ -56,7 +56,7 @@ export class MantenimientoService {
           `El respaldo automático de AquaPlants falló el ${cuando} (registro #${f.id_respaldo}).`,
           `Detalle: ${(f.detalle ?? 'sin detalle').slice(0, 500)}`,
           '',
-          'Revise el contenedor de respaldo (docker compose --profile backup run --rm backup) y vuelva a ejecutarlo.',
+          'Revise el proceso de respaldo y vuelva a ejecutarlo.',
           'Mientras no haya un respaldo correcto, el punto de recuperación (RPO 24 h) no está garantizado.',
           '',
           '— AquaPlants (mensaje automático, no respondas este correo)',

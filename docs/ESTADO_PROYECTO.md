@@ -1,9 +1,14 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-08 (sesión 4, PC Windows de Jesus). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+
+## Sesión 5 — Docker eliminado del repositorio
+- **Decisión del usuario**: se borraron `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, `verificar.ps1` e `infrastructure/` (Nginx, usuarios de MongoDB, respaldo/restauración). Quedan en el historial de git (commit `885105d`). Las variables de SMTP y `NOTIFICACIONES_SOLO_A` pasaron a `.env.nube.example`.
+- Se conservan: el adaptador de MongoDB (si no hay `PAYLOADS_DATABASE_URL`) y el CI de GitHub Actions, que levanta PostgreSQL/TimescaleDB y MongoDB de prueba en los servidores de GitHub para correr la suite.
+- Consecuencias: **sin respaldo cifrado ni prueba de restauración** (D-26/CP-29) hasta definir uno para Supabase + Neon; la suite ya no se puede correr en este PC sin bases de prueba locales.
 
 ## Sesión 4 — Supabase + Neon (configuración vigente; Docker ya no se usa)
-- **Decisión del usuario**: el proyecto se ejecuta **solo** con Supabase + Neon. `Dockerfile`, `docker-compose.yml`, `verificar.ps1`, `infrastructure/` (mongo, backup, nginx), el adaptador de MongoDB y el CI con contenedores **quedan en el repo como referencia, sin uso**. Consecuencias: el respaldo cifrado y la prueba de restauración CP-29 (D-26) y la suite automatizada / CI no están adaptados a la nube (pendiente si el equipo los necesita).
+- **Decisión del usuario**: el proyecto se ejecuta **solo** con Supabase + Neon. En la sesión 4 los archivos de Docker quedaron como referencia; **en la sesión 5 se eliminaron** (ver arriba). Consecuencias: el respaldo cifrado y la prueba de restauración CP-29 (D-26) y la suite automatizada / CI no están adaptados a la nube (pendiente si el equipo los necesita).
 - **D-29**: base principal en **Supabase** (PostgreSQL 17, sin TimescaleDB: 002 y 008 omitidas) y payloads crudos en **Neon** (`PgPayloadStore`, reemplaza a MongoDB cuando existe `PAYLOADS_DATABASE_URL`). TLS `verify-full`; la CA de Supabase va en `secretos/supabase-ca.crt`.
 - Configuración: copiar `.env.nube.example` a `.env.nube` (fuera de git). Primera vez: `.\iniciar-nube.ps1 -Preparar` (migraciones + seed); luego `.\iniciar-nube.ps1` (API + worker, simulador y web en http://localhost:5173).
 - **Verificado manualmente** contra Supabase y Neon reales: `/health` ok, login, simulador → 39 mediciones en Supabase y 9 lotes procesados en Neon en 2 min; adaptador probado aparte (idempotencia, pendientes, procesado, detalle de evento). Supabase ocupa 58 MB con 48 h de historial (plan gratuito: 500 MB).
@@ -43,11 +48,11 @@ _Última actualización: 2026-11-08 (sesión 4, PC Windows de Jesus). Abrir este
 
 ## Pendiente (por prioridad)
 1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
-2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; PWA offline re-verificada sobre el stack Docker (con Chrome/Playwright, no el navegador integrado).
+2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; PWA offline re-verificada (con Chrome/Playwright, no el navegador integrado).
 3. Despliegue en la nube: **no autorizado aún** por el usuario.
 4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
 5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).
-6. Parcial (D-26): respaldo cifrado con age de PostgreSQL + MongoDB, SHA-256, rotación 7/4/3, aviso por correo si falla y CP-29 aprobado en local. **Falta**: subida a almacenamiento externo (Spaces u otro, depende de la nube) y programar el cron 02:00 en el servidor.
+6. **Abierto** (D-26): el respaldo cifrado y CP-29 funcionaban con contenedores Docker y se retiraron en la sesión 5. Falta definir el respaldo de Supabase + Neon y repetir la prueba de restauración.
 7. Resuelto en sesión 3 (D-27): API y worker usan `app_rw`, respaldo `backup_ro`; superusuario solo en `migrate`. `database/permisos.sql` se reaplica en cada migración.
 8. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI; sesión persistente opcional (refresh token httpOnly) si se aprueba cambiar el ES2.
 
@@ -71,17 +76,12 @@ npm run db:migrate && npm run db:seed
 npm run dev:api | npm run dev:worker | npm run sim | npm run dev:web
 npm test
 node tests/e2e/escenarios.mjs
-docker compose --profile demo up -d --build
+.\iniciar-nube.ps1            # API + worker, simulador y web (Supabase + Neon)
 ```
 
 ## Próximo paso concreto
 **Sesión 3 (2026-11-04)**: bloque 1 (seguridad y calidad) y **bloque 2 (base de datos)** terminados. Resultados en `docs/PRUEBAS.md` (84/84, E2E 8/8, CP-29 APROBADA). La clave privada age está en `secretos/age-respaldo.key` (fuera de git; en producción debe guardarse **fuera del servidor**). Copia previa a las migraciones: `respaldos/pre-bloque2.dump`.
 
-Comandos nuevos:
-```bash
-docker compose --profile backup run --rm backup
-docker compose --profile restauracion run --rm restaurar
-```
 
 Además: **enlaces de invitación (D-28)** probados con Jest (5 nuevas, 89/89) y en el navegador sobre Docker (migración 009 aplicada).
 

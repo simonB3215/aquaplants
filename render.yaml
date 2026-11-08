@@ -1,0 +1,93 @@
+# Render Blueprint (D-30): API (+ worker) y simulador. La web va en Netlify y la base en Supabase + Neon.
+# Render → New → Blueprint → elegir este repositorio. Los valores con «sync: false» se piden al crear.
+# Si Render no puede usar los nombres de abajo, la URL cambia: ajústela en netlify.toml y en las variables.
+services:
+  - type: web
+    name: aquaplants-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build:shared && npm run build -w packages/backend
+    startCommand: node packages/backend/dist/server.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # DEMO_MODE no puede usarse con NODE_ENV=production (demo aislada de producción).
+      - key: NODE_ENV
+        value: development
+      - key: DEMO_MODE
+        value: "true"
+      - key: WORKER_EN_API
+        value: "true"
+      # Netlify → balanceador de Render: 2 proxies delante de la API.
+      - key: TRUST_PROXY
+        value: "2"
+      # Supabase. sslrootcert=/etc/secrets/supabase-ca.crt (Secret File de este servicio).
+      - key: DATABASE_URL
+        sync: false
+      # Neon (payloads crudos).
+      - key: PAYLOADS_DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      # URL de Netlify, p. ej. https://aquaplants.netlify.app
+      - key: CORS_ORIGIN
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: SIM_CONTROL_URL
+        value: https://aquaplants-simulador.onrender.com
+      - key: SIM_CONTROL_TOKEN
+        fromService:
+          type: web
+          name: aquaplants-simulador
+          envVarKey: SIM_CONTROL_TOKEN
+      - key: DEMO_ENCARGADO_EMAIL
+        value: encargado@aquaplants.cl
+      - key: DEMO_ENCARGADO_PASSWORD
+        sync: false
+      - key: DEVICE_RATE_LIMIT_PER_MIN
+        value: "30"
+      - key: WORKER_SIN_SENAL_CADA_S
+        value: "10"
+      - key: SIN_SENAL_FACTOR
+        value: "3"
+      - key: RESTABLECER_MINUTOS
+        value: "30"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: NOTIFICACIONES_SOLO_A
+        sync: false
+
+  - type: web
+    name: aquaplants-simulador
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build:shared
+    startCommand: npm run start -w packages/simulador
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Por Netlify, igual que el navegador (así la API ve siempre 2 proxies).
+      - key: API_URL
+        sync: false
+      # Credenciales de los dispositivos (packages/simulador/data/dispositivos.json del seed) como Secret File.
+      - key: SIM_CONFIG_PATH
+        value: /etc/secrets/dispositivos.json
+      # La API de control escucha en el puerto de Render; sin token se niega a abrirse fuera de localhost.
+      - key: SIM_CONTROL_HOST
+        value: 0.0.0.0
+      - key: SIM_CONTROL_PORT
+        value: "10000"
+      - key: SIM_CONTROL_TOKEN
+        generateValue: true
+      - key: SIM_BACKOFF_BASE_MS
+        value: "3000"

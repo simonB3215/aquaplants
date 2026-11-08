@@ -2,6 +2,32 @@
 
 > Desde la sesión 4 (D-29) el proyecto **no usa Docker**: la base principal está en **Supabase** y los payloads crudos en **Neon**; la API (+ worker), el simulador y la web se ejecutan con `iniciar-nube.ps1` (ver README). En la sesión 5 se **eliminaron del repositorio** `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, `verificar.ps1` e `infrastructure/` (Nginx, usuarios de MongoDB, contenedores de respaldo y restauración). Siguen en el historial de git (commit `885105d`) por si el equipo los necesita.
 
+## Publicación: Render + Supabase + Netlify (D-30)
+| Pieza | Dónde | Archivo |
+|---|---|---|
+| Web (PWA) | **Netlify** | `netlify.toml`: compila `packages/frontend` y reenvía `/api/*` a Render (mismo origen para el navegador) |
+| API + worker | **Render** (`aquaplants-api`) | `render.yaml` |
+| Simulador (AquaBrain virtuales) | **Render** (`aquaplants-simulador`) | `render.yaml` |
+| Base principal | **Supabase** | ya preparada con `.\iniciar-nube.ps1 -Preparar` |
+| Payloads crudos | **Neon** | tablas creadas por la API al conectarse |
+
+Pasos (cada uno con la cuenta del equipo; las claves nunca se suben a git):
+1. **Render** → New → **Blueprint** → este repositorio. Completar las variables `sync: false`:
+   - `DATABASE_URL`: la de Supabase con `sslrootcert=/etc/secrets/supabase-ca.crt`; `PAYLOADS_DATABASE_URL`: la de Neon.
+   - `CORS_ORIGIN` y `APP_URL`: la URL de Netlify (p. ej. `https://aquaplants.netlify.app`).
+   - `DEMO_ENCARGADO_PASSWORD`, `SMTP_*` (opcional) y `NOTIFICACIONES_SOLO_A`.
+   - Simulador: `API_URL` = URL de Netlify + `/api/v1`.
+2. **Secret Files** en Render (Environment → Secret Files): en `aquaplants-api` el archivo `supabase-ca.crt`; en `aquaplants-simulador` el archivo `dispositivos.json` (el que generó el seed en `packages/simulador/data/`).
+3. **Netlify** → Add new site → Import from Git → este repositorio (toma `netlify.toml`). Si Render asignó otra URL a la API, cambiarla en el `[[redirects]]` de `/api/*`.
+4. Comprobar: `https://<netlify>/api/v1/health` = ok; iniciar sesión; menú Demostración → escenario A.
+
+Límites del plan gratuito (a tener en cuenta en la presentación):
+- Los servicios de Render se **duermen tras 15 min sin tráfico** y tardan ~1 min en despertar: abrir la app y la página Demostración unos minutos antes. Mientras duerme la API tampoco corre el worker (alertas, «sin señal»).
+- El disco de Render no es permanente: si reinicia el simulador, su cola local se pierde (en la demo, el escenario E/F se hace con los botones, no reiniciando el servicio).
+- Render gratis da 750 h al mes para todos los servicios: dos servicios despiertos todo el mes no alcanzan.
+- `NODE_ENV=development` porque `DEMO_MODE` se niega a correr en producción (demo aislada). Para una instalación real: `NODE_ENV=production`, `DEMO_MODE=false` y sin simulador.
+- `TRUST_PROXY=2` (Netlify + Render) para que los límites por IP vean al cliente real. Quien llame directo a la URL de Render podría falsear su IP ante esos límites; el bloqueo por cuenta (`LOGIN_MAX_INTENTOS`) sigue aplicando.
+
 ## Bases de datos
 - **Supabase** (PostgreSQL 17): esquema con `npm run db:migrate` (`.\iniciar-nube.ps1 -Preparar` la primera vez). Sin TimescaleDB: `002` y `008` se omiten y quedan registradas como omitidas en `schema_migraciones`.
 - **Neon** (PostgreSQL): `PgPayloadStore` crea sus tablas (`payload_telemetria`, `detalle_evento`) al conectarse y borra los payloads de más de 90 días.

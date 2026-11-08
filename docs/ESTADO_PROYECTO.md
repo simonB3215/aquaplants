@@ -2,7 +2,9 @@
 
 _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
-## Sesión 5 — Docker eliminado del repositorio
+## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Netlify (D-30)
+- **Publicación elegida por el usuario**: web en **Netlify**, API (+ worker) y simulador en **Render**, bases en **Supabase** + **Neon**. Preparados `render.yaml` y `netlify.toml` (pasos en `docs/DESPLIEGUE.md`). **Aún no publicado**: falta crear los servicios con las cuentas del equipo y cargar las claves en Render.
+- `TRUST_PROXY` ahora acepta un número de proxies (Netlify → Render = 2); prueba nueva `config.test.ts` (5/5).
 - **Decisión del usuario**: se borraron `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, `verificar.ps1` e `infrastructure/` (Nginx, usuarios de MongoDB, respaldo/restauración). Quedan en el historial de git (commit `885105d`). Las variables de SMTP y `NOTIFICACIONES_SOLO_A` pasaron a `.env.nube.example`.
 - Se conservan: el adaptador de MongoDB (si no hay `PAYLOADS_DATABASE_URL`) y el CI de GitHub Actions, que levanta PostgreSQL/TimescaleDB y MongoDB de prueba en los servidores de GitHub para correr la suite.
 - Consecuencias: **sin respaldo cifrado ni prueba de restauración** (D-26/CP-29) hasta definir uno para Supabase + Neon; la suite ya no se puede correr en este PC sin bases de prueba locales.
@@ -49,7 +51,7 @@ _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir e
 ## Pendiente (por prioridad)
 1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
 2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; PWA offline re-verificada (con Chrome/Playwright, no el navegador integrado).
-3. Despliegue en la nube: **no autorizado aún** por el usuario.
+3. Publicación: **elegida** (D-30, Render + Supabase + Netlify) y preparada; falta crear los servicios y cargar las claves. CP-24 TLS: lo dan Netlify y Render (por verificar una vez publicado).
 4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
 5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).
 6. **Abierto** (D-26): el respaldo cifrado y CP-29 funcionaban con contenedores Docker y se retiraron en la sesión 5. Falta definir el respaldo de Supabase + Neon y repetir la prueba de restauración.
@@ -85,4 +87,4 @@ node tests/e2e/escenarios.mjs
 
 Además: **enlaces de invitación (D-28)** probados con Jest (5 nuevas, 89/89) y en el navegador sobre Docker (migración 009 aplicada).
 
-**Siguiente: bloque 3** (k6 CP-27 con 50 dispositivos × 10 min y CP-13 histórico de 30 días ≤ 3 s; PWA offline re-verificada). Luego bloque 4 (CP-08, documentación final, pantalla de especies opcional). Despliegue en la nube: solo con autorización del usuario.
+**Siguiente: bloque 3** (k6 CP-27 con 50 dispositivos × 10 min y CP-13 histórico de 30 días ≤ 3 s; PWA offline re-verificada). Luego bloque 4 (CP-08, documentación final, pantalla de especies opcional). Publicación: ver D-30 y `docs/DESPLIEGUE.md`.

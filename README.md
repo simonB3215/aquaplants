@@ -45,6 +45,9 @@ copy .env.nube.example .env.nube      # completar DATABASE_URL (Supabase) y PAYL
 3. En el teléfono abra `http://192.168.1.20:5173`. Permita el puerto 5173 en el firewall de Windows si es necesario.
 4. La instalación como app (PWA) y el service worker requieren **HTTPS** salvo en `localhost`; en red local por HTTP la app funciona pero no se instala.
 
+## Publicación
+Web en **Netlify**, API y simulador en **Render**, bases en **Supabase** + **Neon** (D-30): ver [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
+
 ## Pruebas
 
 ```bash

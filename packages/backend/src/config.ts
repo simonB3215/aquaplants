@@ -61,10 +61,12 @@ const Env = z.object({
   SIM_CONTROL_TOKEN: z.string().optional(),
   DEMO_ENCARGADO_EMAIL: z.string().optional(),
   DEMO_ENCARGADO_PASSWORD: z.string().optional(),
+  /** Proxies delante de la API: 'false' = 0, 'true' = 1, o un número (Netlify → Render = 2). */
   TRUST_PROXY: z
     .string()
     .default('false')
-    .transform((v) => v === 'true'),
+    .refine((v) => /^(true|false|[0-9])$/.test(v), 'TRUST_PROXY debe ser true, false o un número de 0 a 9')
+    .transform((v) => (v === 'true' ? 1 : v === 'false' ? 0 : Number(v))),
 });
 
 export type Config = z.infer<typeof Env>;

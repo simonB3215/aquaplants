@@ -2,7 +2,8 @@
 
 _Última actualización: 2026-11-08 (sesión 4, PC Windows de Jesus). Abrir este archivo al comenzar cada sesión._
 
-## Sesión 4 — opción sin Docker (Supabase + Neon) para la presentación
+## Sesión 4 — Supabase + Neon (configuración vigente; Docker ya no se usa)
+- **Decisión del usuario**: el proyecto se ejecuta **solo** con Supabase + Neon. `Dockerfile`, `docker-compose.yml`, `verificar.ps1`, `infrastructure/` (mongo, backup, nginx), el adaptador de MongoDB y el CI con contenedores **quedan en el repo como referencia, sin uso**. Consecuencias: el respaldo cifrado y la prueba de restauración CP-29 (D-26) y la suite automatizada / CI no están adaptados a la nube (pendiente si el equipo los necesita).
 - **D-29**: base principal en **Supabase** (PostgreSQL 17, sin TimescaleDB: 002 y 008 omitidas) y payloads crudos en **Neon** (`PgPayloadStore`, reemplaza a MongoDB cuando existe `PAYLOADS_DATABASE_URL`). TLS `verify-full`; la CA de Supabase va en `secretos/supabase-ca.crt`.
 - Configuración: copiar `.env.nube.example` a `.env.nube` (fuera de git). Primera vez: `.\iniciar-nube.ps1 -Preparar` (migraciones + seed); luego `.\iniciar-nube.ps1` (API + worker, simulador y web en http://localhost:5173).
 - **Verificado manualmente** contra Supabase y Neon reales: `/health` ok, login, simulador → 39 mediciones en Supabase y 9 lotes procesados en Neon en 2 min; adaptador probado aparte (idempotencia, pendientes, procesado, detalle de evento). Supabase ocupa 58 MB con 48 h de historial (plan gratuito: 500 MB).
@@ -20,6 +21,8 @@ _Última actualización: 2026-11-08 (sesión 4, PC Windows de Jesus). Abrir este
 - Detalle en `docs/PRUEBAS.md`.
 
 ## Arquitectura y stack reales
+> Lo siguiente describe la arquitectura hasta la sesión 3. Desde la sesión 4 la persistencia es Supabase (PostgreSQL 17, sin TimescaleDB) + Neon (payloads) y no se usa Docker ni Nginx (ver arriba y D-29).
+
 - Monorepo npm workspaces: `shared` (Zod, Tabla 48) → `backend` (Express 4, pg, mongodb, JWT, bcryptjs) / `simulador` (Node, sin dependencias externas) / `frontend` (React 18, Vite 5, Chart.js 4, React Router 6, Lucide).
 - Persistencia: PostgreSQL 16 (+ TimescaleDB 2.17 en Docker), MongoDB 7 (payload crudo TTL 90 d, detalle de eventos).
 - Procesos: API (`server.ts`), worker (`worker.ts`: outbox de alertas con SKIP LOCKED, notificaciones, «sin señal», reconciliación), simulador (proceso aparte con API de control), Nginx (web + proxy).

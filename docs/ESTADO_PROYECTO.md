@@ -3,7 +3,7 @@
 _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Netlify (D-30)
-- **Publicación elegida por el usuario**: web en **Netlify**, API (+ worker) y simulador en **Render**, bases en **Supabase** + **Neon**. Preparados `render.yaml` y `netlify.toml` (pasos en `docs/DESPLIEGUE.md`). **Aún no publicado**: falta crear los servicios con las cuentas del equipo y cargar las claves en Render.
+- **Publicación elegida por el usuario**: web en **Netlify**, API (+ worker) y simulador en **Render**, bases en **Supabase** + **Neon**. Preparados `render.yaml` y `netlify.toml` (pasos en `docs/DESPLIEGUE.md`). **Publicado** (2026-11-08): web https://aquaplants-app.netlify.app, API https://aquaplants-api.onrender.com, simulador https://aquaplants-simulador.onrender.com (región Virginia). `aquaplants.netlify.app` pertenece a un tercero: no usarlo. El simulador envía directo a la API de Render.
 - El certificado público de Supabase va en el repositorio (`certificados/supabase-ca.crt`) y `sslrootcert` acepta rutas relativas al proyecto: `.env.nube` sirve igual en cualquier computador. Supabase con «Enforce SSL» activado; conexión por Session pooler.
 - `TRUST_PROXY` ahora acepta un número de proxies (Netlify → Render = 2); prueba nueva `config.test.ts` (5/5).
 - **Decisión del usuario**: se borraron `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, `verificar.ps1` e `infrastructure/` (Nginx, usuarios de MongoDB, respaldo/restauración). Quedan en el historial de git (commit `885105d`). Las variables de SMTP y `NOTIFICACIONES_SOLO_A` pasaron a `.env.nube.example`.

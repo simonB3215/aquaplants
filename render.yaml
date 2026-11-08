@@ -31,7 +31,7 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      # URL de Netlify, p. ej. https://aquaplants.netlify.app
+      # URL de Netlify, p. ej. https://aquaplants-app.netlify.app
       - key: CORS_ORIGIN
         sync: false
       - key: APP_URL

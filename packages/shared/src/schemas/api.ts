@@ -23,6 +23,11 @@ export const CambiarPasswordSchema = z.object({
   nueva: PasswordSchema,
 });
 
+/** D-32: preferencia de correos de alerta crítica («ninguna» solo para Administrador; lo valida el backend). */
+export const AvisosSchema = z.object({
+  aviso_alertas: z.enum(['todas', 'urgentes', 'ninguna']),
+});
+
 /** «¿Olvidaste tu contraseña?»: la respuesta es la misma exista o no el email. */
 export const OlvidePasswordSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email con formato inválido').max(160),

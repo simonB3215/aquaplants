@@ -25,7 +25,7 @@ function Requiere({ f, accion = 'escribir', children }: { f: Funcionalidad; acci
 }
 
 function Rutas() {
-  const { usuario } = useSesion();
+  const { usuario, verificando } = useSesion();
   const [demo, setDemo] = useState(false);
   useEffect(() => {
     if (usuario?.rol !== 'administrador') return setDemo(false);
@@ -35,6 +35,12 @@ function Rutas() {
       .catch(() => setDemo(false));
   }, [usuario]);
 
+  if (verificando)
+    return (
+      <div className="pantalla-carga" role="status" aria-live="polite">
+        <p className="muted">Cargando AquaPlants…</p>
+      </div>
+    );
   if (!usuario)
     return (
       <Routes>

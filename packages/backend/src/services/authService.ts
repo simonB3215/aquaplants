@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID, createHash, randomBytes } from 'node:crypto';
-import type { RespuestaLogin, Rol, UsuarioSesion } from '@aquaplants/shared';
+import type { AvisoAlertas, RespuestaLogin, Rol, UsuarioSesion } from '@aquaplants/shared';
 import type { IBaseDatos } from '../ports/index.js';
 import type { Config } from '../config.js';
 import { ErrorApp, NoAutenticadoError, ReglaNegocioError } from '../errores.js';
@@ -29,6 +29,14 @@ export const BCRYPT_COSTO = 12;
 export const hashToken = (token: string) => createHash('sha256').update(token, 'utf8').digest('hex');
 export const generarTokenDispositivo = () => randomBytes(32).toString('base64url'); // 256 bits
 
+/** D-31: login o reanudación de sesión. `sesion` va SOLO en la cookie httpOnly, nunca en el cuerpo. */
+export interface Ingreso {
+  respuesta: RespuestaLogin;
+  sesion: { token: string; expira: Date };
+}
+
+type FilaUsuario = { id_usuario: number; nombre: string; email: string; rol: Rol; debe_cambiar_password: boolean; aviso_alertas: AvisoAlertas; version_token: number };
+
 /**
  * CU-02: autenticación con bcrypt, bloqueo tras N intentos, JWT de 8 h con
  * version_token para revocación (sección 6.1) y lista de bloqueo por jti al
@@ -45,7 +53,7 @@ export class AuthService {
     private readonly cfg: Config,
   ) {}
 
-  async login(email: string, password: string, ip: string | null): Promise<RespuestaLogin> {
+  async login(email: string, password: string, ip: string | null): Promise<Ingreso> {
     const r = await this.db.query<{
       id_usuario: number;
       nombre: string;
@@ -56,10 +64,11 @@ export class AuthService {
       intentos_fallidos: number;
       bloqueado_hasta: Date | null;
       debe_cambiar_password: boolean;
+      aviso_alertas: AvisoAlertas;
       version_token: number;
     }>(
       `SELECT u.id_usuario, u.nombre, u.email, u.hash_password, u.activo, r.nombre AS rol,
-              u.intentos_fallidos, u.bloqueado_hasta, u.debe_cambiar_password, u.version_token
+              u.intentos_fallidos, u.bloqueado_hasta, u.debe_cambiar_password, u.aviso_alertas, u.version_token
          FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
         WHERE lower(u.email) = lower($1)`,
       [email],
@@ -96,19 +105,53 @@ export class AuthService {
       await tx.query(`UPDATE usuario SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id_usuario = $1`, [u.id_usuario]);
       await auditar(tx, { id_usuario: u.id_usuario, ip }, 'login', 'usuario', u.id_usuario, null);
     });
-    const jti = randomUUID();
-    const expS = Math.floor(Date.now() / 1000) + Math.round(this.cfg.JWT_EXPIRA_HORAS * 3600);
-    const token = jwt.sign({ sub: String(u.id_usuario), rol: u.rol, nombre: u.nombre, email: u.email, ver: u.version_token, jti, exp: expS }, this.cfg.JWT_SECRET, {
-      algorithm: 'HS256',
-    });
+    const expira = new Date(Date.now() + Math.round(this.cfg.JWT_EXPIRA_HORAS * 3600) * 1000);
+    const sesion = randomBytes(32).toString('base64url'); // 256 bits; en la BD solo su SHA-256
+    await this.db.query(
+      `INSERT INTO sesion (id_usuario, hash_token, version_token, expira_en) VALUES ($1, $2, $3, $4)`,
+      [u.id_usuario, hashToken(sesion), u.version_token, expira],
+    );
+    return { respuesta: this.emitir(u, expira), sesion: { token: sesion, expira } };
+  }
+
+  /** JWT de acceso que vence junto con la sesión (8 h desde el login, nunca más). */
+  private emitir(u: FilaUsuario, expira: Date): RespuestaLogin {
+    const expS = Math.floor(expira.getTime() / 1000);
+    const token = jwt.sign(
+      { sub: String(u.id_usuario), rol: u.rol, nombre: u.nombre, email: u.email, ver: u.version_token, jti: randomUUID(), exp: expS },
+      this.cfg.JWT_SECRET,
+      { algorithm: 'HS256' },
+    );
     const usuario: UsuarioSesion = {
       id_usuario: u.id_usuario,
       nombre: u.nombre,
       email: u.email,
       rol: u.rol,
       debe_cambiar_password: u.debe_cambiar_password,
+      aviso_alertas: u.aviso_alertas,
     };
-    return { token, expira_en: new Date(expS * 1000).toISOString(), usuario };
+    return { token, expira_en: expira.toISOString(), usuario };
+  }
+
+  /**
+   * D-31: al refrescar la página, la cookie httpOnly trae el token de sesión y se
+   * emite un JWT nuevo. Vale solo si la sesión no venció ni se cerró, el usuario
+   * sigue activo y su versión de credenciales es la misma del login.
+   */
+  async reanudar(sesion: string | undefined): Promise<Ingreso> {
+    if (!sesion || !/^[A-Za-z0-9_-]{43}$/.test(sesion)) throw new NoAutenticadoError('Sin sesión', 'SIN_SESION');
+    const r = await this.db.query<FilaUsuario & { expira_en: Date }>(
+      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password, u.aviso_alertas, u.version_token, s.expira_en
+         FROM sesion s
+         JOIN usuario u ON u.id_usuario = s.id_usuario
+         JOIN rol r ON r.id_rol = u.id_rol
+        WHERE s.hash_token = $1 AND s.revocada_en IS NULL AND s.expira_en > now()
+          AND u.activo AND u.version_token = s.version_token`,
+      [hashToken(sesion)],
+    );
+    const f = r.rows[0];
+    if (!f) throw new NoAutenticadoError('Sesión inválida o expirada', 'SIN_SESION');
+    return { respuesta: this.emitir(f, f.expira_en), sesion: { token: sesion, expira: f.expira_en } };
   }
 
   /** Verifica el JWT, la lista de bloqueo y la versión de credenciales (caché 30 s). */
@@ -140,21 +183,42 @@ export class AuthService {
     this.cacheVersion.delete(id);
   }
 
-  async logout(u: UsuarioToken, ip: string | null): Promise<void> {
+  async logout(u: UsuarioToken, ip: string | null, sesion?: string): Promise<void> {
     this.bloqueados.set(u.jti, u.exp);
     const ahora = Date.now() / 1000;
     for (const [k, exp] of this.bloqueados) if (exp < ahora) this.bloqueados.delete(k);
-    await this.db.transaccion((tx) => auditar(tx, { id_usuario: u.id_usuario, ip }, 'logout', 'usuario', u.id_usuario));
+    await this.db.transaccion(async (tx) => {
+      if (sesion) {
+        await tx.query(`UPDATE sesion SET revocada_en = now() WHERE hash_token = $1 AND id_usuario = $2 AND revocada_en IS NULL`, [hashToken(sesion), u.id_usuario]);
+      }
+      await auditar(tx, { id_usuario: u.id_usuario, ip }, 'logout', 'usuario', u.id_usuario);
+    });
   }
 
   async me(id: number): Promise<UsuarioSesion> {
     const r = await this.db.query<UsuarioSesion>(
-      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password
+      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password, u.aviso_alertas
          FROM usuario u JOIN rol r ON r.id_rol = u.id_rol WHERE u.id_usuario = $1`,
       [id],
     );
     if (!r.rows[0]) throw new NoAutenticadoError();
     return r.rows[0];
+  }
+
+  /** D-32: preferencia propia de correos de alerta crítica. «ninguna» solo para Administrador. */
+  async cambiarAvisos(u: UsuarioToken, aviso: AvisoAlertas, ip: string | null): Promise<{ aviso_alertas: AvisoAlertas }> {
+    if (aviso === 'ninguna' && u.rol !== 'administrador') {
+      throw new ReglaNegocioError('Las alertas urgentes siempre se avisan por correo', [
+        { campo: 'aviso_alertas', mensaje: 'Elija «todas» o «solo urgentes»' },
+      ]);
+    }
+    await this.db.transaccion(async (tx) => {
+      const r = await tx.query<{ aviso_alertas: AvisoAlertas }>(`SELECT aviso_alertas FROM usuario WHERE id_usuario = $1 FOR UPDATE`, [u.id_usuario]);
+      if (r.rows[0]?.aviso_alertas === aviso) return;
+      await tx.query(`UPDATE usuario SET aviso_alertas = $2 WHERE id_usuario = $1`, [u.id_usuario, aviso]);
+      await auditar(tx, { id_usuario: u.id_usuario, ip }, 'cambiar_avisos', 'usuario', u.id_usuario, { anterior: r.rows[0]?.aviso_alertas, nuevo: aviso });
+    });
+    return { aviso_alertas: aviso };
   }
 
   /** Devuelve si se programó el aviso por correo (solo hay aviso si SMTP está configurado). */

@@ -41,8 +41,9 @@ export class UsuarioService {
       const dup = await tx.query(`SELECT 1 FROM usuario WHERE lower(email) = lower($1)`, [d.email]);
       if (dup.rowCount) throw new ConflictoError('El email ya está registrado', 'EMAIL_DUPLICADO');
       const r = await tx.query<{ id_usuario: number }>(
-        `INSERT INTO usuario (nombre, email, hash_password, id_rol, debe_cambiar_password)
-         VALUES ($1, $2, $3, (SELECT id_rol FROM rol WHERE nombre = $4), true) RETURNING id_usuario`,
+        `INSERT INTO usuario (nombre, email, hash_password, id_rol, debe_cambiar_password, aviso_alertas)
+         VALUES ($1, $2, $3, (SELECT id_rol FROM rol WHERE nombre = $4), true,
+                 CASE WHEN $4 = 'administrador' THEN 'ninguna' ELSE 'todas' END) RETURNING id_usuario`,
         [d.nombre, d.email, hash, d.rol],
       );
       const id = r.rows[0].id_usuario;
@@ -86,7 +87,9 @@ export class UsuarioService {
                 id_rol = COALESCE((SELECT id_rol FROM rol WHERE nombre = $3), id_rol),
                 activo = COALESCE($4, activo),
                 desactivado_en = CASE WHEN $4 = false THEN now() WHEN $4 = true THEN NULL ELSE desactivado_en END,
-                version_token = version_token + CASE WHEN $5 THEN 1 ELSE 0 END
+                version_token = version_token + CASE WHEN $5 THEN 1 ELSE 0 END,
+                -- D-32: «ninguna» es solo para Administrador; al dejar de serlo vuelve a «todas».
+                aviso_alertas = CASE WHEN $3 IS NOT NULL AND $3 <> 'administrador' AND aviso_alertas = 'ninguna' THEN 'todas' ELSE aviso_alertas END
           WHERE id_usuario = $1`,
         [id, d.nombre ?? null, d.rol ?? null, d.activo ?? null, revocar],
       );

@@ -13,6 +13,8 @@ Errores uniformes (Tabla 11): `{ "codigo": "...", "mensaje": "...", "campos": [{
 |---|---|---|---|---|
 | `POST /telemetria`, `POST /telemetria/eventos` | 01 | — (solo dispositivo) | — | — |
 | `POST /auth/login`, `/auth/logout`, `GET /auth/me`, `POST /auth/cambiar-password` (200 `{aviso_correo}`; programa aviso por correo al titular) | 02 | ✔ | ✔ | ✔ |
+| `POST /auth/sesion` (D-31: reanuda la sesión con la cookie httpOnly `aq_sesion`; pública, 60/min por IP) | 02 | ✔ | ✔ | ✔ |
+| `PATCH /auth/avisos` (D-32: `todas` \| `urgentes` \| `ninguna`; `ninguna` solo Administrador → 422 para los demás) | 02 | ✔ | ✔ | ✔ |
 | `GET /torres/estado`, `GET /torres/{id}/estado` | 03 | sus torres | ✔ | ✔ |
 | `GET /alertas` | 04 | sus torres | ✔ | ✔ |
 | `PATCH /alertas/{id}/resolver` (alias `PATCH /alertas/{id}`) | 04 | advertencias | ✔ (crítica: comentario obligatorio) | ✔ |

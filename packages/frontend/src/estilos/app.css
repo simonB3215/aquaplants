@@ -976,3 +976,57 @@ table.tabla {
 .donut-leyenda .dato {
   margin-left: auto;
 }
+
+/* D-31: mientras se reanuda la sesión al cargar la página. */
+.pantalla-carga {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* D-32: preferencia de avisos por correo (Perfil). */
+.opciones-aviso {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.opciones-aviso legend {
+  margin-bottom: 4px;
+}
+.opcion-aviso {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-md, 8px);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.opcion-aviso:hover {
+  border-color: var(--color-primary);
+}
+.opcion-aviso[data-activa] {
+  border-color: var(--color-primary);
+  background: var(--color-background);
+}
+.opcion-aviso input {
+  margin-top: 3px;
+  accent-color: var(--color-primary);
+}
+.opcion-aviso > span {
+  display: grid;
+  gap: 2px;
+}
+.opciones-aviso:disabled .opcion-aviso {
+  cursor: progress;
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .opcion-aviso {
+    transition: none;
+  }
+}

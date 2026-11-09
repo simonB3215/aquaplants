@@ -38,6 +38,14 @@ export class MantenimientoService {
     });
   }
 
+  /** D-31: sesiones vencidas o cerradas hace más de un día (minimización). */
+  async purgarSesionesVencidas(): Promise<number> {
+    const r = await this.db.query(
+      `DELETE FROM sesion WHERE expira_en < now() - interval '1 day' OR revocada_en < now() - interval '1 day'`,
+    );
+    return r.rowCount ?? 0;
+  }
+
   /**
    * Por cada respaldo fallido sin avisar programa un correo a cada Administrador
    * activo (lo envía el ciclo `correos_cuenta`) y lo marca como notificado.

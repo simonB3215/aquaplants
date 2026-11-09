@@ -1,8 +1,9 @@
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response } from 'express';
 import express from 'express';
 import { z } from 'zod';
 import {
   AsignacionSchema,
+  AvisosSchema,
   BajaSchema,
   CambiarPasswordSchema,
   ConfirmarRegistroSchema,
@@ -85,12 +86,43 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
 
   // ------------------------------------------------------------ CU-02 Sesión
   const tasaLogin = limitarTasa(cfg.LOGIN_RATE_LIMIT_PER_MIN, (req) => `ip${ipDe(req)}`);
+  // D-31: el token de sesión viaja solo en una cookie httpOnly (JavaScript no la lee),
+  // SameSite=Strict (no se envía desde otros sitios) y limitada a /api/v1/auth.
+  const COOKIE_SESION = 'aq_sesion';
+  const RUTA_COOKIE = '/api/v1/auth';
+  const esHttps = (req: Request) => req.secure || (cfg.TRUST_PROXY > 0 && /https/i.test(req.get('x-forwarded-proto') ?? ''));
+  const leerSesion = (req: Request) =>
+    (req.get('cookie') ?? '')
+      .split(';')
+      .map((c) => c.trim().split('='))
+      .find(([k]) => k === COOKIE_SESION)?.[1];
+  const ponerSesion = (req: Request, res: Response, ses: { token: string; expira: Date }) =>
+    res.cookie(COOKIE_SESION, ses.token, { httpOnly: true, secure: esHttps(req), sameSite: 'strict', path: RUTA_COOKIE, expires: ses.expira });
+  const borrarSesion = (req: Request, res: Response) =>
+    res.clearCookie(COOKIE_SESION, { httpOnly: true, secure: esHttps(req), sameSite: 'strict', path: RUTA_COOKIE });
   r.post(
     '/auth/login',
     tasaLogin,
     validar(LoginSchema),
     h(async (req, res) => {
-      res.json(await s.auth.login(req.body.email, req.body.password, ipDe(req)));
+      const i = await s.auth.login(req.body.email, req.body.password, ipDe(req));
+      ponerSesion(req, res, i.sesion);
+      res.json(i.respuesta);
+    }),
+  );
+  // D-31: reanudar la sesión al refrescar la página (cookie → JWT nuevo, sin contraseña).
+  const tasaSesion = limitarTasa(60, (req) => `ses${ipDe(req)}`);
+  r.post(
+    '/auth/sesion',
+    tasaSesion,
+    h(async (req, res) => {
+      try {
+        const i = await s.auth.reanudar(leerSesion(req));
+        res.json(i.respuesta);
+      } catch (e) {
+        borrarSesion(req, res);
+        throw e;
+      }
     }),
   );
   // «¿Olvidaste tu contraseña?» (públicas, con el mismo límite por IP que el login).
@@ -127,7 +159,8 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     '/auth/logout',
     auth,
     h(async (req, res) => {
-      await s.auth.logout(req.usuario!, ipDe(req));
+      await s.auth.logout(req.usuario!, ipDe(req), leerSesion(req));
+      borrarSesion(req, res);
       res.status(204).end();
     }),
   );
@@ -137,6 +170,13 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     h(async (req, res) => {
       res.json(await s.auth.me(req.usuario!.id_usuario));
     }),
+  );
+  // D-32: preferencia propia de correos de alerta crítica.
+  r.patch(
+    '/auth/avisos',
+    auth,
+    validar(AvisosSchema),
+    h(async (req, res) => void res.json(await s.auth.cambiarAvisos(req.usuario!, req.body.aviso_alertas, ipDe(req)))),
   );
   r.post(
     '/auth/cambiar-password',

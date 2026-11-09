@@ -26,6 +26,7 @@ export function iniciarWorker(cfg: Config, s: Servicios) {
   const timers = [
     ciclo('alertas', cfg.WORKER_OUTBOX_CADA_MS, () => s.motor.procesarPendientes()),
     ciclo('notificaciones', 15_000, () => s.motor.procesarNotificaciones()),
+    ciclo('urgentes', 60_000, () => s.motor.procesarUrgentes()), // D-32
     ciclo('correos_cuenta', 15_000, () => s.correosCuenta.procesarPendientes()),
     ciclo('sin_senal', cfg.WORKER_SIN_SENAL_CADA_S * 1000, () => s.continuidad.detectarSinSenal()),
     ciclo('reconciliacion', cfg.WORKER_RECONCILIAR_CADA_S * 1000, () => s.continuidad.reconciliar(s.ingesta)),
@@ -35,6 +36,8 @@ export function iniciarWorker(cfg: Config, s: Servicios) {
       if (n) console.log(`[worker:anonimizacion] ${n} usuario(s) anonimizado(s) (Tabla 40)`);
       const p = await s.mantenimiento.purgarRegistrosVencidos();
       if (p) console.log(`[worker:anonimizacion] ${p} solicitud(es) de registro vencida(s) eliminada(s) (D-28)`);
+      const ses = await s.mantenimiento.purgarSesionesVencidas();
+      if (ses) console.log(`[worker:anonimizacion] ${ses} sesión(es) vencida(s) eliminada(s) (D-31)`);
     }),
   ];
   console.log('[worker] iniciado');

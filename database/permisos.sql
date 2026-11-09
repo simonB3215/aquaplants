@@ -26,6 +26,7 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_rw;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO app_rw;
 GRANT DELETE ON usuario_instalacion TO app_rw;              -- reasignación de torres (CU-08/CU-09)
 GRANT DELETE ON registro_pendiente TO app_rw;               -- purga de solicitudes no confirmadas (D-28)
+GRANT DELETE ON sesion TO app_rw;                           -- purga de sesiones vencidas (D-31)
 REVOKE UPDATE, DELETE, TRUNCATE ON log_auditoria FROM app_rw; -- RN-07
 REVOKE UPDATE, DELETE, TRUNCATE ON medicion_evidencia FROM app_rw;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON schema_migraciones FROM app_rw;

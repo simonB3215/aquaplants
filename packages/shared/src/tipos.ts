@@ -16,7 +16,11 @@ export interface UsuarioSesion {
   email: string;
   rol: Rol;
   debe_cambiar_password: boolean;
+  /** D-32: correos de alerta crítica. */
+  aviso_alertas: AvisoAlertas;
 }
+
+export type AvisoAlertas = 'todas' | 'urgentes' | 'ninguna';
 
 export interface RespuestaLogin {
   token: string;

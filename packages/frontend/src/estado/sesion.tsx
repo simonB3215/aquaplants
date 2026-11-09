@@ -4,6 +4,8 @@ import { api } from '../api/cliente';
 
 interface Sesion {
   usuario: UsuarioSesion | null;
+  /** D-31: true mientras se intenta reanudar la sesión al cargar la página. */
+  verificando: boolean;
   expiraEn: string | null;
   iniciar(email: string, password: string): Promise<void>;
   cerrar(): Promise<void>;
@@ -15,9 +17,14 @@ interface Sesion {
 
 const Ctx = createContext<Sesion | null>(null);
 
-/** El token vive solo en memoria (ES2 §6.1): al recargar se vuelve a iniciar sesión. */
+/**
+ * El JWT de acceso vive solo en memoria (ES2 §6.1). D-31: al recargar la página se
+ * pide uno nuevo con la cookie httpOnly de sesión (JavaScript no puede leerla), así
+ * no hay que volver a iniciar sesión mientras la sesión de 8 h siga vigente.
+ */
 export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
+  const [verificando, setVerificando] = useState(true);
   const [expiraEn, setExpiraEn] = useState<string | null>(null);
   const [motivoCierre, setMotivo] = useState<string | null>(null);
 
@@ -35,6 +42,26 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       }),
     [limpiar],
   );
+
+  // D-31: reanudar la sesión al cargar (una sola vez).
+  useEffect(() => {
+    let vigente = true;
+    api
+      .post<RespuestaLogin>('/auth/sesion')
+      .then((r) => {
+        if (!vigente) return;
+        api.establecerToken(r.token);
+        setUsuario(r.usuario);
+        setExpiraEn(r.expira_en);
+      })
+      .catch(() => {
+        /* sin sesión: se muestra el inicio de sesión */
+      })
+      .finally(() => vigente && setVerificando(false));
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   // Expiración local del token (8 h).
   useEffect(() => {
@@ -64,6 +91,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const valor = useMemo<Sesion>(
     () => ({
       usuario,
+      verificando,
       expiraEn,
       iniciar,
       cerrar,
@@ -71,7 +99,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       actualizar: (u) => setUsuario((prev) => (prev ? { ...prev, ...u } : prev)),
       puede: (f, a = 'escribir') => (usuario ? autorizado(usuario.rol, f, a) : false),
     }),
-    [usuario, expiraEn, iniciar, cerrar, motivoCierre],
+    [usuario, verificando, expiraEn, iniciar, cerrar, motivoCierre],
   );
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }

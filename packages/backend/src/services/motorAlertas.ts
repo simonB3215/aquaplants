@@ -15,6 +15,8 @@ export class MotorAlertas {
     private readonly alertas: IAlertaRepo,
     private readonly outbox: IOutbox,
     private readonly notificador: INotificador,
+    /** D-32: minutos tras los cuales una alerta crítica activa es «urgente». */
+    private readonly cfgUrgenteMin = 30,
   ) {}
 
   /** Procesa hasta `max` lotes pendientes. Devuelve cuántos procesó. */
@@ -98,12 +100,12 @@ export class MotorAlertas {
         await this.db.query(`UPDATE alerta SET notificacion_estado = 'no_configurada' WHERE id_alerta = $1`, [a.id_alerta]);
         continue;
       }
-      const dest = await this.db.query<{ email: string }>(
-        `SELECT DISTINCT u.email FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
-          LEFT JOIN usuario_instalacion ui ON ui.id_usuario = u.id_usuario
-          WHERE u.activo AND (r.nombre = 'supervisor' OR ui.id_instalacion = $1)`,
-        [a.id_instalacion],
-      );
+      // D-32: al momento, solo a quienes eligieron «todas»; los de «solo urgentes» reciben procesarUrgentes().
+      const dest = await this.destinatarios(a.id_instalacion, 'todas');
+      if (!dest.rows.length) {
+        await this.db.query(`UPDATE alerta SET notificacion_estado = 'sin_destinatarios' WHERE id_alerta = $1`, [a.id_alerta]);
+        continue;
+      }
       try {
         await this.notificador.enviar({
           destinatarios: dest.rows.map((d) => d.email),
@@ -127,6 +129,72 @@ export class MotorAlertas {
             });
           }
         });
+      }
+    }
+    return enviadas;
+  }
+
+  /**
+   * Destinatarios de una torre según su preferencia (D-32): Supervisores y
+   * Administradores ven todas las torres; los Encargados, solo las asignadas.
+   */
+  private destinatarios(idInstalacion: number, preferencia: 'todas' | 'urgentes') {
+    return this.db.query<{ email: string }>(
+      `SELECT DISTINCT u.email FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
+        LEFT JOIN usuario_instalacion ui ON ui.id_usuario = u.id_usuario
+        WHERE u.activo AND u.aviso_alertas = $2
+          AND (r.nombre IN ('supervisor', 'administrador') OR ui.id_instalacion = $1)`,
+      [idInstalacion, preferencia],
+    );
+  }
+
+  /**
+   * D-32: alerta crítica que sigue activa después de ALERTA_URGENTE_MIN → correo a
+   * quienes eligieron «solo urgentes». Un aviso por alerta; hasta 3 intentos.
+   */
+  async procesarUrgentes(): Promise<number> {
+    const r = await this.db.query<{
+      id_alerta: string; id_instalacion: number; torre: string; variable: string; unidad: string;
+      valor: number; valor_min: number; valor_max: number; ocurrencias: number; fecha_generacion: Date; intentos: number;
+    }>(
+      `SELECT a.id_alerta, i.id_instalacion, i.nombre AS torre, tv.nombre AS variable, tv.unidad_medida AS unidad,
+              a.valor, a.valor_min, a.valor_max, a.ocurrencias, a.fecha_generacion, a.aviso_urgente_intentos AS intentos
+         FROM alerta a
+         JOIN sensor s ON s.id_sensor = a.id_sensor
+         JOIN tipo_variable tv ON tv.id_tipo_variable = s.id_tipo_variable
+         JOIN dispositivo d ON d.id_dispositivo = s.id_dispositivo
+         JOIN instalacion i ON i.id_instalacion = d.id_instalacion
+        WHERE a.estado = 'activa' AND a.notificacion_estado <> 'no_aplica'
+          AND a.aviso_urgente_en IS NULL AND a.aviso_urgente_intentos < 3
+          AND a.fecha_generacion < now() - make_interval(mins => $1)
+        ORDER BY a.fecha_generacion LIMIT 20`,
+      [this.cfgUrgenteMin],
+    );
+    let enviadas = 0;
+    for (const a of r.rows) {
+      const dest = await this.destinatarios(a.id_instalacion, 'urgentes');
+      if (!dest.rows.length || !this.notificador.configurado) {
+        await this.db.query(`UPDATE alerta SET aviso_urgente_en = now() WHERE id_alerta = $1`, [a.id_alerta]);
+        continue;
+      }
+      const minutos = Math.round((Date.now() - a.fecha_generacion.getTime()) / 60_000);
+      try {
+        await this.notificador.enviar({
+          destinatarios: dest.rows.map((d) => d.email),
+          asunto: `[AquaPlants] URGENTE: alerta crítica sin resolver en ${a.torre} (${a.variable})`,
+          texto:
+            `La alerta crítica de ${a.variable} en ${a.torre} sigue activa hace ${minutos} minutos (${a.ocurrencias} lecturas fuera de rango).
+` +
+            `Último valor ${a.valor} ${a.unidad}; rango permitido [${a.valor_min}, ${a.valor_max}].
+
+` +
+            `Recibe este correo porque eligió «solo alertas urgentes» en su Perfil.`,
+        });
+        await this.db.query(`UPDATE alerta SET aviso_urgente_en = now(), aviso_urgente_intentos = aviso_urgente_intentos + 1 WHERE id_alerta = $1`, [a.id_alerta]);
+        enviadas++;
+      } catch (e) {
+        console.warn('[motor] aviso urgente no enviado:', (e as Error).message);
+        await this.db.query(`UPDATE alerta SET aviso_urgente_intentos = aviso_urgente_intentos + 1 WHERE id_alerta = $1`, [a.id_alerta]);
       }
     }
     return enviadas;

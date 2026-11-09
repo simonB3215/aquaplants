@@ -36,7 +36,7 @@ export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?:
     payloads,
     auth,
     ingesta: new IngestaService(db, mediciones, outbox, payloads, cfg),
-    motor: new MotorAlertas(db, mediciones, new PgAlertaRepo(), outbox, notificador),
+    motor: new MotorAlertas(db, mediciones, new PgAlertaRepo(), outbox, notificador, cfg.ALERTA_URGENTE_MIN),
     correosCuenta: new CorreosCuentaService(db, notificador),
     mantenimiento: new MantenimientoService(db, cfg.ANONIMIZAR_TRAS_DIAS),
     estado: new EstadoService(db, cfg),

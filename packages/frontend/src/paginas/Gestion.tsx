@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Ban, KeyRound, Link2, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
-import { ETIQUETA_ROL, ROLES, type Rol } from '@aquaplants/shared';
+import { ETIQUETA_ROL, ROLES, type AvisoAlertas, type Rol } from '@aquaplants/shared';
 import { api, qs, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
 import { useSesion } from '../estado/sesion';
@@ -957,7 +957,63 @@ export function Perfil() {
             </div>
           </dl>
         </Tarjeta>
+        {!usuario.debe_cambiar_password && <PreferenciaAvisos />}
       </div>
     </>
+  );
+}
+
+/** D-32: el ALERTA_URGENTE_MIN por defecto del backend. */
+const MINUTOS_URGENTE = 30;
+const OPCIONES_AVISO: { valor: AvisoAlertas; titulo: string; detalle: string; soloAdmin?: boolean }[] = [
+  { valor: 'todas', titulo: 'Todas las alertas críticas', detalle: 'Un correo apenas se genera una alerta crítica en sus torres.' },
+  { valor: 'urgentes', titulo: 'Solo las urgentes', detalle: `Solo si una alerta crítica sigue sin resolverse después de ${MINUTOS_URGENTE} minutos.` },
+  { valor: 'ninguna', titulo: 'No recibir alertas', detalle: 'Las alertas se siguen viendo en la aplicación.', soloAdmin: true },
+];
+
+function PreferenciaAvisos() {
+  const { usuario, actualizar } = useSesion();
+  const avisar = useAvisos();
+  const [guardando, setGuardando] = useState<AvisoAlertas | null>(null);
+  const [error, setError] = useState('');
+  if (!usuario) return null;
+  async function elegir(valor: AvisoAlertas) {
+    if (valor === usuario!.aviso_alertas || guardando) return;
+    setGuardando(valor);
+    setError('');
+    try {
+      const r = await api.patch<{ aviso_alertas: AvisoAlertas }>('/auth/avisos', { aviso_alertas: valor });
+      actualizar({ aviso_alertas: r.aviso_alertas });
+      avisar('Preferencia de avisos guardada.');
+    } catch (x) {
+      setError((x as ApiError).message);
+    } finally {
+      setGuardando(null);
+    }
+  }
+  const opciones = OPCIONES_AVISO.filter((o) => !o.soloAdmin || usuario.rol === 'administrador');
+  return (
+    <Tarjeta titulo="Avisos por correo">
+      <fieldset className="opciones-aviso" disabled={guardando !== null}>
+        <legend className="muted pequeno">Alertas críticas de {usuario.rol === 'encargado' ? 'sus torres' : 'todas las torres'}</legend>
+        {opciones.map((o) => (
+          <label key={o.valor} className="opcion-aviso" data-activa={usuario.aviso_alertas === o.valor || undefined}>
+            <input type="radio" name="aviso_alertas" value={o.valor} checked={usuario.aviso_alertas === o.valor} onChange={() => elegir(o.valor)} />
+            <span>
+              <strong>{o.titulo}</strong>
+              <span className="muted pequeno">{guardando === o.valor ? 'Guardando…' : o.detalle}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {error && (
+        <div className="aviso fondo-critico" role="alert" style={{ marginTop: 12 }}>
+          <p>{error}</p>
+        </div>
+      )}
+      <p className="muted pequeno" style={{ marginTop: 12, marginBottom: 0 }}>
+        Los correos de seguridad de su cuenta (cambio de contraseña, enlaces de acceso) se envían siempre.
+      </p>
+    </Tarjeta>
   );
 }

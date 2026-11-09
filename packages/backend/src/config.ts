@@ -15,6 +15,8 @@ const Env = z.object({
   PAYLOADS_DATABASE_URL: z.string().min(1).optional(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
   JWT_EXPIRA_HORAS: z.coerce.number().positive().default(8),
+  /** D-32: una alerta crítica activa por más de estos minutos se avisa a quienes eligieron «solo urgentes». */
+  ALERTA_URGENTE_MIN: z.coerce.number().int().min(1).max(1440).default(30),
   LOGIN_MAX_INTENTOS: z.coerce.number().int().positive().default(5),
   LOGIN_BLOQUEO_MIN: z.coerce.number().int().positive().default(15),
   /** Límite por dispositivo autenticado (Tabla 12: 30/min). */

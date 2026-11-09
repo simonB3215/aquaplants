@@ -108,8 +108,9 @@ export async function sembrar(url: string, opciones: { historialHoras?: number; 
     for (const u of usuarios) {
       const hash = await bcrypt.hash(u.pass, 10);
       const r = await c.query<{ id: number }>(
-        `INSERT INTO usuario (nombre, email, hash_password, id_rol, debe_cambiar_password)
-         VALUES ($1,$2,$3,(SELECT id_rol FROM rol WHERE nombre=$4), false) RETURNING id_usuario AS id`,
+        `INSERT INTO usuario (nombre, email, hash_password, id_rol, debe_cambiar_password, aviso_alertas)
+         VALUES ($1,$2,$3,(SELECT id_rol FROM rol WHERE nombre=$4), false,
+                 CASE WHEN $4 = 'administrador' THEN 'ninguna' ELSE 'todas' END) RETURNING id_usuario AS id`,
         [u.nombre, u.email, hash, u.rol],
       );
       if (u.rol === 'administrador') idAdmin = r.rows[0].id;

@@ -159,3 +159,10 @@ Defectos encontrados y corregidos en el bloque 2:
 | Migración 010 en Supabase | `npm run db:migrate` con `.env.nube` | ✔ aplicada; permisos reaplicados; la API publicada (versión anterior) siguió respondiendo |
 | Navegador (API y web locales contra Supabase, worker apagado) | Encargado inicia sesión → recarga → sigue dentro; Perfil → «Solo las urgentes» → recarga → se conserva → vuelve a «Todas»; «Cerrar sesión» → recarga → pide iniciar sesión; `document.cookie` no muestra `aq_sesion` | ✔ |
 
+## Sesión 5 — D-33 correo por Resend en Render (2026-11-09)
+| Prueba | Resultado |
+|---|---|
+| Causa: alertas críticas 1 y 2 en Render | `fallida` tras 3 intentos, error «Connection timeout» (SMTP bloqueado en Render free); el mismo SMTP desde el PC: OK |
+| `notificador.test.ts` + `config.test.ts` (local) | 9/9 aprobadas |
+| Producción: aviso de la alerta 2 reencolado con `RESEND_API_KEY` en Render | `enviada` al primer intento (~40 s, ciclo del worker) |
+

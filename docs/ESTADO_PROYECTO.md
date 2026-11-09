@@ -3,6 +3,7 @@
 _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Netlify (D-30)
+- **D-31**: la sesión ya no se pierde al refrescar (cookie httpOnly `aq_sesion` + `POST /auth/sesion`, 8 h). **D-32**: en Perfil cada usuario elige «Todas las alertas críticas» o «Solo las urgentes» (activa tras 30 min); el Administrador también «No recibir alertas». Migración 010. Ambas divergen del ES2: mencionarlas en el informe.
 - **Publicación elegida por el usuario**: web en **Netlify**, API (+ worker) y simulador en **Render**, bases en **Supabase** + **Neon**. Preparados `render.yaml` y `netlify.toml` (pasos en `docs/DESPLIEGUE.md`). **Publicado** (2026-11-08): web https://aquaplants-app.netlify.app, API https://aquaplants-api.onrender.com, simulador https://aquaplants-simulador.onrender.com (región Virginia). `aquaplants.netlify.app` pertenece a un tercero: no usarlo. El simulador envía directo a la API de Render.
 - El certificado público de Supabase va en el repositorio (`certificados/supabase-ca.crt`) y `sslrootcert` acepta rutas relativas al proyecto: `.env.nube` sirve igual en cualquier computador. Supabase con «Enforce SSL» activado; conexión por Session pooler.
 - `TRUST_PROXY` ahora acepta un número de proxies (Netlify → Render = 2); prueba nueva `config.test.ts` (5/5).
@@ -57,17 +58,17 @@ _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir e
 5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).
 6. **Abierto** (D-26): el respaldo cifrado y CP-29 funcionaban con contenedores Docker y se retiraron en la sesión 5. Falta definir el respaldo de Supabase + Neon y repetir la prueba de restauración.
 7. Resuelto en sesión 3 (D-27): API y worker usan `app_rw`, respaldo `backup_ro`; superusuario solo en `migrate`. `database/permisos.sql` se reaplica en cada migración.
-8. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI; sesión persistente opcional (refresh token httpOnly) si se aprueba cambiar el ES2.
+8. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI. (Sesión persistente: hecha en D-31.)
 
 ## Problemas y riesgos conocidos
 - (Resuelto en sesión 2) Las pruebas ya corren con MongoDB 7 y TimescaleDB 2.17.2 reales.
 - `WORKER_SIN_SENAL_CADA_S` debe ser menor que `SIN_SENAL_FACTOR × intervalo` o los cortes breves no se registran.
-- Al recargar la página se pierde la sesión (JWT en memoria, decisión del ES2).
+- (Resuelto en sesión 5, D-31) Al recargar la página ya no se pierde la sesión.
 - En red local por HTTP la PWA no se instala (requiere HTTPS).
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-29). **D-28 diverge del ES2 (CU-09)** y **D-29 del §4.4** (si se usa en la entrega): mencionarlos en el informe. Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
+Ver `docs/DECISIONES.md` (D-01…D-32). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente) y D-32 (RF-11, preferencia de avisos). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.

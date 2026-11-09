@@ -72,7 +72,7 @@ export function Login() {
             Ingresar
           </Boton>
           <p className="muted pequeno">¿No tiene cuenta? Pida al administrador un enlace de invitación para su torre.</p>
-          <p className="muted pequeno">La sesión dura 8 horas y se guarda solo en memoria: al recargar la página deberá ingresar de nuevo.</p>
+          <p className="muted pequeno">La sesión dura 8 horas y se mantiene aunque recargue la página. Use «Cerrar sesión» en equipos compartidos.</p>
         </form>
       </div>
     </main>

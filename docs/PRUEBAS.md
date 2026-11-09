@@ -146,3 +146,16 @@ Defectos encontrados y corregidos en el bloque 2:
 | Migración 009 sobre la base con datos | `docker compose --profile demo up -d --build` | ✔ aplicada; permisos reaplicados |
 | Prueba real en el navegador (stack Docker) | Admin crea enlace «Torre C» → pestaña nueva abre `/registro#invitacion=…` (el token se quita de la barra) → formulario → «Revise su correo» → `/confirmar-registro#token=…` → «Activar mi cuenta» → «Cuenta activada» | ✔ la cuenta nueva entra como Encargado y solo ve Torre C; reusar la confirmación → 422; panel: 1/20. Correo `confirmar_registro` **enviado** (redirigido a simon.bueguenio@gmail.com). Luego se anuló el enlace y se desactivó `prueba-invitacion@aquaplants.cl` |
 | E2E A–G | `escenarios.mjs` en la red Docker | **8/8 ✔** |
+
+## Sesión 5 — sesión al refrescar (D-31) y preferencia de avisos (D-32), 2026-11-08
+| Verificación | Cómo | Resultado |
+|---|---|---|
+| Cookie de sesión | Jest `sesion.test.ts` | ✔ HttpOnly, SameSite=Strict, Path=/api/v1/auth, con vencimiento; el token no va en el cuerpo; en la BD solo el SHA-256 |
+| Reanudar al refrescar | Jest | ✔ `POST /auth/sesion` con la cookie → JWT nuevo que funciona y vence a la misma hora; sin cookie o con una inventada → 401 |
+| Revocación | Jest | ✔ cerrar sesión borra la cookie y la invalida; cambiar la contraseña invalida las sesiones abiertas; sesión vencida → 401 y se purga al día |
+| Preferencia de avisos | Jest | ✔ Encargado no puede elegir «ninguna» (422); «urgentes» queda guardado y auditado; Administrador parte en «ninguna» |
+| Correos de alerta crítica | Jest con notificador falso | ✔ al momento solo a «todas» (admin + supervisor); a los 31 min, un único aviso URGENTE al encargado con «solo urgentes»; si nadie tiene «todas» → `sin_destinatarios` |
+| `npm test` en CI | GitHub Actions (TimescaleDB + MongoDB) | **backend 86/86 ✔** (71 + config 5 + conexión 3 + sesión 7), shared 6, simulador 6, frontend 6 |
+| Migración 010 en Supabase | `npm run db:migrate` con `.env.nube` | ✔ aplicada; permisos reaplicados; la API publicada (versión anterior) siguió respondiendo |
+| Navegador (API y web locales contra Supabase, worker apagado) | Encargado inicia sesión → recarga → sigue dentro; Perfil → «Solo las urgentes» → recarga → se conserva → vuelve a «Todas»; «Cerrar sesión» → recarga → pide iniciar sesión; `document.cookie` no muestra `aq_sesion` | ✔ |
+

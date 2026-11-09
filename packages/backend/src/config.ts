@@ -46,6 +46,13 @@ const Env = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   /**
+   * Proveedor HTTP de correo (Resend). Render free bloquea los puertos SMTP (25/465/587):
+   * con RESEND_API_KEY los avisos salen por HTTPS y se ignora SMTP_*. Sin dominio propio
+   * el remitente debe ser onboarding@resend.dev y solo llega al correo dueño de la cuenta.
+   */
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().default('AquaPlants <onboarding@resend.dev>'),
+  /**
    * Solo desarrollo/demostración: si se define, TODOS los avisos se envían únicamente a esta
    * dirección (los usuarios sembrados tienen correos ficticios @aquaplants.cl).
    */

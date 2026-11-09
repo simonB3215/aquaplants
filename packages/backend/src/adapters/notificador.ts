@@ -20,6 +20,32 @@ export class SmtpNotificador implements INotificador {
 }
 
 /**
+ * Notificador HTTP (Resend, https://resend.com/docs/api-reference/emails/send-email).
+ * Se usa en Render free, que bloquea la salida por los puertos SMTP.
+ */
+export class ResendNotificador implements INotificador {
+  readonly configurado = true;
+  constructor(
+    private readonly cfg: Pick<Config, 'RESEND_API_KEY' | 'RESEND_FROM' | 'NOTIFICACIONES_SOLO_A'>,
+    private readonly http: typeof fetch = fetch,
+  ) {}
+  async enviar(m: MensajeNotificacion): Promise<void> {
+    const d = destino(this.cfg, m);
+    const r = await this.http('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${this.cfg.RESEND_API_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ from: this.cfg.RESEND_FROM, to: d.to, subject: d.subject, text: d.text }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!r.ok) {
+      // El mensaje de Resend explica la causa (clave inválida, destinatario no permitido…); nunca incluye la clave.
+      const cuerpo = await r.text().catch(() => '');
+      throw new Error(`Resend respondió ${r.status}: ${cuerpo.slice(0, 300)}`);
+    }
+  }
+}
+
+/**
  * Con NOTIFICACIONES_SOLO_A (solo demo) el aviso va únicamente a esa dirección y el texto
  * indica a quién habría correspondido; nunca se envía a los destinatarios originales.
  */
@@ -45,5 +71,6 @@ export class NotificadorNoConfigurado implements INotificador {
 }
 
 export function crearNotificador(cfg: Config): INotificador {
+  if (cfg.RESEND_API_KEY) return new ResendNotificador(cfg);
   return cfg.SMTP_HOST ? new SmtpNotificador(cfg) : new NotificadorNoConfigurado();
 }

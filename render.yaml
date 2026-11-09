@@ -67,6 +67,9 @@ services:
         sync: false
       - key: NOTIFICACIONES_SOLO_A
         sync: false
+      # Render free bloquea los puertos SMTP: los correos salen por la API HTTP de Resend.
+      - key: RESEND_API_KEY
+        sync: false
 
   - type: web
     name: aquaplants-simulador

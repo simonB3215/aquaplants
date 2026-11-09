@@ -23,6 +23,7 @@ Pasos (cada uno con la cuenta del equipo; las claves nunca se suben a git):
 
 Límites del plan gratuito (a tener en cuenta en la presentación):
 - Los servicios de Render se **duermen tras 15 min sin tráfico** y tardan ~1 min en despertar: abrir la app y la página Demostración unos minutos antes. Mientras duerme la API tampoco corre el worker (alertas, «sin señal»).
+- **Día de presentación:** GitHub → Actions → «Mantener despierto» → *Run workflow* con las horas (1–24). Llama al simulador y al API cada 10 min y se detiene solo al cumplirlas (para cortar antes, cancelar la ejecución). Un día completo consume ~48 h de las 750 h/mes de Render y ~27 MB de Supabase (sin TimescaleDB no hay retención automática: no dejarlo prendido semanas, el plan free tiene 500 MB).
 - El disco de Render no es permanente: si reinicia el simulador, su cola local se pierde (en la demo, el escenario E/F se hace con los botones, no reiniciando el servicio).
 - Render gratis da 750 h al mes para todos los servicios: dos servicios despiertos todo el mes no alcanzan.
 - `NODE_ENV=development` porque `DEMO_MODE` se niega a correr en producción (demo aislada). Para una instalación real: `NODE_ENV=production`, `DEMO_MODE=false` y sin simulador.

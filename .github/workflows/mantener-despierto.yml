@@ -1,0 +1,57 @@
+# Mantiene despiertos el simulador y el API en Render (plan free) durante una
+# presentación. Render duerme un servicio tras 15 min sin tráfico entrante; este
+# workflow los llama cada 10 min durante las horas indicadas y luego se detiene.
+# No usa secretos: una respuesta 401 del simulador también cuenta como tráfico.
+#
+# Uso: GitHub → Actions → «Mantener despierto» → Run workflow → horas (1–24).
+# Para detenerlo antes: cancelar la ejecución en curso.
+name: Mantener despierto
+
+on:
+  workflow_dispatch:
+    inputs:
+      horas:
+        description: 'Horas que debe mantenerse despierto (1–24)'
+        required: true
+        default: '10'
+
+permissions:
+  actions: write # solo para encadenar la siguiente ejecución (> 5 h)
+
+concurrency:
+  group: mantener-despierto
+  cancel-in-progress: false
+
+jobs:
+  despierto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Llamar cada 10 minutos
+        env:
+          HORAS: ${{ inputs.horas }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+        run: |
+          set -u
+          case "$HORAS" in ''|*[!0-9]*) echo "horas debe ser un entero"; exit 1;; esac
+          [ "$HORAS" -ge 1 ] && [ "$HORAS" -le 24 ] || { echo "horas debe estar entre 1 y 24"; exit 1; }
+          # Un job de GitHub dura como máximo 6 h: se cubren 5 h y el resto lo hace una ejecución nueva.
+          TRAMO=$(( HORAS < 5 ? HORAS : 5 ))
+          RESTO=$(( HORAS - TRAMO ))
+          FIN=$(( $(date +%s) + TRAMO * 3600 ))
+          llamar() {
+            for u in https://aquaplants-simulador.onrender.com/estado https://aquaplants-api.onrender.com/api/v1/health; do
+              c=$(curl -s -o /dev/null -m 90 -w '%{http_code}' "$u" || echo error)
+              echo "$(date -u +%H:%M:%S) $c $u"
+            done
+          }
+          while [ "$(date +%s)" -lt "$FIN" ]; do
+            llamar
+            sleep 600
+          done
+          if [ "$RESTO" -gt 0 ]; then
+            echo "Quedan $RESTO h: se encadena otra ejecución."
+            gh workflow run mantener-despierto.yml -R "$REPO" --ref "$REF" -f horas="$RESTO"
+          fi

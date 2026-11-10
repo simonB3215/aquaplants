@@ -48,7 +48,7 @@ export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?:
     invitaciones: new InvitacionService(db, cfg),
     cultivos: new CultivoService(db),
     continuidad: new ContinuidadService(db, payloads, cfg),
-    demo: new DemoService(cfg),
+    demo: new DemoService(cfg, db),
   };
 }
 export type Servicios = ReturnType<typeof crearServicios>;

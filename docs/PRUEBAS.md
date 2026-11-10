@@ -205,3 +205,15 @@ Escenario: 50 dispositivos AquaBrain virtuales (torre temporal, 5 sensores c/u, 
 
 Observaciones: la latencia está dominada por la distancia de red (la mínima ya es 177 ms); el servidor procesó la carga sin errores en el plan gratuito (0,1 CPU). Tras detener la carga el worker marcó 12 dispositivos «sin señal» (comportamiento esperado, RN-04). Volumen simulado: 50 equipos ≈ 17 veces los 3 de la demostración. **CP-13** (histórico de 30 días ≤ 3 s) sigue sin medición de rendimiento.
 
+
+## Sesión 7 — Escenario B y correo cuando ya hay una alerta activa (2026-11-10)
+
+Síntoma: «en la simulación hay para mandar alertas al correo pero no me llegan». Causa: el escenario B altera el pH del dispositivo elegido (por defecto la Torre A), que ya tenía la alerta crítica #2 **activa**. Por diseño (índice `alerta_activa_uq`) una violación repetida solo suma ocurrencias: no crea alerta ni correo nuevos. El envío funcionaba: la alerta #2 se reencoló y quedó `enviada` por Resend (2026-11-10 15:32 UTC, sin error).
+
+Cambio: antes de ejecutar B, la API revisa si ese sensor ya tiene una alerta crítica activa y la página Demostración lo muestra («No se enviará correo: … resuélvala en Alertas o elija otro dispositivo»). Si no hay ninguna, indica que se creará una alerta nueva con correo.
+
+| Prueba | Resultado |
+|---|---|
+| `test/demoEscenarioB.test.ts` (3 casos: sin alerta previa, con alerta previa #2, otros escenarios sin aviso) | 3/3 OK |
+| Tipos backend y frontend (`tsc --noEmit`) | OK |
+| Correo real tras ejecutar B en producción sobre una torre sin alerta activa | **Pendiente**: lo ejecuta el usuario (el token de control del simulador en producción no está en este equipo) |

@@ -1,5 +1,6 @@
 import type { Config } from '../config.js';
 import { ErrorApp } from '../errores.js';
+import type { IBaseDatos } from '../ports/index.js';
 
 export const ESCENARIOS_DEMO = {
   A: 'Operación normal: el simulador envía mediciones reales a la API',
@@ -18,7 +19,10 @@ export type CodigoEscenario = keyof typeof ESCENARIOS_DEMO;
  * control; el G hace una petición HTTP real contra esta misma API.
  */
 export class DemoService {
-  constructor(private readonly cfg: Config) {}
+  constructor(
+    private readonly cfg: Config,
+    private readonly db?: IBaseDatos,
+  ) {}
 
   private async sim(ruta: string, init?: RequestInit) {
     try {
@@ -49,7 +53,32 @@ export class DemoService {
 
   async ejecutar(codigo: CodigoEscenario, idDispositivo?: number) {
     if (codigo === 'G') return this.escenarioG();
-    return this.sim('/escenario', { method: 'POST', body: JSON.stringify({ codigo, id_dispositivo: idDispositivo }) });
+    // B: si el sensor ya tiene una alerta crítica activa, la nueva violación solo suma
+    // ocurrencias (sin alerta ni correo nuevos, para no duplicar avisos). Se informa.
+    const previa = codigo === 'B' ? await this.alertaCriticaActiva(idDispositivo) : null;
+    const r = (await this.sim('/escenario', { method: 'POST', body: JSON.stringify({ codigo, id_dispositivo: idDispositivo }) })) as Record<string, unknown>;
+    if (codigo !== 'B') return r;
+    return {
+      ...r,
+      correo: previa
+        ? `No se enviará correo: el sensor ya tiene la alerta crítica #${previa} activa y esta violación solo suma una ocurrencia. Resuélvala en Alertas y vuelva a ejecutar B, o elija otro dispositivo.`
+        : 'Se creará una alerta crítica nueva y se enviará el correo en 1–2 minutos.',
+      alerta_activa_previa: previa,
+    };
+  }
+
+  /** Alerta crítica activa del sensor de pH (el que usa el escenario B) del dispositivo. */
+  private async alertaCriticaActiva(idDispositivo?: number): Promise<number | null> {
+    if (!this.db || !idDispositivo) return null;
+    const r = await this.db.query<{ id_alerta: string }>(
+      `SELECT a.id_alerta FROM alerta a
+         JOIN sensor s ON s.id_sensor = a.id_sensor
+         JOIN tipo_variable tv ON tv.id_tipo_variable = s.id_tipo_variable
+        WHERE s.id_dispositivo = $1 AND tv.clave = 'ph' AND a.estado = 'activa' AND a.severidad = 'critica'
+        ORDER BY a.id_alerta DESC LIMIT 1`,
+      [idDispositivo],
+    );
+    return r.rows[0] ? Number(r.rows[0].id_alerta) : null;
   }
 
   private async escenarioG() {

@@ -99,6 +99,14 @@ export function Demo() {
               </ul>
               {resultado != null && (
                 <div style={{ marginTop: 12 }}>
+                  {typeof (resultado as { correo?: unknown }).correo === 'string' && (
+                    <div style={{ marginBottom: 8 }}>
+                      <Aviso
+                        tono={(resultado as { alerta_activa_previa?: number | null }).alerta_activa_previa ? 'fondo-advertencia' : 'fondo-normal'}
+                        titulo={(resultado as { correo: string }).correo}
+                      />
+                    </div>
+                  )}
                   <strong className="pequeno">Resultado</strong>
                   <pre className="credencial-unica" style={{ whiteSpace: 'pre-wrap', maxHeight: 260, overflow: 'auto' }}>
                     {JSON.stringify(resultado, null, 2)}

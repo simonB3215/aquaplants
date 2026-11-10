@@ -61,7 +61,7 @@ export const SENSOR_POR_DEFECTO: Record<string, { base: number; amplitud: number
   humedad: { base: 60, amplitud: 4 },
   caudal: { base: 4, amplitud: 0.6 },
   consumo_hidrico: { base: 30, amplitud: 4 },
-  fotoperiodo: { base: 14, amplitud: 0.4 },
+  fotoperiodo: { base: 15, amplitud: 0.4 }, // 15 h: dentro del rango de todas las especies (12–16 y 14–16)
 };
 
 /**

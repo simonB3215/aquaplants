@@ -217,3 +217,15 @@ Cambio: antes de ejecutar B, la API revisa si ese sensor ya tiene una alerta cr�
 | `test/demoEscenarioB.test.ts` (3 casos: sin alerta previa, con alerta previa #2, otros escenarios sin aviso) | 3/3 OK |
 | Tipos backend y frontend (`tsc --noEmit`) | OK |
 | Correo real tras ejecutar B en producción sobre una torre sin alerta activa | **✔ Recepción confirmada por el usuario** el 2026-11-10 |
+
+## Sesión 7 — Revisión del simulador para la demostración (2026-11-10)
+
+| Revisión | Resultado |
+|---|---|
+| 3 AquaBrain en producción comunicando (intervalo 10 s, RSSI −64 a −68 dBm) | OK |
+| 22 sensores con mediciones en los últimos 15 min (93 c/u) | OK |
+| Valores simulados durante 24 h frente a la advertencia de cada sensor | 21/22 siempre dentro. **Fotoperiodo de la Torre B (albahaca, 14–16 h) fuera el 50 % del tiempo**: el simulador usaba 14 h para todas las especies → alerta de advertencia #3. Corregido: base 15 h (dentro de 12–16 y 14–16); nueva simulación 0 % fuera |
+| Escenarios C/D/E/F ejecutados por el usuario hoy | OK: eventos `sin_senal` y `reconexion` con lotes en cola, 249 lotes recuperados, 1 duplicado descartado (reenvío del escenario D), `reinicio` del escenario F |
+| Escenario B con correo | OK (confirmado por el usuario) |
+| Reinicios del simulador (13 en 2 h) | No son caídas: coinciden con cada `git push` (Render redespliega). Se agregó `buildFilter.ignoredPaths` en `render.yaml` para que los cambios de documentación, web o pruebas no reinicien la API ni el simulador |
+| `npm test -w packages/simulador` | 6/6 OK |

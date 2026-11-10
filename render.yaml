@@ -8,6 +8,17 @@ services:
     plan: free
     region: virginia   # Supabase está en us-east-1 (Virginia) y Neon en us-east-2 (Ohio)
     buildCommand: npm ci && npm run build:shared && npm run build -w packages/backend
+    # Solo redesplegar (y reiniciar) cuando cambia código que usa este servicio:
+    # un commit de documentación o de la web no debe reiniciar la demostración.
+    buildFilter:
+      ignoredPaths:
+        - "docs/**"
+        - "**/*.md"
+        - "packages/frontend/**"
+        - "pruebas/**"
+        - "tests/**"
+        - "vercel.json"
+        - ".github/**"
     startCommand: node packages/backend/dist/server.js
     healthCheckPath: /api/v1/health
     envVars:
@@ -81,6 +92,17 @@ services:
     plan: free
     region: virginia   # Supabase está en us-east-1 (Virginia) y Neon en us-east-2 (Ohio)
     buildCommand: npm ci && npm run build:shared
+    # Solo redesplegar (y reiniciar) cuando cambia código que usa este servicio:
+    # un commit de documentación o de la web no debe reiniciar la demostración.
+    buildFilter:
+      ignoredPaths:
+        - "docs/**"
+        - "**/*.md"
+        - "packages/frontend/**"
+        - "pruebas/**"
+        - "tests/**"
+        - "vercel.json"
+        - ".github/**"
     startCommand: npm run start -w packages/simulador
     envVars:
       - key: NODE_VERSION

@@ -23,11 +23,10 @@ GRANT USAGE ON SCHEMA public TO app_rw, app_ro, backup_ro;
 -- app_rw
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO app_rw;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_rw;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO app_rw;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO app_rw;     -- incluye fn_purgar_mediciones (D-35): único modo de borrar mediciones
 GRANT DELETE ON usuario_instalacion TO app_rw;              -- reasignación de torres (CU-08/CU-09)
 GRANT DELETE ON registro_pendiente TO app_rw;               -- purga de solicitudes no confirmadas (D-28)
 GRANT DELETE ON sesion TO app_rw;                           -- purga de sesiones vencidas (D-31)
-GRANT DELETE ON medicion TO app_rw;                         -- retención sin TimescaleDB (D-35)
 REVOKE UPDATE, DELETE, TRUNCATE ON log_auditoria FROM app_rw; -- RN-07
 REVOKE UPDATE, DELETE, TRUNCATE ON medicion_evidencia FROM app_rw;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON schema_migraciones FROM app_rw;

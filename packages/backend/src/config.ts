@@ -36,7 +36,12 @@ const Env = z.object({
    * TimescaleDB (Supabase). 0 = no borrar. Con TimescaleDB manda la política de la migración 008.
    * Las mediciones que originaron alertas se conservan aparte (medicion_evidencia).
    */
-  RETENCION_MEDICIONES_DIAS: z.coerce.number().int().min(0).max(3650).default(0),
+  RETENCION_MEDICIONES_DIAS: z.coerce
+    .number()
+    .int()
+    .max(3650)
+    .refine((n) => n === 0 || n >= 7, 'Use 0 (no borrar) o al menos 7 días')
+    .default(0),
   /** Tolerancia de marca temporal (Tabla 12). */
   TS_FUTURO_MAX_S: z.coerce.number().int().positive().default(120),
   TS_ANTIGUEDAD_MAX_H: z.coerce.number().positive().default(48),

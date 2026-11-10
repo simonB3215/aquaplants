@@ -36,3 +36,27 @@ ON CONFLICT (id_especie, id_tipo_variable) DO NOTHING;
 ALTER TABLE dispositivo
   ADD COLUMN rssi_dbm smallint NULL CHECK (rssi_dbm BETWEEN -130 AND 0),
   ADD COLUMN rssi_en  timestamptz NULL;
+
+-- Retención de mediciones crudas cuando NO hay TimescaleDB (Supabase). app_rw NO
+-- tiene DELETE sobre medicion (ES2 §3.4): solo puede llamar a esta función, que
+-- borra exclusivamente mediciones más antiguas que p_dias (mínimo 7) y por tandas.
+-- La evidencia de las alertas está en medicion_evidencia y no se toca.
+CREATE OR REPLACE FUNCTION fn_purgar_mediciones(p_dias integer, p_tanda integer DEFAULT 20000)
+RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE n integer;
+BEGIN
+  IF p_dias IS NULL OR p_dias < 7 THEN
+    RAISE EXCEPTION 'La retención mínima de mediciones es de 7 días' USING ERRCODE = '22023';
+  END IF;
+  IF p_tanda IS NULL OR p_tanda < 1 OR p_tanda > 100000 THEN
+    RAISE EXCEPTION 'Tamaño de tanda inválido' USING ERRCODE = '22023';
+  END IF;
+  -- Por clave primaria (no por ctid: en TimescaleDB el ctid se repite entre chunks).
+  DELETE FROM medicion m
+   USING (SELECT id_medicion, ts FROM medicion
+           WHERE ts < now() - make_interval(days => p_dias) LIMIT p_tanda) v
+   WHERE m.id_medicion = v.id_medicion AND m.ts = v.ts;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+REVOKE ALL ON FUNCTION fn_purgar_mediciones(integer, integer) FROM PUBLIC;

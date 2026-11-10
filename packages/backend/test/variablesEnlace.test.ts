@@ -122,5 +122,15 @@ describe('D-35 — retención de mediciones', () => {
       expect(await quedan(vieja)).toBe(0);
     }
     expect(await quedan(reciente)).toBe(1);
+
+    // La función de la base (la que usa el worker) borra solo lo anterior a la retención,
+    // también sobre una hypertable de TimescaleDB.
+    await s.db.query(`SELECT fn_purgar_mediciones(30)`);
+    expect(await quedan(vieja)).toBe(0);
+    expect(await quedan(reciente)).toBe(1);
+  });
+
+  test('la función exige una retención mínima de 7 días', async () => {
+    await expect(s.db.query(`SELECT fn_purgar_mediciones(3)`)).rejects.toMatchObject({ code: '22023' });
   });
 });

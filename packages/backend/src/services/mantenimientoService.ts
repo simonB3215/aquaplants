@@ -50,13 +50,12 @@ export class MantenimientoService {
     if (ts.rowCount) return 0; // con TimescaleDB la retención la hace la política de la migración 008
     let total = 0;
     for (let i = 0; i < maxTandas; i++) {
-      const r = await this.db.query(
-        `DELETE FROM medicion WHERE ctid IN (
-           SELECT ctid FROM medicion WHERE ts < now() - make_interval(days => $1::int) LIMIT $2)`,
-        [this.retencionMedicionesDias, tanda],
-      );
-      total += r.rowCount ?? 0;
-      if ((r.rowCount ?? 0) < tanda) break;
+      // app_rw no tiene DELETE sobre medicion: la función (SECURITY DEFINER, migración 011)
+      // solo borra lo anterior a la retención, con un mínimo de 7 días.
+      const r = await this.db.query<{ n: number }>(`SELECT fn_purgar_mediciones($1::int, $2::int) AS n`, [this.retencionMedicionesDias, tanda]);
+      const n = r.rows[0].n;
+      total += n;
+      if (n < tanda) break;
     }
     return total;
   }

@@ -216,4 +216,4 @@ Cambio: antes de ejecutar B, la API revisa si ese sensor ya tiene una alerta cr�
 |---|---|
 | `test/demoEscenarioB.test.ts` (3 casos: sin alerta previa, con alerta previa #2, otros escenarios sin aviso) | 3/3 OK |
 | Tipos backend y frontend (`tsc --noEmit`) | OK |
-| Correo real tras ejecutar B en producción sobre una torre sin alerta activa | **Pendiente**: lo ejecuta el usuario (el token de control del simulador en producción no está en este equipo) |
+| Correo real tras ejecutar B en producción sobre una torre sin alerta activa | **✔ Recepción confirmada por el usuario** el 2026-11-10 |

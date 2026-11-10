@@ -59,7 +59,7 @@ _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir e
 3. Publicación: **elegida** (D-30, Render + Supabase + Netlify) y preparada; falta crear los servicios y cargar las claves. CP-24 TLS: lo dan Netlify y Render (por verificar una vez publicado).
 4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
 5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).
-6. **Abierto** (D-26): el respaldo cifrado y CP-29 funcionaban con contenedores Docker y se retiraron en la sesión 5. Falta definir el respaldo de Supabase + Neon y repetir la prueba de restauración.
+6. **Cerrado por decisión del usuario** (D-26b, 2026-11-10): no se hará respaldo propio de Supabase + Neon; queda como divergencia y trabajo futuro. Antes (D-26): el respaldo cifrado y CP-29 funcionaban con contenedores Docker y se retiraron en la sesión 5. Falta definir el respaldo de Supabase + Neon y repetir la prueba de restauración.
 7. Resuelto en sesión 3 (D-27): API y worker usan `app_rw`, respaldo `backup_ro`; superusuario solo en `migrate`. `database/permisos.sql` se reaplica en cada migración.
 8. Sugerencias: dependency-cruiser/ESLint/Semgrep/gitleaks en CI. (Sesión persistente: hecha en D-31.)
 

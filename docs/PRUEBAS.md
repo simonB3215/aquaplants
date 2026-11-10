@@ -70,7 +70,7 @@ Entorno de ejecución: contenedor Linux, Node 22.23, **PostgreSQL 16.15 sin Time
 | CP-24 | testssl.sh / TLS 1.3 | — | **No ejecutada** (sin despliegue con TLS) |
 | CP-25 | Usabilidad SUS | — | **No ejecutada** (requiere usuarios reales) |
 | CP-26 | Pantallas sin desplazamiento horizontal | 360, 390, 768, 1024, 1440 px | Aprobada |
-| CP-27 | Carga 50 dispositivos (k6) | — | **No ejecutada** |
+| CP-27 | Carga 50 dispositivos × 10 min | 2.999/2.999 lotes 201, 0 errores, p95 276 ms (ver sesión 5, D-35) | **Aprobada** (2026-11-10, script Node equivalente a k6) |
 | CP-28 | Despliegue desde cero (local, Docker Compose) | Volúmenes vacíos → build, migraciones, seed, salud ok, E2E 8/8 | **Aprobada en local** (sesión 2); despliegue en servidor/nube no realizado (sin autorización) |
 | CP-29 | Restauración de respaldo | Respaldo cifrado → contenedores limpios → conteos por tabla y última medición frente al respaldo; tiempo frente a RTO 2 h | **Aprobada en local** (sesión 3): 22/22 tablas idénticas, última medición idéntica, 1 736 documentos MongoDB, políticas TimescaleDB restauradas, 2 s. Acta `respaldos/actas/CP-29_20261104T161127Z.md` (local, no versionada). Subida a Spaces: pendiente (nube) |
 | CC-01 | Mismo lote ×10 en paralelo | 1×201 + 9×200 duplicado, una copia | Aprobada |
@@ -188,4 +188,20 @@ Prueba manual en navegador (web local + API local contra Supabase, sin worker), 
 | Producción: RSSI | AquaBrain-A −68, B −73, C −66 dBm (aceptable/buena) |
 | Producción: web con insignia de señal | publicada en Netlify |
 | Retención en producción | sin datos de más de 30 días todavía (la más antigua es del 2026-11-06): se verificará cuando existan |
+
+## Sesión 5 — CP-27 prueba de carga contra la publicación (2026-11-10)
+Escenario: 50 dispositivos AquaBrain virtuales (torre temporal, 5 sensores c/u, sin umbrales) envían **1 lote cada 10 s durante 10 min** a `POST /api/v1/telemetria` de la API publicada (Render free, región Virginia; Supabase + Neon). Arranque escalonado; cliente desde Chile. Scripts en `pruebas/carga/` (Node, equivalente a k6, que no está instalado).
+
+| Indicador | Esperado | Obtenido | Estado |
+|---|---|---|---|
+| Solicitudes | ≈ 3.000 (50 × 6/min × 10 min) | 2.999 (4,92 /s; 14.995 lecturas) | OK |
+| Respuestas | todas 201, sin errores | 2.999 × 201; 0 errores de red; 0 rechazos por límite de tasa | OK |
+| Latencia (incluye ~180 ms de red Chile → Virginia) | p95 < 1 s | mín 177 · p50 214 · p90 240 · **p95 276** · p99 449 · máx 1.271 ms | OK |
+| Estabilidad por minuto | sin degradación | media 214–245 ms en los 10 minutos; pico aislado de 1,27 s en el minuto 4 | OK |
+| Consistencia PostgreSQL | lotes = 201 recibidos | 2.999 = 2.999; 0 duplicados | OK |
+| Mediciones | 5 × lotes | 14.995 = 14.995 | OK |
+| Payloads originales en Neon | = lotes | 2.999 = 2.999 | OK |
+| Limpieza | sin restos | torre, 50 dispositivos, 250 sensores, 14.995 mediciones, 2.999 lotes y payloads borrados; auditoría conservada | OK |
+
+Observaciones: la latencia está dominada por la distancia de red (la mínima ya es 177 ms); el servidor procesó la carga sin errores en el plan gratuito (0,1 CPU). Tras detener la carga el worker marcó 12 dispositivos «sin señal» (comportamiento esperado, RN-04). Volumen simulado: 50 equipos ≈ 17 veces los 3 de la demostración. **CP-13** (histórico de 30 días ≤ 3 s) sigue sin medición de rendimiento.
 

@@ -11,3 +11,8 @@ coverage/
 *.log
 __pycache__/
 secretos/
+
+# Prueba de carga: tokens temporales y resultados
+pruebas/carga/dispositivos-carga.json
+pruebas/carga/resultado.json
+pruebas/carga/consistencia.json

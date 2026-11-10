@@ -166,3 +166,13 @@ Defectos encontrados y corregidos en el bloque 2:
 | `notificador.test.ts` + `config.test.ts` (local) | 9/9 aprobadas |
 | Producción: aviso de la alerta 2 reencolado con `RESEND_API_KEY` en Render | `enviada` al primer intento (~40 s, ciclo del worker) |
 
+## Sesión 5 — Asignación de torres con buscador y selección en bloque (2026-11-10)
+Prueba manual en navegador (web local + API local contra Supabase, sin worker), como Administrador; nada se guardó.
+| Prueba | Resultado |
+|---|---|
+| Editar usuario Encargado: buscador «albahaca» deja 1 visible; «Quitar visibles» desmarca solo esa; contador «1 de 3 seleccionadas» | OK |
+| «Seleccionar todas» marca las 3 y se deshabilita; «Ninguna» habilitada | OK |
+| Nuevo enlace de invitación: mismo selector (0 de 3) | OK |
+| Infraestructura → Responsables de Torre A: selector de encargados con textos en masculino («Seleccionar todos», «Ninguno») | OK |
+| `npm run build -w packages/frontend` | OK |
+

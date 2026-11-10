@@ -700,6 +700,48 @@ textarea {
 .filtros .campo {
   flex: 1 1 180px;
 }
+.seleccion-multiple {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.seleccion-multiple legend {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+}
+.seleccion-multiple-barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+}
+.seleccion-multiple-acciones {
+  display: flex;
+  gap: var(--space-xs, 4px);
+  flex-wrap: wrap;
+}
+.seleccion-multiple-lista {
+  display: grid;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-md);
+}
+.seleccion-multiple-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  cursor: pointer;
+}
 .formulario {
   display: grid;
   gap: var(--space-md);

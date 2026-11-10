@@ -6,6 +6,7 @@ import { useDatos } from '../hooks/useDatos';
 import { useSesion } from '../estado/sesion';
 import { useAvisos } from '../estado/avisos';
 import { BarraSuperior } from '../componentes/Layout';
+import { SeleccionMultiple } from '../componentes/SeleccionMultiple';
 import { Aviso, Boton, Campo, Encabezado, Esqueleto, MensajeError, Modal, Paginador, Selector, Tarjeta, Vacio } from '../componentes/ui';
 import { fechaHora, hace, numero } from '../util/formato';
 
@@ -167,23 +168,12 @@ export function Usuarios() {
               ))}
             </Selector>
             {edit.rol === 'encargado' && (
-              <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-                <legend style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 6 }}>Torres asignadas (RN-10)</legend>
-                <div style={{ display: 'grid', gap: 6 }}>
-                  {torres.datos
-                    ?.filter((t) => t.estado === 'activo')
-                    .map((t) => (
-                      <label key={t.id_instalacion} style={{ display: 'flex', gap: 8, alignItems: 'center', minHeight: 32 }}>
-                        <input
-                          type="checkbox"
-                          checked={edit.torres?.includes(t.id_instalacion) ?? false}
-                          onChange={(e) => setEdit({ ...edit, torres: e.target.checked ? [...(edit.torres ?? []), t.id_instalacion] : (edit.torres ?? []).filter((x) => x !== t.id_instalacion) })}
-                        />
-                        {t.nombre}
-                      </label>
-                    ))}
-                </div>
-              </fieldset>
+              <SeleccionMultiple
+                etiqueta="Torres asignadas (RN-10)"
+                opciones={(torres.datos ?? []).filter((t) => t.estado === 'activo').map((t) => ({ id: t.id_instalacion, texto: t.nombre }))}
+                seleccion={edit.torres ?? []}
+                alCambiar={(ids) => setEdit({ ...edit, torres: ids })}
+              />
             )}
             {!edit.id_usuario && <p className="muted pequeno">Se generará una contraseña temporal que el usuario deberá cambiar en su primer acceso.</p>}
             {errores.general && (
@@ -350,28 +340,13 @@ function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alReg
       <Modal titulo="Nuevo enlace de invitación" abierto={!!form} onCerrar={() => setForm(null)}>
         {form && (
           <form className="formulario" onSubmit={crear} noValidate>
-            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 6 }}>Torres a las que tendrán acceso</legend>
-              <div style={{ display: 'grid', gap: 6 }}>
-                {torres
-                  .filter((t) => t.estado === 'activo')
-                  .map((t) => (
-                    <label key={t.id_instalacion} style={{ display: 'flex', gap: 8, alignItems: 'center', minHeight: 32 }}>
-                      <input
-                        type="checkbox"
-                        checked={form.torres.includes(t.id_instalacion)}
-                        onChange={(e) => setForm({ ...form, torres: e.target.checked ? [...form.torres, t.id_instalacion] : form.torres.filter((x) => x !== t.id_instalacion) })}
-                      />
-                      {t.nombre}
-                    </label>
-                  ))}
-              </div>
-              {errores.torres && (
-                <p className="campo-error" role="alert">
-                  {errores.torres}
-                </p>
-              )}
-            </fieldset>
+            <SeleccionMultiple
+              etiqueta="Torres a las que tendrán acceso"
+              opciones={torres.filter((t) => t.estado === 'activo').map((t) => ({ id: t.id_instalacion, texto: t.nombre }))}
+              seleccion={form.torres}
+              alCambiar={(ids) => setForm({ ...form, torres: ids })}
+              error={errores.torres}
+            />
             <Campo etiqueta="Válido por (días)" type="number" min={1} max={30} inputMode="numeric" value={form.dias} onChange={(e) => setForm({ ...form, dias: e.target.value })} error={errores.dias} />
             <Campo etiqueta="Máximo de personas" type="number" min={1} max={500} inputMode="numeric" value={form.max_usos} onChange={(e) => setForm({ ...form, max_usos: e.target.value })} error={errores.max_usos} ayuda="Cuando se llena el cupo, el enlace deja de funcionar." />
             <Campo etiqueta="Descripción (opcional)" maxLength={120} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} ayuda="Por ejemplo: «Turno mañana, temporada 2027»." />
@@ -631,19 +606,14 @@ export function Infraestructura() {
               </>
             )}
             {modal.tipo === 'asignar' && (
-              <div style={{ display: 'grid', gap: 6 }}>
-                {usuarios.datos
-                  ?.filter((u) => u.activo && u.rol === 'encargado')
-                  .map((u) => {
-                    const sel = (modal.datos.usuarios as number[]) ?? [];
-                    return (
-                      <label key={u.id_usuario} style={{ display: 'flex', gap: 8, alignItems: 'center', minHeight: 32 }}>
-                        <input type="checkbox" checked={sel.includes(u.id_usuario)} onChange={(e) => set('usuarios', e.target.checked ? [...sel, u.id_usuario] : sel.filter((x) => x !== u.id_usuario))} />
-                        {u.nombre} ({u.email})
-                      </label>
-                    );
-                  })}
-              </div>
+              <SeleccionMultiple
+                etiqueta="Encargados responsables"
+                nombreItem="encargado"
+                femenino={false}
+                opciones={(usuarios.datos ?? []).filter((u) => u.activo && u.rol === 'encargado').map((u) => ({ id: u.id_usuario, texto: `${u.nombre} (${u.email})` }))}
+                seleccion={(modal.datos.usuarios as number[]) ?? []}
+                alCambiar={(ids) => set('usuarios', ids)}
+              />
             )}
             {errores.general && (
               <div className="aviso fondo-critico" role="alert">

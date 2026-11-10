@@ -82,7 +82,7 @@ const Env = z.object({
   SIM_CONTROL_TOKEN: z.string().optional(),
   DEMO_ENCARGADO_EMAIL: z.string().optional(),
   DEMO_ENCARGADO_PASSWORD: z.string().optional(),
-  /** Proxies delante de la API: 'false' = 0, 'true' = 1, o un número (Netlify → Render = 2). */
+  /** Proxies delante de la API: 'false' = 0, 'true' = 1, o un número (Vercel → Render = 2). */
   TRUST_PROXY: z
     .string()
     .default('false')

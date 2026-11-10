@@ -6,7 +6,7 @@ const base = {
   JWT_SECRET: 'x'.repeat(32),
 };
 
-describe('TRUST_PROXY (D-30: Netlify → Render son 2 proxies)', () => {
+describe('TRUST_PROXY (D-30/D-36: Vercel → Render son 2 proxies)', () => {
   test.each([
     [undefined, 0],
     ['false', 0],

@@ -9,7 +9,7 @@ import { manejadorErrores } from './middleware/index.js';
 export function crearApp(cfg: Config, s: Servicios) {
   const app = express();
   app.disable('x-powered-by');
-  if (cfg.TRUST_PROXY) app.set('trust proxy', cfg.TRUST_PROXY); // n.º de proxies delante (Netlify → Render = 2): IP real del cliente
+  if (cfg.TRUST_PROXY) app.set('trust proxy', cfg.TRUST_PROXY); // n.º de proxies delante (Vercel → Render = 2): IP real del cliente
   app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } } }));
   app.use(
     cors({

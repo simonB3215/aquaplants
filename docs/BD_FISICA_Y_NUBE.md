@@ -10,7 +10,7 @@ flowchart LR
   API -->|lectura y escritura| P[("BD física<br/>PRINCIPAL")]
   P -->|replicación continua<br/>TLS o VPN, segundos| R[("BD en la nube<br/>RÉPLICA en espera<br/>solo lectura")]
   API -. reportes pesados .-> R
-  WEB["Web (Netlify)"] --> API
+  WEB["Web (Vercel)"] --> API
 ```
 
 - **Funcionamiento normal:** todas las escrituras van a la base **física**. PostgreSQL envía cada cambio a la **réplica en la nube** mediante *streaming replication* asíncrona, con unos segundos de atraso.

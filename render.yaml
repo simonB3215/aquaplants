@@ -1,6 +1,6 @@
-# Render Blueprint (D-30): API (+ worker) y simulador. La web va en Netlify y la base en Supabase + Neon.
+# Render Blueprint (D-30): API (+ worker) y simulador. La web va en Vercel (D-36) y la base en Supabase + Neon.
 # Render → New → Blueprint → elegir este repositorio. Los valores con «sync: false» se piden al crear.
-# Si Render no puede usar los nombres de abajo, la URL cambia: ajústela en netlify.toml y en las variables.
+# Si Render no puede usar los nombres de abajo, la URL cambia: ajústela en vercel.json (rewrite de /api) y en las variables.
 services:
   - type: web
     name: aquaplants-api
@@ -20,7 +20,7 @@ services:
         value: "true"
       - key: WORKER_EN_API
         value: "true"
-      # Netlify → balanceador de Render: 2 proxies delante de la API.
+      # Vercel → balanceador de Render: 2 proxies delante de la API.
       # D-35: Supabase no tiene TimescaleDB; se conservan 30 días de mediciones crudas
       # (la evidencia de las alertas se guarda aparte y no se borra).
       - key: RETENCION_MEDICIONES_DIAS
@@ -35,7 +35,7 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
-      # URL de Netlify, p. ej. https://aquaplants-app.netlify.app
+      # URL de la web en Vercel: https://aquaplants.vercel.app
       - key: CORS_ORIGIN
         sync: false
       - key: APP_URL

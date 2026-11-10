@@ -186,7 +186,7 @@ Prueba manual en navegador (web local + API local contra Supabase, sin worker), 
 | Producción: 9 sensores nuevos (caudal, consumo hídrico, fotoperiodo × 3 torres) con umbrales desde el rango de la especie | creados (ids 14–22), auditados en `log_auditoria` |
 | Producción: el simulador descubre los sensores nuevos sin editar `dispositivos.json` | a los ~10 min (ciclo de sincronización) llegan las 9 variables: caudal 3,1–3,7 L/min, consumo 25–28 L/día, fotoperiodo ≈ 14 h/día |
 | Producción: RSSI | AquaBrain-A −68, B −73, C −66 dBm (aceptable/buena) |
-| Producción: web con insignia de señal | publicada en Netlify |
+| Producción: web con insignia de señal | publicada en Netlify (desde D-36 en Vercel) |
 | Retención en producción | sin datos de más de 30 días todavía (la más antigua es del 2026-11-06): se verificará cuando existan |
 
 ## Sesión 5 — CP-27 prueba de carga contra la publicación (2026-11-10)

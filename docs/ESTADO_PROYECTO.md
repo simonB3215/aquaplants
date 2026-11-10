@@ -1,8 +1,10 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-10 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
-## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Netlify (D-30)
+## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Vercel (D-30, D-36)
+- **D-36** (2026-11-10): la web pasó de Netlify a **Vercel** (`https://aquaplants.vercel.app`, `vercel.json`); `netlify.toml` eliminado. Pendiente del usuario: `CORS_ORIGIN` y `APP_URL` en Render con esa URL y borrar el sitio de Netlify.
+- **CP-27** aprobada (50 dispositivos × 10 min: 2.999/2.999 lotes, p95 276 ms). Escenario B ahora avisa si la alerta crítica ya está activa y no habrá correo nuevo (correo confirmado por el usuario el 2026-11-10).
 - **D-31**: la sesión ya no se pierde al refrescar (cookie httpOnly `aq_sesion` + `POST /auth/sesion`, 8 h). **D-32**: en Perfil cada usuario elige «Todas las alertas críticas» o «Solo las urgentes» (activa tras 30 min); el Administrador también «No recibir alertas». Migración 010. Ambas divergen del ES2: mencionarlas en el informe.
 - **Publicación elegida por el usuario**: web en **Netlify**, API (+ worker) y simulador en **Render**, bases en **Supabase** + **Neon**. Preparados `render.yaml` y `netlify.toml` (pasos en `docs/DESPLIEGUE.md`). **Publicado** (2026-11-08): web https://aquaplants-app.netlify.app, API https://aquaplants-api.onrender.com, simulador https://aquaplants-simulador.onrender.com (región Virginia). `aquaplants.netlify.app` pertenece a un tercero: no usarlo. El simulador envía directo a la API de Render.
 - El certificado público de Supabase va en el repositorio (`certificados/supabase-ca.crt`) y `sslrootcert` acepta rutas relativas al proyecto: `.env.nube` sirve igual en cualquier computador. Supabase con «Enforce SSL» activado; conexión por Session pooler.
@@ -57,7 +59,7 @@ _Última actualización: 2026-11-08 (sesión 5, PC Windows del usuario). Abrir e
 
 ## Pendiente (por prioridad)
 1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
-2. CP-27/CP-13 rendimiento con k6; CP-24 TLS; CP-25 SUS; PWA offline re-verificada (con Chrome/Playwright, no el navegador integrado).
+2. CP-13 rendimiento (histórico de 30 días ≤ 3 s); CP-24 TLS; CP-25 SUS; PWA offline re-verificada (con Chrome/Playwright, no el navegador integrado).
 3. Publicación: **elegida** (D-30, Render + Supabase + Netlify) y preparada; falta crear los servicios y cargar las claves. CP-24 TLS: lo dan Netlify y Render (por verificar una vez publicado).
 4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
 5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).

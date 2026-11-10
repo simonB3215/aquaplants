@@ -176,3 +176,16 @@ Prueba manual en navegador (web local + API local contra Supabase, sin worker), 
 | Infraestructura → Responsables de Torre A: selector de encargados con textos en masculino («Seleccionar todos», «Ninguno») | OK |
 | `npm run build -w packages/frontend` | OK |
 
+## Sesión 5 — D-35 variables de la empresa, calidad del enlace y retención (2026-11-10)
+| Prueba | Resultado |
+|---|---|
+| CI (rama `variables-enlace`): suite backend con 11 pruebas nuevas en `variablesEnlace.test.ts` (catálogo, telemetría de caudal, `GET /telemetria/configuracion` 200/401, RSSI buena/aceptable/débil, RSSI fuera de rango → 422, retención 0 = no borra, retención 30 d con y sin TimescaleDB, mínimo 7 días → 22023) | 97/97 aprobadas |
+| Primera corrida del CI | 1 fallo **detectado por la suite existente**: `app_rw` no debe poder borrar mediciones (ES2 §3.4). Corregido con `fn_purgar_mediciones` (SECURITY DEFINER, mínimo 7 días) en vez de `GRANT DELETE` |
+| Frontend `npm test` / shared `npm test` | 6/6 y 6/6 |
+| Producción: migración 011 en Supabase | aplicada; la versión anterior siguió funcionando (solo agrega columnas/filas) |
+| Producción: 9 sensores nuevos (caudal, consumo hídrico, fotoperiodo × 3 torres) con umbrales desde el rango de la especie | creados (ids 14–22), auditados en `log_auditoria` |
+| Producción: el simulador descubre los sensores nuevos sin editar `dispositivos.json` | a los ~10 min (ciclo de sincronización) llegan las 9 variables: caudal 3,1–3,7 L/min, consumo 25–28 L/día, fotoperiodo ≈ 14 h/día |
+| Producción: RSSI | AquaBrain-A −68, B −73, C −66 dBm (aceptable/buena) |
+| Producción: web con insignia de señal | publicada en Netlify |
+| Retención en producción | sin datos de más de 30 días todavía (la más antigua es del 2026-11-06): se verificará cuando existan |
+

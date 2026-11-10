@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { EventoDispositivo, Lote } from '@aquaplants/shared';
 import { ColaPersistente } from './cola.js';
-import { valorSensor, type ModoSensor, type SensorSim } from './generador.js';
+import { rssiSimulado, SENSOR_POR_DEFECTO, valorSensor, type ModoSensor, type SensorSim } from './generador.js';
 
 export interface ConfigDispositivo {
   id_dispositivo: number;
@@ -46,6 +46,10 @@ export interface EstadoDispositivo {
   proximo_reintento: string | null;
   credencial_rechazada: boolean;
   modos: Record<number, ModoSensor>;
+  /** Intensidad de señal informada en el último envío (dBm). */
+  rssi_dbm: number;
+  rssi_forzado: number | null;
+  sensores: { id_sensor: number; clave: string }[];
 }
 
 /**
@@ -73,6 +77,11 @@ export class DispositivoVirtual {
   ultimoError: string | null = null;
   credencialRechazada = false;
   ultimoLoteConfirmado: Lote | null = null;
+  /** Señal fija para la demostración (p. ej. -95 = débil); null = valor simulado normal. */
+  rssiForzado: number | null = null;
+  private sincronizador: NodeJS.Timeout | null = null;
+  /** true cuando la API respondió /telemetria/configuracion (versión con D-35: acepta meta.rssi_dbm). */
+  apiConSenal = false;
 
   constructor(
     readonly cfg: ConfigDispositivo,
@@ -100,6 +109,11 @@ export class DispositivoVirtual {
     this.encolarEvento('reinicio', { motivo: `Arranque del dispositivo (${motivo})`, pendientes_en_cola: this.cola.longitud });
     this.programar();
     void this.bombear();
+    if (this.op.medicionAutomatica !== false) {
+      void this.sincronizarSensores();
+      if (this.sincronizador) clearInterval(this.sincronizador);
+      this.sincronizador = setInterval(() => void this.sincronizarSensores(), 10 * 60_000).unref();
+    }
   }
 
   /** Corte eléctrico simulado: se detiene todo; lo no persistido se pierde. */
@@ -108,6 +122,8 @@ export class DispositivoVirtual {
     this.energia = false;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    if (this.sincronizador) clearInterval(this.sincronizador);
+    this.sincronizador = null;
     this.controlador?.abort(); // un envío en curso no llega a confirmarse: el lote sigue en la cola
     this.log('apagado (corte eléctrico simulado): no se generan mediciones', { lotes_en_cola: this.cola.longitud });
   }
@@ -121,6 +137,45 @@ export class DispositivoVirtual {
       this.esperaHasta = 0;
       this.encolarEvento('reconexion_local', { motivo: 'Conectividad de red restablecida', pendientes_en_cola: this.cola.longitud });
       void this.bombear();
+    }
+  }
+
+  /** Intensidad de señal (dBm) que se informa con cada lote (D-35). */
+  rssi(): number {
+    return this.rssiForzado ?? rssiSimulado(this.cfg.id_dispositivo, Date.now());
+  }
+
+  setRssi(dbm: number | null) {
+    this.rssiForzado = dbm == null ? null : Math.max(-130, Math.min(0, Math.round(dbm)));
+    this.log(dbm == null ? 'señal normal' : `señal fijada en ${this.rssiForzado} dBm`);
+  }
+
+  /**
+   * D-35: pide a la API los sensores activos del dispositivo. Así un sensor agregado
+   * desde Infraestructura empieza a medir sin editar dispositivos.json, y uno dado de
+   * baja deja de enviarse (evita lotes rechazados). Si la API no responde se conserva
+   * la lista actual.
+   */
+  async sincronizarSensores(): Promise<boolean> {
+    if (!this.energia || !this.red) return false;
+    try {
+      const r = await fetch(`${this.op.apiUrl}/telemetria/configuracion`, {
+        headers: { authorization: `Bearer ${this.cfg.token}`, 'x-device-id': String(this.cfg.id_dispositivo) },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (r.status !== 200) return false;
+      this.apiConSenal = true;
+      const j = (await r.json()) as { sensores?: { id_sensor: number; clave: string }[] };
+      if (!Array.isArray(j.sensores) || j.sensores.length === 0) return false;
+      const antes = new Map(this.cfg.sensores.map((s) => [s.id_sensor, s]));
+      const nuevos = j.sensores.map((s) => antes.get(s.id_sensor) ?? { id_sensor: s.id_sensor, clave: s.clave, ...(SENSOR_POR_DEFECTO[s.clave] ?? { base: 1, amplitud: 0.1 }) });
+      const agregados = nuevos.filter((s) => !antes.has(s.id_sensor)).map((s) => s.clave);
+      const quitados = this.cfg.sensores.filter((s) => !nuevos.some((n) => n.id_sensor === s.id_sensor)).map((s) => s.clave);
+      this.cfg.sensores = nuevos;
+      if (agregados.length || quitados.length) this.log('sensores sincronizados con la API', { agregados, quitados });
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -215,7 +270,7 @@ export class DispositivoVirtual {
       }
       // 3) Lotes de mediciones.
       for (let p = this.cola.primero(); p && this.energia && this.red; p = this.cola.primero()) {
-        const lote: Lote = { ...p.item, meta: { ...p.item.meta, pendientes: this.cola.longitud - 1 } };
+        const lote: Lote = { ...p.item, meta: { ...p.item.meta, pendientes: this.cola.longitud - 1, ...(this.apiConSenal ? { rssi_dbm: this.rssi() } : {}) } };
         const r = await this.post('/telemetria', lote);
         if (r.status === 201 || r.status === 200) {
           this.cola.confirmar(p.archivo);
@@ -297,6 +352,9 @@ export class DispositivoVirtual {
       proximo_reintento: this.esperaHasta > Date.now() ? new Date(this.esperaHasta).toISOString() : null,
       credencial_rechazada: this.credencialRechazada,
       modos: this.modos,
+      rssi_dbm: this.rssi(),
+      rssi_forzado: this.rssiForzado,
+      sensores: this.cfg.sensores.map((s) => ({ id_sensor: s.id_sensor, clave: s.clave })),
     };
   }
 

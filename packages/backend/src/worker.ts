@@ -38,6 +38,8 @@ export function iniciarWorker(cfg: Config, s: Servicios) {
       if (p) console.log(`[worker:anonimizacion] ${p} solicitud(es) de registro vencida(s) eliminada(s) (D-28)`);
       const ses = await s.mantenimiento.purgarSesionesVencidas();
       if (ses) console.log(`[worker:anonimizacion] ${ses} sesión(es) vencida(s) eliminada(s) (D-31)`);
+      const med = await s.mantenimiento.purgarMedicionesAntiguas();
+      if (med) console.log(`[worker:anonimizacion] ${med} medición(es) anteriores a la retención eliminada(s) (D-35)`);
     }),
   ];
   console.log('[worker] iniciado');

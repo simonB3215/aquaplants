@@ -36,23 +36,27 @@ const TIPOS = [
   { clave: 'temperatura', nombre: 'Temperatura del agua', unidad: '°C', min: -10, max: 60, delta: 5 },
   { clave: 'nivel', nombre: 'Nivel de agua', unidad: '%', min: 0, max: 100, delta: 25 },
   { clave: 'humedad', nombre: 'Humedad relativa', unidad: '%', min: 0, max: 100, delta: 25 },
+  // D-35 (migración 011): variables que menciona la empresa.
+  { clave: 'caudal', nombre: 'Caudal de riego', unidad: 'L/min', min: 0, max: 30, delta: 10 },
+  { clave: 'consumo_hidrico', nombre: 'Consumo hídrico', unidad: 'L/día', min: 0, max: 500, delta: 100 },
+  { clave: 'fotoperiodo', nombre: 'Fotoperiodo', unidad: 'h/día', min: 0, max: 24, delta: 24 },
 ] as const;
 type Clave = (typeof TIPOS)[number]['clave'];
 
 const ESPECIES: { nombre: string; descripcion: string; rangos: Partial<Record<Clave, [number, number]>> }[] = [
-  { nombre: 'Lechuga', descripcion: 'Lactuca sativa', rangos: { ph: [5.6, 6.2], ce: [0.8, 1.2], temperatura: [18, 22], nivel: [40, 95], humedad: [50, 70] } },
-  { nombre: 'Albahaca', descripcion: 'Ocimum basilicum', rangos: { ph: [5.5, 6.5], ce: [1.0, 1.6], temperatura: [20, 25], nivel: [40, 95], humedad: [40, 60] } },
-  { nombre: 'Frutilla', descripcion: 'Fragaria × ananassa', rangos: { ph: [5.5, 6.2], ce: [1.0, 1.4], temperatura: [18, 24], nivel: [40, 95], humedad: [60, 75] } },
+  { nombre: 'Lechuga', descripcion: 'Lactuca sativa', rangos: { ph: [5.6, 6.2], ce: [0.8, 1.2], temperatura: [18, 22], nivel: [40, 95], humedad: [50, 70], caudal: [2, 6], consumo_hidrico: [15, 40], fotoperiodo: [12, 16] } },
+  { nombre: 'Albahaca', descripcion: 'Ocimum basilicum', rangos: { ph: [5.5, 6.5], ce: [1.0, 1.6], temperatura: [20, 25], nivel: [40, 95], humedad: [40, 60], caudal: [2, 6], consumo_hidrico: [15, 45], fotoperiodo: [14, 16] } },
+  { nombre: 'Frutilla', descripcion: 'Fragaria × ananassa', rangos: { ph: [5.5, 6.2], ce: [1.0, 1.4], temperatura: [18, 24], nivel: [40, 95], humedad: [60, 75], caudal: [2, 6], consumo_hidrico: [20, 50], fotoperiodo: [12, 16] } },
   { nombre: 'Espinaca', descripcion: 'Spinacia oleracea', rangos: { ph: [6.0, 7.0], ce: [1.8, 2.3], temperatura: [16, 21], nivel: [40, 95] } },
   { nombre: 'Rúcula', descripcion: 'Eruca vesicaria', rangos: { ph: [6.0, 6.8], ce: [0.8, 1.2], temperatura: [16, 22], nivel: [40, 95] } },
 ];
 /** Margen para el umbral crítico respecto del advertencia (ancho del rango de referencia). */
-const CRITICO_EXTRA: Record<Clave, number> = { ph: 0.5, ce: 0.4, temperatura: 4, nivel: 20, humedad: 15 };
+const CRITICO_EXTRA: Record<Clave, number> = { ph: 0.5, ce: 0.4, temperatura: 4, nivel: 20, humedad: 15, caudal: 1.5, consumo_hidrico: 15, fotoperiodo: 2 };
 
 const TORRES = [
-  { nombre: 'Torre A · Lechuga', tipo: 'aeroponica', ubicacion: 'Invernadero 1, fila norte', especie: 'Lechuga', sensores: ['ph', 'ce', 'temperatura', 'nivel', 'humedad'] as Clave[] },
-  { nombre: 'Torre B · Albahaca', tipo: 'hidroponica', ubicacion: 'Invernadero 1, fila sur', especie: 'Albahaca', sensores: ['ph', 'ce', 'temperatura', 'nivel'] as Clave[] },
-  { nombre: 'Torre C · Frutilla', tipo: 'aeroponica', ubicacion: 'Invernadero 2', especie: 'Frutilla', sensores: ['ph', 'ce', 'temperatura', 'nivel'] as Clave[] },
+  { nombre: 'Torre A · Lechuga', tipo: 'aeroponica', ubicacion: 'Invernadero 1, fila norte', especie: 'Lechuga', sensores: ['ph', 'ce', 'temperatura', 'nivel', 'humedad', 'caudal', 'consumo_hidrico', 'fotoperiodo'] as Clave[] },
+  { nombre: 'Torre B · Albahaca', tipo: 'hidroponica', ubicacion: 'Invernadero 1, fila sur', especie: 'Albahaca', sensores: ['ph', 'ce', 'temperatura', 'nivel', 'caudal', 'consumo_hidrico', 'fotoperiodo'] as Clave[] },
+  { nombre: 'Torre C · Frutilla', tipo: 'aeroponica', ubicacion: 'Invernadero 2', especie: 'Frutilla', sensores: ['ph', 'ce', 'temperatura', 'nivel', 'caudal', 'consumo_hidrico', 'fotoperiodo'] as Clave[] },
 ];
 
 export async function sembrar(url: string, opciones: { historialHoras?: number; intervaloS?: number; simConfig?: string; silencioso?: boolean } = {}) {
@@ -80,7 +84,8 @@ export async function sembrar(url: string, opciones: { historialHoras?: number; 
     const tipoId: Record<string, number> = {};
     for (const t of TIPOS) {
       const r = await c.query<{ id: number }>(
-        `INSERT INTO tipo_variable (nombre, clave, unidad_medida, min_fisico, max_fisico, max_delta_minuto) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id_tipo_variable AS id`,
+        `INSERT INTO tipo_variable (nombre, clave, unidad_medida, min_fisico, max_fisico, max_delta_minuto) VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (clave) DO UPDATE SET nombre = EXCLUDED.nombre RETURNING id_tipo_variable AS id`,
         [t.nombre, t.clave, t.unidad, t.min, t.max, t.delta],
       );
       tipoId[t.clave] = r.rows[0].id;
@@ -172,7 +177,12 @@ export async function sembrar(url: string, opciones: { historialHoras?: number; 
           const dia = Math.sin(((t / 3600_000) % 24) / 24 * 2 * Math.PI);
           for (const s of sens) {
             const ruido = (rnd() - 0.5) * s.amp;
-            const v = s.clave === 'nivel' ? 85 - ((t - inicio) / 3600_000) % 24 * 1.2 + ruido * 4 : s.base + dia * s.amp * 1.5 + ruido;
+            const v =
+              s.clave === 'nivel'
+                ? 85 - ((t - inicio) / 3600_000) % 24 * 1.2 + ruido * 4
+                : s.clave === 'fotoperiodo'
+                  ? s.base + ruido * 0.1 // programado: casi constante
+                  : s.base + dia * s.amp * 1.5 + ruido;
             tsArr.push(new Date(t).toISOString());
             idArr.push(s.id);
             valArr.push(+v.toFixed(3));

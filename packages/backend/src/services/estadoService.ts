@@ -1,3 +1,4 @@
+import { calidadEnlace } from '@aquaplants/shared';
 import type {
   DispositivoEstado,
   EstadoConectividad,
@@ -91,9 +92,10 @@ export class EstadoService {
       intervalo_muestreo_s: number;
       pendientes_reportados: number | null;
       pendientes_reportados_en: Date | null;
+      rssi_dbm: number | null;
     }>(
       `SELECT id_dispositivo, id_instalacion, nombre, estado, ultima_comunicacion, ultima_lectura_ts, intervalo_muestreo_s,
-              pendientes_reportados, pendientes_reportados_en
+              pendientes_reportados, pendientes_reportados_en, rssi_dbm
          FROM dispositivo WHERE id_instalacion = ANY($1::int[]) ORDER BY nombre`,
       [ids],
     );
@@ -142,6 +144,8 @@ export class EstadoService {
             umbral_sin_senal_s: limite,
             pendientes_reportados: d.pendientes_reportados,
             datos_desactualizados: !d.ultima_lectura_ts || ahora - d.ultima_lectura_ts.getTime() > limite * 1000,
+            rssi_dbm: d.rssi_dbm,
+            calidad_enlace: calidadEnlace(d.rssi_dbm),
           };
         });
       const variables: VariableEstado[] = vars.rows

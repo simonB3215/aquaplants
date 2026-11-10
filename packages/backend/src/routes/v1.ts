@@ -70,6 +70,12 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
       res.status(out.duplicado ? 200 : 201).json(out);
     }),
   );
+  r.get(
+    '/telemetria/configuracion', // D-35
+    authDispositivo(s.auth),
+    tasaDispositivo,
+    h(async (req, res) => void res.json(await s.ingesta.configuracionDispositivo(req.dispositivo!))),
+  );
   r.post(
     '/telemetria/eventos',
     authDispositivo(s.auth),

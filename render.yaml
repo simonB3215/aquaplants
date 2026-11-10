@@ -21,6 +21,10 @@ services:
       - key: WORKER_EN_API
         value: "true"
       # Netlify → balanceador de Render: 2 proxies delante de la API.
+      # D-35: Supabase no tiene TimescaleDB; se conservan 30 días de mediciones crudas
+      # (la evidencia de las alertas se guarda aparte y no se borra).
+      - key: RETENCION_MEDICIONES_DIAS
+        value: "30"
       - key: TRUST_PROXY
         value: "2"
       # Supabase (Session pooler) terminada en ?sslmode=verify-full&sslrootcert=certificados/supabase-ca.crt

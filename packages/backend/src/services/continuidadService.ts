@@ -1,4 +1,4 @@
-import { LoteSchema, type EventoOperativo, type Paginado, type ResumenContinuidad } from '@aquaplants/shared';
+import { calidadEnlace, LoteSchema, type EventoOperativo, type Paginado, type ResumenContinuidad } from '@aquaplants/shared';
 import type { IBaseDatos, IPayloadStore } from '../ports/index.js';
 import type { Config } from '../config.js';
 import { registrarEvento } from './auditoria.js';
@@ -104,9 +104,10 @@ export class ContinuidadService {
       intervalo_muestreo_s: number;
       pendientes_reportados: number | null;
       pendientes_reportados_en: Date | null;
+      rssi_dbm: number | null;
     }>(
       `SELECT d.id_dispositivo, d.nombre, d.id_instalacion, i.nombre AS torre, d.estado, d.ultima_comunicacion, d.ultima_lectura_ts,
-              d.intervalo_muestreo_s, d.pendientes_reportados, d.pendientes_reportados_en
+              d.intervalo_muestreo_s, d.pendientes_reportados, d.pendientes_reportados_en, d.rssi_dbm
          FROM dispositivo d JOIN instalacion i ON i.id_instalacion = d.id_instalacion
         WHERE ($1::int[] IS NULL OR d.id_instalacion = ANY($1::int[])) ORDER BY i.nombre, d.nombre`,
       [vis],
@@ -126,6 +127,8 @@ export class ContinuidadService {
       umbral_sin_senal_s: x.intervalo_muestreo_s * f,
       pendientes_reportados: x.pendientes_reportados,
       datos_desactualizados: !x.ultima_lectura_ts || ahora - x.ultima_lectura_ts.getTime() > x.intervalo_muestreo_s * f * 1000,
+      rssi_dbm: x.rssi_dbm,
+      calidad_enlace: calidadEnlace(x.rssi_dbm),
     }));
     const lotes = await this.db.query<{ recuperados: number; lecturas: number; duplicados: number }>(
       `SELECT count(*) FILTER (WHERE l.recuperado)::int AS recuperados,

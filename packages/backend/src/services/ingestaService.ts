@@ -212,7 +212,7 @@ export class IngestaService {
       }
       await this.mediciones.insertarLote(tx, lote.id_lote, lote.lecturas);
 
-      await this.marcarComunicacion(tx, disp.id_dispositivo, { origen: `lote ${lote.id_lote}`, pendientes: lote.meta?.pendientes ?? null, tsMax });
+      await this.marcarComunicacion(tx, disp.id_dispositivo, { origen: `lote ${lote.id_lote}`, pendientes: lote.meta?.pendientes ?? null, rssi: lote.meta?.rssi_dbm ?? null, tsMax });
       await this.outbox.encolar(tx, lote.id_lote);
       return { id_lote: lote.id_lote, recibidas: lote.lecturas.length, duplicado: false };
     });
@@ -222,7 +222,7 @@ export class IngestaService {
    * Actualiza la última comunicación. Si el dispositivo estaba «sin señal» vuelve a
    * activo y se registra el evento `reconexion` con la duración del silencio (RN-04).
    */
-  private async marcarComunicacion(tx: Consulta, idDispositivo: number, d: { origen: string; pendientes: number | null; tsMax?: string }) {
+  private async marcarComunicacion(tx: Consulta, idDispositivo: number, d: { origen: string; pendientes: number | null; rssi?: number | null; tsMax?: string }) {
     const prev = await tx.query<{ estado: string; ultima_comunicacion: Date | null }>(
       `SELECT estado, ultima_comunicacion FROM dispositivo WHERE id_dispositivo = $1 FOR UPDATE`,
       [idDispositivo],
@@ -234,9 +234,11 @@ export class IngestaService {
                                        ELSE GREATEST(COALESCE(ultima_lectura_ts, $2::timestamptz), $2::timestamptz) END,
               pendientes_reportados = COALESCE($3, pendientes_reportados),
               pendientes_reportados_en = CASE WHEN $3::int IS NULL THEN pendientes_reportados_en ELSE now() END,
+              rssi_dbm = COALESCE($4::smallint, rssi_dbm),
+              rssi_en = CASE WHEN $4::smallint IS NULL THEN rssi_en ELSE now() END,
               estado = CASE WHEN estado = 'sin_senal' THEN 'activo' ELSE estado END
         WHERE id_dispositivo = $1`,
-      [idDispositivo, d.tsMax ?? null, d.pendientes],
+      [idDispositivo, d.tsMax ?? null, d.pendientes, d.rssi ?? null],
     );
     if (prev.rows[0]?.estado === 'sin_senal') {
       const ultima = prev.rows[0].ultima_comunicacion;
@@ -247,6 +249,21 @@ export class IngestaService {
         pendientes_en_cola: d.pendientes,
       });
     }
+  }
+
+  /**
+   * D-35: configuración que el dispositivo puede consultar con su credencial:
+   * intervalo y sensores ACTIVOS (con la clave de su tipo de variable). Así un sensor
+   * agregado o dado de baja desde Infraestructura se refleja sin tocar el equipo.
+   */
+  async configuracionDispositivo(disp: DispositivoAutenticado) {
+    const s = await this.db.query<{ id_sensor: number; clave: string; unidad: string }>(
+      `SELECT s.id_sensor, tv.clave, tv.unidad_medida AS unidad
+         FROM sensor s JOIN tipo_variable tv ON tv.id_tipo_variable = s.id_tipo_variable
+        WHERE s.id_dispositivo = $1 AND s.estado = 'activo' ORDER BY s.id_sensor`,
+      [disp.id_dispositivo],
+    );
+    return { id_dispositivo: disp.id_dispositivo, intervalo_muestreo_s: disp.intervalo_muestreo_s, sensores: s.rows };
   }
 
   /** Eventos que reporta el propio dispositivo (reinicio, datos descartados). Idempotente. */

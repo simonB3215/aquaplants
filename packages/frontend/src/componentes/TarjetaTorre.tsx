@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Bell, ChartLine, Clock, Cpu, Sprout, TriangleAlert } from 'lucide-react';
 import type { EstadoTorre } from '@aquaplants/shared';
-import { InsigniaConectividad, InsigniaEstado } from './ui';
+import { InsigniaConectividad, InsigniaEstado, InsigniaSenal } from './ui';
 import { duracion, fechaHora, hace, numero } from '../util/formato';
 
 /** Tarjeta de estado por torre (CU-03): cultivo, variables, unidades, estados, umbrales y timestamps. */
@@ -64,6 +64,7 @@ export function TarjetaTorre({ torre, servidorCaido }: { torre: EstadoTorre; ser
             <Cpu size={14} aria-hidden />
             <strong>{d.nombre}</strong>
             <InsigniaConectividad estado={d.conectividad} />
+            {d.conectividad !== 'nunca_conectado' && <InsigniaSenal calidad={d.calidad_enlace} rssi={d.rssi_dbm} />}
             <span className="muted">
               <Clock size={12} aria-hidden /> última comunicación {hace(d.ultima_comunicacion)}
             </span>

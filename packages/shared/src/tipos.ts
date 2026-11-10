@@ -10,6 +10,15 @@ export type EstadoVariable = 'normal' | 'advertencia' | 'critico' | 'sin_clasifi
  */
 export type EstadoConectividad = 'conectado' | 'sin_senal' | 'sincronizando' | 'baja' | 'nunca_conectado';
 
+/** D-35: calidad del enlace según RSSI (umbrales habituales de Wi-Fi). */
+export type CalidadEnlace = 'buena' | 'aceptable' | 'debil' | 'sin_dato';
+export function calidadEnlace(rssi: number | null | undefined): CalidadEnlace {
+  if (rssi == null) return 'sin_dato';
+  if (rssi >= -67) return 'buena';
+  if (rssi >= -80) return 'aceptable';
+  return 'debil';
+}
+
 export interface UsuarioSesion {
   id_usuario: number;
   nombre: string;
@@ -51,6 +60,9 @@ export interface DispositivoEstado {
   umbral_sin_senal_s: number;
   pendientes_reportados: number | null;
   datos_desactualizados: boolean;
+  /** D-35: última intensidad de señal informada (RSSI, dBm) y su clasificación. */
+  rssi_dbm: number | null;
+  calidad_enlace: CalidadEnlace;
 }
 
 export interface EstadoTorre {

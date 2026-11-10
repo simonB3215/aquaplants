@@ -7,13 +7,16 @@ import {
   ServerCrash,
   TriangleAlert,
   Wifi,
+  WifiHigh,
+  WifiLow,
+  WifiZero,
   WifiOff,
   Inbox,
   CircleAlert,
   X,
   type LucideIcon,
 } from 'lucide-react';
-import type { EstadoConectividad, EstadoVariable } from '@aquaplants/shared';
+import type { CalidadEnlace, EstadoConectividad, EstadoVariable } from '@aquaplants/shared';
 import { NOMBRE_CONECTIVIDAD, NOMBRE_ESTADO_VARIABLE } from '@aquaplants/shared';
 
 /* ------------------------------------------------------------------ Estados (color + ícono + texto) */
@@ -47,6 +50,25 @@ export function InsigniaConectividad({ estado }: { estado: EstadoConectividad })
   return (
     <span className={`insignia ${e.clase}`}>
       <I size={14} aria-hidden /> {NOMBRE_CONECTIVIDAD[estado]}
+    </span>
+  );
+}
+
+const SENAL: Record<CalidadEnlace, { texto: string; icono: LucideIcon; clase: string }> = {
+  buena: { texto: 'Señal buena', icono: Wifi, clase: 'e-normal' },
+  aceptable: { texto: 'Señal aceptable', icono: WifiHigh, clase: 'e-advertencia' },
+  debil: { texto: 'Señal débil', icono: WifiLow, clase: 'e-critico' },
+  sin_dato: { texto: 'Señal sin dato', icono: WifiZero, clase: 'e-neutro' },
+};
+
+/** D-35: calidad del enlace informada por el AquaBrain (RSSI). */
+export function InsigniaSenal({ calidad, rssi }: { calidad: CalidadEnlace; rssi: number | null }) {
+  const s = SENAL[calidad];
+  const I = s.icono;
+  return (
+    <span className={`insignia ${s.clase}`} title="Intensidad de la señal (RSSI) informada en el último envío">
+      <I size={14} aria-hidden /> {s.texto}
+      {rssi != null && <span className="dato"> · {rssi} dBm</span>}
     </span>
   );
 }

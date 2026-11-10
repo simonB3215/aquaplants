@@ -18,4 +18,4 @@ También se puede simular un corte eléctrico “de verdad” cerrando la ventan
 
 Prueba automatizada de los mismos escenarios: `node tests/e2e/escenarios.mjs http://localhost:3000/api/v1` (genera `docs/evidencias/escenarios-e2e.json`).
 
-API de control del simulador (solo red interna/localhost, con `SIM_CONTROL_TOKEN`): `GET /estado`, `POST /escenario {codigo, id_dispositivo}`, `POST /dispositivos/{id}/red|energia|intervalo|credencial-invalida`.
+API de control del simulador (solo red interna/localhost, con `SIM_CONTROL_TOKEN`): `GET /estado`, `POST /escenario {codigo, id_dispositivo}`, `POST /dispositivos/{id}/red|energia|intervalo|senal|credencial-invalida` (`senal`: `{"rssi_dbm": -95}` fija una señal débil para la demostración; `{"rssi_dbm": null}` la devuelve a normal — D-35).

@@ -10,6 +10,7 @@ export class MantenimientoService {
   constructor(
     private readonly db: IBaseDatos,
     private readonly anonimizarTrasDias: number,
+    private readonly retencionMedicionesDias = 0,
   ) {}
 
   /** Devuelve cuántos usuarios se anonimizaron. Idempotente. */
@@ -36,6 +37,28 @@ export class MantenimientoService {
       );
       return r.rowCount ?? 0;
     });
+  }
+
+  /**
+   * D-35: retención de mediciones crudas sin TimescaleDB. Borra por tandas (no bloquea
+   * la ingesta) las mediciones más antiguas que RETENCION_MEDICIONES_DIAS. La evidencia
+   * de las alertas vive en medicion_evidencia y no se toca. Devuelve cuántas se borraron.
+   */
+  async purgarMedicionesAntiguas(tanda = 20_000, maxTandas = 50): Promise<number> {
+    if (this.retencionMedicionesDias <= 0) return 0;
+    const ts = await this.db.query(`SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'`);
+    if (ts.rowCount) return 0; // con TimescaleDB la retención la hace la política de la migración 008
+    let total = 0;
+    for (let i = 0; i < maxTandas; i++) {
+      const r = await this.db.query(
+        `DELETE FROM medicion WHERE ctid IN (
+           SELECT ctid FROM medicion WHERE ts < now() - make_interval(days => $1::int) LIMIT $2)`,
+        [this.retencionMedicionesDias, tanda],
+      );
+      total += r.rowCount ?? 0;
+      if ((r.rowCount ?? 0) < tanda) break;
+    }
+    return total;
   }
 
   /** D-31: sesiones vencidas o cerradas hace más de un día (minimización). */

@@ -113,7 +113,7 @@ const control = createServer(async (req, res) => {
   try {
     if (!autorizado(req)) return responder(res, 401, { mensaje: 'Token de control inválido' });
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const m = url.pathname.match(/^\/dispositivos\/(\d+)\/(red|energia|intervalo|credencial-invalida)$/);
+    const m = url.pathname.match(/^\/dispositivos\/(\d+)\/(red|energia|intervalo|senal|credencial-invalida)$/);
     if (req.method === 'GET' && url.pathname === '/estado') {
       return responder(res, 200, { api: op.apiUrl, dispositivos: [...dispositivos.values()].map((d) => d.estado()) });
     }
@@ -127,6 +127,7 @@ const control = createServer(async (req, res) => {
       if (m[2] === 'red') d.setRed(Boolean(b.conectado));
       if (m[2] === 'energia') (b.encendido ? d.encender('control manual') : d.apagar());
       if (m[2] === 'intervalo') d.setIntervalo(Math.max(1, Number(b.intervalo_s) || 60));
+      if (m[2] === 'senal') d.setRssi(b.rssi_dbm == null ? null : Number(b.rssi_dbm));
       if (m[2] === 'credencial-invalida') return responder(res, 200, await d.probarCredencialInvalida());
       return responder(res, 200, d.estado());
     }

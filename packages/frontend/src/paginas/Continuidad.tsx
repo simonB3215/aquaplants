@@ -5,7 +5,7 @@ import { api, qs } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
 import { useConexion } from '../estado/conexion';
 import { BarraSuperior } from '../componentes/Layout';
-import { Aviso, Encabezado, Esqueleto, InsigniaConectividad, InsigniaServidor, Kpi, MensajeError, Paginador, Selector, Tarjeta, Vacio } from '../componentes/ui';
+import { Aviso, Encabezado, Esqueleto, InsigniaConectividad, InsigniaSenal, InsigniaServidor, Kpi, MensajeError, Paginador, Selector, Tarjeta, Vacio } from '../componentes/ui';
 import { duracion, fechaHora, hace } from '../util/formato';
 
 const NOMBRE_EVENTO: Record<string, string> = {
@@ -65,6 +65,7 @@ export function Continuidad() {
                       <th scope="col">Dispositivo</th>
                       <th scope="col">Torre</th>
                       <th scope="col">Conectividad</th>
+                      <th scope="col">Señal</th>
                       <th scope="col">Última comunicación</th>
                       <th scope="col">Sin reportar</th>
                       <th scope="col">Plazo «sin señal»</th>
@@ -79,6 +80,9 @@ export function Continuidad() {
                         </td>
                         <td>{x.torre}</td>
                         <td>{conexion === 'servidor_caido' ? <InsigniaServidor /> : <InsigniaConectividad estado={x.conectividad} />}</td>
+                        <td>
+                          <InsigniaSenal calidad={x.calidad_enlace} rssi={x.rssi_dbm} />
+                        </td>
                         <td className="dato">{fechaHora(x.ultima_comunicacion)}</td>
                         <td className="dato">{duracion(x.segundos_sin_reportar)}</td>
                         <td className="dato">{duracion(x.umbral_sin_senal_s)}</td>

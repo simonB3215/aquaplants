@@ -64,6 +64,7 @@ export const openapi = {
         },
       },
     },
+    '/telemetria/configuracion': { get: { summary: 'D-35 Sensores activos e intervalo del dispositivo autenticado', security: [{ bearerDispositivo: [] }], responses: { 200: ok('Configuración'), 401: err('Credencial de dispositivo') } } },
     '/telemetria/eventos': { post: { summary: 'Evento informado por el dispositivo (reinicio, datos descartados)', security: [{ bearerDispositivo: [] }], responses: { 201: ok('Registrado'), 200: ok('Ya registrado') } } },
     '/auth/login': { post: { summary: 'CU-02 Iniciar sesión', responses: { 200: ok('Token JWT'), 401: err('Credenciales inválidas'), 422: err('Campos'), 423: err('Cuenta bloqueada'), 429: err('Exceso de intentos') } } },
     '/auth/logout': { post: { summary: 'Cerrar sesión (también revoca la cookie de sesión, D-31)', security: seg, responses: { 204: ok('Sesión cerrada') } } },

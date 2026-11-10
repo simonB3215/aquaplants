@@ -18,6 +18,8 @@ export const MetaLoteSchema = z
     /** true si el lote se generó durante una desconexión y se envía al recuperar la red. */
     recuperado: z.boolean().optional(),
     firmware: z.string().max(40).optional(),
+    /** D-35: intensidad de la señal del enlace al enviar (RSSI, dBm). */
+    rssi_dbm: z.number().int().min(-130).max(0).optional(),
   })
   .strict();
 

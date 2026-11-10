@@ -31,6 +31,12 @@ const Env = z.object({
   WORKER_MANTENIMIENTO_CADA_S: z.coerce.number().positive().default(3600),
   /** Tabla 40: anonimizar nombre y email de usuarios desactivados tras este plazo. */
   ANONIMIZAR_TRAS_DIAS: z.coerce.number().int().positive().default(365),
+  /**
+   * D-35: días que se conservan las mediciones crudas cuando la base NO tiene
+   * TimescaleDB (Supabase). 0 = no borrar. Con TimescaleDB manda la política de la migración 008.
+   * Las mediciones que originaron alertas se conservan aparte (medicion_evidencia).
+   */
+  RETENCION_MEDICIONES_DIAS: z.coerce.number().int().min(0).max(3650).default(0),
   /** Tolerancia de marca temporal (Tabla 12). */
   TS_FUTURO_MAX_S: z.coerce.number().int().positive().default(120),
   TS_ANTIGUEDAD_MAX_H: z.coerce.number().positive().default(48),

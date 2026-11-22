@@ -283,5 +283,7 @@ Cambio solo de interfaz en Torres / Mis torres: buscador (nombre, cultivo, tipo,
 | Navegador con **API simulada** (8 torres): 7 estados × 5 conexiones, a 1280 px | 35/35 contador igual a tarjetas |
 | Navegador (API simulada): Torres y Usuarios × 7 anchos (320–1440 px) × 4 búsquedas | 56/56 sin scroll horizontal; controles de 44 px o más |
 | Navegador (API simulada): entrar a una ficha y volver | Conserva el filtro |
+| Publicación `e181077`: https://aquaplants.vercel.app | OK: sirve el JS y CSS nuevos; el login abre sin errores de consola; `/api/v1/torres/estado` sin sesión 401 |
+| Render tras el push | OK: sin redespliegue; API y simulador siguieron respondiendo |
 | Con sesión, API y datos reales | **No ejecutado** |
-| Pruebas del backend | **No ejecutadas** (sin cambios en backend) |
+| Pruebas del backend | No ejecutadas en este equipo (sin cambios en backend); CI de GitHub en `e181077` OK |

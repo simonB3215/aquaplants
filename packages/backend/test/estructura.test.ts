@@ -171,8 +171,11 @@ describe('RN-12 Administrador y Administrador principal', () => {
 
   test('el principal se designa fuera de la app y entonces gestiona Administradores', async () => {
     await expect(designarPrincipal(DB_URL, 'supervisor@aquaplants.cl', false)).rejects.toThrow(/Solo una cuenta de Administrador/);
+    const idAdmin = (await api().get('/api/v1/auth/me').set(H(admin))).body.id_usuario;
     await designarPrincipal(DB_URL, 'admin@aquaplants.cl', false);
-    // La designación cierra la sesión anterior.
+    // La designación cierra la sesión anterior: el script corre fuera de la API, que guarda la
+    // versión de cada usuario hasta 30 s; se simula que ese plazo ya pasó.
+    s.auth.invalidarCache(idAdmin);
     expect((await api().get('/api/v1/auth/me').set(H(admin))).status).toBe(401);
     const p = await login(app, 'admin@aquaplants.cl', semilla.passwords.administrador);
     expect((await api().get('/api/v1/auth/me').set(H(p))).body.rol).toBe('administrador_principal');

@@ -9,7 +9,9 @@ import { resolverCertificado } from '../conexion.js';
  *   npm run admin:principal -w packages/backend -- --email persona@empresa.cl --quitar
  *
  * Designar: la cuenta (activa, de Administrador) pasa a Administrador principal.
- * Quitar: vuelve a Administrador. En ambos casos se cierran sus sesiones (version_token).
+ * Quitar: vuelve a Administrador. En ambos casos se cierran sus sesiones (version_token):
+ * como el script corre fuera de la API, la sesión abierta deja de servir en a lo sumo 30 s
+ * (caché de versión de AuthService).
  * Usa DATABASE_URL (la conexión de administración, no la de la aplicación).
  */
 export const MAXIMO_PRINCIPALES = 2;

@@ -244,8 +244,10 @@ Cambio solo de interfaz (además, el mismo número junto a «Alertas» en el men
 | Navegador (API simulada): resolver la única crítica | OK: baja a 2 y pasa a ámbar sin esperar el refresco |
 | Navegador (API simulada): número del menú lateral, 11 rutas como Administrador a 1280 px | «3» en las 11, sin scroll horizontal |
 | Navegador (API simulada): número de la barra inferior, página Alertas; 3 roles × 4 casos (0, 2, 3 con crítica, 120) × 4 anchos (320, 360, 390, 768 px) | 48/48 OK: dentro de su botón, oculto con 0, sin scroll horizontal. Antes del arreglo el «99+» invadía 20 px el botón «Más» a 360 px |
-| Contra la API y la base reales | **No ejecutado** |
-| Pruebas del backend | **No ejecutadas** (sin cambios en backend; este equipo no tiene PostgreSQL de pruebas) |
+| Publicación `98b34bd`: https://aquaplants.vercel.app | OK: sirve el JS y CSS nuevos; el login abre sin errores de consola; `/api/v1/health` por Vercel 200 y `/api/v1/alertas` sin sesión 401 |
+| Render tras el push | OK: sin despliegue nuevo en GitHub para `98b34bd` (el filtro de `render.yaml` funcionó); API y simulador siguieron respondiendo |
+| Campana y número con sesión iniciada y datos reales | **No ejecutado** |
+| Pruebas del backend | No ejecutadas en este equipo (sin PostgreSQL de pruebas); CI de GitHub en `98b34bd` OK (`npm test` completo, tipos, compilación y auditoría) |
 
 Observado, sin corregir: en la página Alertas el fondo oscuro del modal «Resolver» cubre solo la tarjeta y no toda la pantalla (defecto anterior a este cambio).
 

@@ -3,7 +3,7 @@
 _Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 8 — Sugerencias recibidas (2026-11-22)
-- **1. Indicador de alertas (campana + número en el menú y en la barra del celular): hecho y probado en local con API simulada, sin publicar** (`componentes/IndicadorAlertas.tsx`; ver PRUEBAS, sesión 8).
+- **1. Indicador de alertas (campana + número en el menú y en la barra del celular): publicado el 2026-11-22 (`98b34bd`); falta verlo con sesión iniciada y datos reales** (`componentes/IndicadorAlertas.tsx`; ver PRUEBAS, sesión 8).
 - **2. GPS por dispositivo, 3. filtro de usuarios, 4. rol Técnico (incidencias como alerta), 5. AquaPlants → Supervisor → Encargados: sin empezar, por validar** con quien las propuso. La 4 cambia la Tabla 48; la 5 cambia RN-10 y CU-09.
 - Por corregir: el fondo del modal «Resolver» cubre solo la tarjeta en la página Alertas.
 

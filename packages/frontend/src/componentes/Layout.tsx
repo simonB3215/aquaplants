@@ -24,6 +24,7 @@ import { ETIQUETA_ROL } from '@aquaplants/shared';
 import { useSesion } from '../estado/sesion';
 import { useConexion } from '../estado/conexion';
 import { iniciales } from '../util/formato';
+import { CampanaAlertas, NumeroAlertasNav, ProveedorAlertas } from './IndicadorAlertas';
 
 interface ItemNav {
   ruta: string;
@@ -31,6 +32,8 @@ interface ItemNav {
   icono: LucideIcon;
   movil?: boolean;
   grupo?: string;
+  /** Muestra el número de alertas activas junto al texto. */
+  contador?: boolean;
 }
 
 /** Navegación por rol: mismo sistema visual, distinto contenido (Tabla 48 como ayuda visual). */
@@ -39,7 +42,7 @@ function itemsPara(puede: ReturnType<typeof useSesion>['puede'], rol: string, de
     { ruta: '/', texto: 'Inicio', icono: House, movil: true },
     { ruta: '/torres', texto: rol === 'encargado' ? 'Mis torres' : 'Torres', icono: Sprout, movil: true },
     { ruta: '/historicos', texto: 'Históricos', icono: ChartLine, movil: true },
-    { ruta: '/alertas', texto: 'Alertas', icono: Bell, movil: true },
+    { ruta: '/alertas', texto: 'Alertas', icono: Bell, movil: true, contador: true },
     { ruta: '/continuidad', texto: 'Continuidad', icono: Activity },
   ];
   if (puede('infraestructura.gestionar', 'leer') && rol !== 'encargado') items.push({ ruta: '/infraestructura', texto: 'Infraestructura', icono: Cpu, grupo: 'Gestión' });
@@ -85,6 +88,7 @@ export function Layout({ demoHabilitada }: { demoHabilitada: boolean }) {
       <li key={i.ruta}>
         <NavLink to={i.ruta} end={i.ruta === '/'} className="nav-enlace">
           <i.icono size={20} aria-hidden /> {i.texto}
+          {i.contador && <NumeroAlertasNav />}
         </NavLink>
       </li>,
     );
@@ -92,63 +96,68 @@ export function Layout({ demoHabilitada }: { demoHabilitada: boolean }) {
 
   return (
     <div className="app">
-      <a href="#contenido" className="saltar-contenido">
-        Saltar al contenido
-      </a>
-      <aside className="lateral vidrio" aria-label="Navegación principal">
-        <NavLink to="/" className="marca" aria-label="AquaPlants, inicio">
-          <span className="marca-logo">
-            <Droplets size={20} aria-hidden />
-          </span>
-          <span>
-            AquaPlants
-            <small>AquaBrain · {ETIQUETA_ROL[usuario.rol]}</small>
-          </span>
-        </NavLink>
-        <nav>
-          <ul className="nav-lista">{lista}</ul>
-        </nav>
-        <div className="nav-pie">
-          <button className="nav-enlace boton-fantasma" style={{ width: '100%', border: 0, cursor: 'pointer' }} onClick={() => void cerrar()}>
-            <LogOut size={20} aria-hidden /> Cerrar sesión
-          </button>
-        </div>
-      </aside>
-
-      <main id="contenido" className="principal" tabIndex={-1}>
-        <Outlet />
-      </main>
-
-      {hojaAbierta && (
-        <div className="hoja vidrio" id="hoja-mas" role="dialog" aria-label="Más opciones">
-          <ul className="nav-lista">
-            {resto.map((i) => (
-              <li key={i.ruta}>
-                <NavLink to={i.ruta} className="nav-enlace">
-                  <i.icono size={20} aria-hidden /> {i.texto}
-                </NavLink>
-              </li>
-            ))}
-            <li>
-              <button className="nav-enlace" style={{ width: '100%', border: 0, background: 'none', cursor: 'pointer' }} onClick={() => void cerrar()}>
-                <LogOut size={20} aria-hidden /> Cerrar sesión
-              </button>
-            </li>
-          </ul>
-        </div>
-      )}
-      <nav className="nav-inferior vidrio" aria-label="Navegación inferior">
-        {moviles.map((i) => (
-          <NavLink key={i.ruta} to={i.ruta} end={i.ruta === '/'}>
-            <i.icono size={20} aria-hidden />
-            <span>{i.texto}</span>
+      <ProveedorAlertas activo={!usuario.debe_cambiar_password}>
+        <a href="#contenido" className="saltar-contenido">
+          Saltar al contenido
+        </a>
+        <aside className="lateral vidrio" aria-label="Navegación principal">
+          <NavLink to="/" className="marca" aria-label="AquaPlants, inicio">
+            <span className="marca-logo">
+              <Droplets size={20} aria-hidden />
+            </span>
+            <span>
+              AquaPlants
+              <small>AquaBrain · {ETIQUETA_ROL[usuario.rol]}</small>
+            </span>
           </NavLink>
-        ))}
-        <button aria-expanded={hojaAbierta} aria-controls="hoja-mas" onClick={() => setHoja((v) => !v)}>
-          <Menu size={20} aria-hidden />
-          <span>Más</span>
-        </button>
-      </nav>
+          <nav>
+            <ul className="nav-lista">{lista}</ul>
+          </nav>
+          <div className="nav-pie">
+            <button className="nav-enlace boton-fantasma" style={{ width: '100%', border: 0, cursor: 'pointer' }} onClick={() => void cerrar()}>
+              <LogOut size={20} aria-hidden /> Cerrar sesión
+            </button>
+          </div>
+        </aside>
+
+        <main id="contenido" className="principal" tabIndex={-1}>
+          <Outlet />
+        </main>
+
+        {hojaAbierta && (
+          <div className="hoja vidrio" id="hoja-mas" role="dialog" aria-label="Más opciones">
+            <ul className="nav-lista">
+              {resto.map((i) => (
+                <li key={i.ruta}>
+                  <NavLink to={i.ruta} className="nav-enlace">
+                    <i.icono size={20} aria-hidden /> {i.texto}
+                  </NavLink>
+                </li>
+              ))}
+              <li>
+                <button className="nav-enlace" style={{ width: '100%', border: 0, background: 'none', cursor: 'pointer' }} onClick={() => void cerrar()}>
+                  <LogOut size={20} aria-hidden /> Cerrar sesión
+                </button>
+              </li>
+            </ul>
+          </div>
+        )}
+        <nav className="nav-inferior vidrio" aria-label="Navegación inferior">
+          {moviles.map((i) => (
+            <NavLink key={i.ruta} to={i.ruta} end={i.ruta === '/'}>
+              <span className="insignia-nav">
+                <i.icono size={20} aria-hidden />
+              </span>
+              <span>{i.texto}</span>
+              {i.contador && <NumeroAlertasNav />}
+            </NavLink>
+          ))}
+          <button aria-expanded={hojaAbierta} aria-controls="hoja-mas" onClick={() => setHoja((v) => !v)}>
+            <Menu size={20} aria-hidden />
+            <span>Más</span>
+          </button>
+        </nav>
+      </ProveedorAlertas>
     </div>
   );
 }
@@ -172,6 +181,7 @@ export function BarraSuperior({ actualizadoEn, desactualizado, extra }: { actual
         </div>
       </div>
       <div className="barra-acciones">
+        {!usuario.debe_cambiar_password && <CampanaAlertas />}
         <IndicadorConexion />
         {actualizadoEn !== undefined && (
           <span className={`insignia ${desactualizado ? 'e-advertencia' : 'e-neutro'}`} title="Última actualización recibida del servidor">

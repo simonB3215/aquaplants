@@ -1,6 +1,11 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-10 (sesión 5, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+
+## Sesión 8 — Sugerencias recibidas (2026-11-22)
+- **1. Indicador de alertas (campana + número en el menú y en la barra del celular): hecho y probado en local con API simulada, sin publicar** (`componentes/IndicadorAlertas.tsx`; ver PRUEBAS, sesión 8).
+- **2. GPS por dispositivo, 3. filtro de usuarios, 4. rol Técnico (incidencias como alerta), 5. AquaPlants → Supervisor → Encargados: sin empezar, por validar** con quien las propuso. La 4 cambia la Tabla 48; la 5 cambia RN-10 y CU-09.
+- Por corregir: el fondo del modal «Resolver» cubre solo la tarjeta en la página Alertas.
 
 ## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Vercel (D-30, D-36)
 - **D-36** (2026-11-10): la web pasó de Netlify a **Vercel** (`https://aquaplants.vercel.app`, `vercel.json`); `netlify.toml` eliminado. `CORS_ORIGIN` y `APP_URL` en Render ya apuntan a Vercel (CORS verificado el 2026-11-10). Sitio de Netlify deshabilitado por el usuario (404); la web queda solo en Vercel.

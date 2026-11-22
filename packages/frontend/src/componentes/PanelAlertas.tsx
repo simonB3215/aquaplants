@@ -6,11 +6,13 @@ import { useSesion } from '../estado/sesion';
 import { useAvisos } from '../estado/avisos';
 import { fechaHora, numero } from '../util/formato';
 import { Boton, InsigniaSeveridad, Modal, Vacio } from './ui';
+import { useResumenAlertas } from './IndicadorAlertas';
 
 /** Lista de alertas con acción «Resolver» solo si la Tabla 48 lo permite al rol (ayuda visual; el backend decide). */
 export function ListaAlertas({ alertas, alResolver, compacta }: { alertas: Alerta[]; alResolver: () => void; compacta?: boolean }) {
   const { puede } = useSesion();
   const avisar = useAvisos();
+  const { refrescar: refrescarCampana } = useResumenAlertas();
   const [sel, setSel] = useState<Alerta | null>(null);
   const [comentario, setComentario] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -31,12 +33,14 @@ export function ListaAlertas({ alertas, alResolver, compacta }: { alertas: Alert
       setSel(null);
       setComentario('');
       setError(null);
+      void refrescarCampana();
       alResolver();
     } catch (e) {
       const err = e as ApiError;
       if (err.status === 409) {
         avisar('La alerta ya fue resuelta por otro usuario');
         setSel(null);
+        void refrescarCampana();
         alResolver();
       } else setError(err.campo('comentario') ?? err.message);
     } finally {

@@ -229,3 +229,24 @@ Cambio: antes de ejecutar B, la API revisa si ese sensor ya tiene una alerta cr�
 | Escenario B con correo | OK (confirmado por el usuario) |
 | Reinicios del simulador (13 en 2 h) | No son caídas: coinciden con cada `git push` (Render redespliega). Se agregó `buildFilter.ignoredPaths` en `render.yaml` para que los cambios de documentación, web o pruebas no reinicien la API ni el simulador |
 | `npm test -w packages/simulador` | 6/6 OK |
+
+## Sesión 8 — Sugerencia 1: indicador de alertas (2026-11-22)
+
+Cambio solo de interfaz (además, el mismo número junto a «Alertas» en el menú lateral y en la barra inferior del celular; no se muestra con 0): campana en la barra superior de todas las páginas con el total de alertas activas (`GET /alertas?estado=activa&por_pagina=1`, que ya filtra por rol y ordena las críticas primero). Neutra con 0, ámbar con advertencias, roja con «Hay críticas» si hay alguna.
+
+| Prueba | Resultado |
+|---|---|
+| `npm test -w packages/frontend` (14 casos nuevos en `indicadorAlertas.test.tsx`: 9 de campana y 5 del menú; + 6 existentes) | 20/20 OK |
+| `npm test -w packages/shared` | 6/6 OK |
+| `npm run typecheck` y `npm run build -w packages/frontend` (Node 26.13.1) | OK |
+| Navegador con web compilada y **API simulada**: 11 rutas como Administrador a 360 px | Campana en las 11, sin scroll horizontal |
+| Navegador (API simulada): 360, 768, 1024 y 1440 px; casos 0, 3 con crítica y 120 | OK: «0», «3 · Hay críticas», «99+»; 44 px de alto; el clic lleva a /alertas |
+| Navegador (API simulada): resolver la única crítica | OK: baja a 2 y pasa a ámbar sin esperar el refresco |
+| Navegador (API simulada): número del menú lateral, 11 rutas como Administrador a 1280 px | «3» en las 11, sin scroll horizontal |
+| Navegador (API simulada): número de la barra inferior, página Alertas; 3 roles × 4 casos (0, 2, 3 con crítica, 120) × 4 anchos (320, 360, 390, 768 px) | 48/48 OK: dentro de su botón, oculto con 0, sin scroll horizontal. Antes del arreglo el «99+» invadía 20 px el botón «Más» a 360 px |
+| Contra la API y la base reales | **No ejecutado** |
+| Pruebas del backend | **No ejecutadas** (sin cambios en backend; este equipo no tiene PostgreSQL de pruebas) |
+
+Observado, sin corregir: en la página Alertas el fondo oscuro del modal «Resolver» cubre solo la tarjeta y no toda la pantalla (defecto anterior a este cambio).
+
+Nota: correr una sola suite del backend reescribe `docs/evidencias/pruebas-backend.json` con solo esa suite. No confirmar ese archivo salvo tras una ejecución completa.

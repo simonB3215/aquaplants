@@ -42,10 +42,11 @@ async function tokenConfirmacion(email: string) {
 }
 
 describe('D-28 — enlaces de invitación', () => {
-  test('solo el Administrador crea, lista y anula enlaces (Tabla 48)', async () => {
+  test('el Encargado no crea ni lista enlaces; el Supervisor, solo de su cliente (Anexo C)', async () => {
     const sup = await login(app, 'supervisor@aquaplants.cl', semilla.passwords.supervisor);
     const enc = await login(app, 'encargado@aquaplants.cl', semilla.passwords.encargado);
-    for (const t of [sup, enc]) {
+    expect((await api().post('/api/v1/invitaciones').set('authorization', `Bearer ${sup}`).send({ torres: [semilla.torres[0]] })).status).toBe(201);
+    for (const t of [enc]) {
       expect((await api().post('/api/v1/invitaciones').set('authorization', `Bearer ${t}`).send({ torres: [semilla.torres[0]] })).status).toBe(403);
       expect((await api().get('/api/v1/invitaciones').set('authorization', `Bearer ${t}`)).status).toBe(403);
     }

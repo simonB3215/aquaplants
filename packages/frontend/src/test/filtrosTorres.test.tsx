@@ -17,10 +17,10 @@ vi.mock('../componentes/PanelHistorico', () => ({ PanelHistorico: () => null }))
 import { Torres } from '../paginas/Torres';
 
 const t = (id: number, nombre: string, especie: string | null, estado_general: EstadoVariable, conexiones: EstadoConectividad[], alertas_activas = 0, extra: Partial<EstadoTorre> = {}): EstadoTorre => ({
-  id_instalacion: id, nombre, tipo: 'aeroponica', ubicacion: '', estado_registro: 'activo',
+  id_instalacion: id, nombre, tipo: 'aeroponica', ubicacion: '', id_cliente: 1, cliente: 'Cliente inicial', estado_registro: 'activo',
   cultivo: especie ? { id_cultivo: id, especie, fecha_inicio: '2026-11-01' } : null,
   estado_general, alertas_activas, variables: [], ultima_lectura: null,
-  dispositivos: conexiones.map((conectividad, i) => ({ id_dispositivo: id * 10 + i, nombre: `AquaBrain-${id}${i}`, estado_registro: 'activo', conectividad, ultima_comunicacion: null, segundos_sin_reportar: null, intervalo_muestreo_s: 60, umbral_sin_senal_s: 180, pendientes_reportados: null, datos_desactualizados: false, rssi_dbm: null, calidad_enlace: 'sin_dato' })),
+  dispositivos: conexiones.map((conectividad, i) => ({ id_dispositivo: id * 10 + i, nombre: `AquaBrain-${id}${i}`, estado_registro: 'activo', conectividad, ultima_comunicacion: null, segundos_sin_reportar: null, intervalo_muestreo_s: 60, umbral_sin_senal_s: 180, pendientes_reportados: null, datos_desactualizados: false, rssi_dbm: null, calidad_enlace: 'sin_dato', latitud: null, longitud: null })),
   ...extra,
 });
 let torres: EstadoTorre[];

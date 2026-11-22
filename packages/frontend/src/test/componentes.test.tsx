@@ -6,9 +6,9 @@ import { TarjetaTorre } from '../componentes/TarjetaTorre';
 import { RestablecerContrasena } from '../paginas/Recuperar';
 
 const torre: EstadoTorre = {
-  id_instalacion: 1, nombre: 'Torre A', tipo: 'aeroponica', ubicacion: '', estado_registro: 'activo',
+  id_instalacion: 1, nombre: 'Torre A', tipo: 'aeroponica', ubicacion: '', id_cliente: 1, cliente: 'Cliente inicial', estado_registro: 'activo',
   cultivo: { id_cultivo: 1, especie: 'Lechuga', fecha_inicio: '2026-10-01' }, estado_general: 'critico', alertas_activas: 1,
-  dispositivos: [{ id_dispositivo: 1, nombre: 'AquaBrain-A', estado_registro: 'sin_senal', conectividad: 'sin_senal', ultima_comunicacion: new Date(Date.now() - 300_000).toISOString(), segundos_sin_reportar: 300, intervalo_muestreo_s: 60, umbral_sin_senal_s: 180, pendientes_reportados: null, datos_desactualizados: true, rssi_dbm: -88, calidad_enlace: 'debil' }],
+  dispositivos: [{ id_dispositivo: 1, nombre: 'AquaBrain-A', estado_registro: 'sin_senal', conectividad: 'sin_senal', ultima_comunicacion: new Date(Date.now() - 300_000).toISOString(), segundos_sin_reportar: 300, intervalo_muestreo_s: 60, umbral_sin_senal_s: 180, pendientes_reportados: null, datos_desactualizados: true, rssi_dbm: -88, calidad_enlace: 'debil', latitud: null, longitud: null }],
   variables: [{ id_sensor: 1, tipo_variable: 'pH', id_tipo_variable: 1, unidad: 'pH', valor: 4.2, ts: new Date().toISOString(), estado: 'critico', umbrales: [{ severidad: 'critica', valor_min: 5.1, valor_max: 6.7 }], sensor_activo: true }],
   ultima_lectura: null,
 };

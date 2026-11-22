@@ -126,19 +126,40 @@ export const TorreSchema = z.object({
   nombre: texto(80),
   tipo: z.enum(TIPOS_INSTALACION),
   ubicacion: z.string().trim().max(160).optional().default(''),
+  /** RN-11. Opcional solo si existe un único cliente activo. */
+  id_cliente: z.number().int().positive().optional(),
 });
-export const EditarTorreSchema = TorreSchema.partial();
-
-export const DispositivoSchema = z.object({
-  nombre: texto(80),
-  id_instalacion: z.number().int().positive(),
-  intervalo_muestreo_s: z.number().int().min(5).max(3600).default(60),
-});
-export const EditarDispositivoSchema = z.object({
+export const EditarTorreSchema = z.object({
   nombre: texto(80).optional(),
-  id_instalacion: z.number().int().positive().optional(),
-  intervalo_muestreo_s: z.number().int().min(5).max(3600).optional(),
+  tipo: z.enum(TIPOS_INSTALACION).optional(),
+  ubicacion: z.string().trim().max(160).optional(),
+  id_cliente: z.number().int().positive().optional(),
 });
+
+/** D-37: GPS manual. Ambos o ninguno; null borra la ubicación. */
+const lat = z.number().finite().min(-90, 'Latitud entre -90 y 90').max(90, 'Latitud entre -90 y 90');
+const lon = z.number().finite().min(-180, 'Longitud entre -180 y 180').max(180, 'Longitud entre -180 y 180');
+const gpsCompleto = (v: { latitud?: number | null; longitud?: number | null }) => (v.latitud === undefined) === (v.longitud === undefined) && (v.latitud === null) === (v.longitud === null);
+const mensajeGps = { message: 'Ingrese latitud y longitud juntas', path: ['longitud'] };
+
+export const DispositivoSchema = z
+  .object({
+    nombre: texto(80),
+    id_instalacion: z.number().int().positive(),
+    intervalo_muestreo_s: z.number().int().min(5).max(3600).default(60),
+    latitud: lat.nullable().optional(),
+    longitud: lon.nullable().optional(),
+  })
+  .refine(gpsCompleto, mensajeGps);
+export const EditarDispositivoSchema = z
+  .object({
+    nombre: texto(80).optional(),
+    id_instalacion: z.number().int().positive().optional(),
+    intervalo_muestreo_s: z.number().int().min(5).max(3600).optional(),
+    latitud: lat.nullable().optional(),
+    longitud: lon.nullable().optional(),
+  })
+  .refine(gpsCompleto, mensajeGps);
 
 export const SensorSchema = z.object({
   id_dispositivo: z.number().int().positive(),
@@ -160,6 +181,10 @@ export const UsuarioSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email con formato inválido').max(160),
   rol: z.enum(ROLES),
   torres: z.array(z.number().int().positive()).max(50).optional(),
+  /** RN-11: cliente del Supervisor o Encargado (el Supervisor no lo elige: usa el suyo). */
+  id_cliente: z.number().int().positive().optional(),
+  /** Clientes que atiende un Técnico. */
+  clientes: z.array(z.number().int().positive()).max(500).optional(),
 });
 
 export const EditarUsuarioSchema = z.object({
@@ -167,6 +192,28 @@ export const EditarUsuarioSchema = z.object({
   rol: z.enum(ROLES).optional(),
   activo: z.boolean().optional(),
   torres: z.array(z.number().int().positive()).max(50).optional(),
+  id_cliente: z.number().int().positive().optional(),
+  clientes: z.array(z.number().int().positive()).max(500).optional(),
+});
+
+// ---------- D-37 Clientes (RN-11) ----------
+export const ClienteSchema = z.object({ nombre: texto(120) });
+export const EditarClienteSchema = z.object({
+  nombre: texto(120).optional(),
+  estado: z.enum(['activo', 'baja']).optional(),
+});
+
+// ---------- D-37 Incidencias de equipos (RN-13) ----------
+export const ESTADOS_INCIDENCIA = ['abierta', 'en_atencion', 'cerrada'] as const;
+export const FiltroIncidenciasSchema = z.object({
+  /** «activas» = abiertas y en atención. */
+  estado: z.enum(['activas', ...ESTADOS_INCIDENCIA]).optional(),
+  torre: id.optional(),
+  pagina: z.coerce.number().int().min(1).default(1),
+  por_pagina: z.coerce.number().int().min(1).max(100).default(25),
+});
+export const CerrarIncidenciaSchema = z.object({
+  comentario: z.string().trim().min(1, 'Indique qué se hizo').max(500),
 });
 
 // ---------- D-28 Registro con enlace de invitación (amplía CU-09) ----------

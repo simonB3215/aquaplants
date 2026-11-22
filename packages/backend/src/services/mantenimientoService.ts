@@ -95,7 +95,7 @@ export class MantenimientoService {
           `INSERT INTO notificacion_correo (id_usuario, tipo, destinatario, asunto, texto)
            SELECT u.id_usuario, 'respaldo_fallido', u.email, '[AquaPlants] Falló el respaldo de la base de datos', $1
              FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
-            WHERE r.nombre = 'administrador' AND u.activo`,
+            WHERE r.nombre IN ('administrador', 'administrador_principal') AND u.activo`,
           [texto],
         );
         await tx.query(`UPDATE respaldo_registro SET notificado_en = now() WHERE id_respaldo = $1`, [f.id_respaldo]);

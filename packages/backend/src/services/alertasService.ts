@@ -5,7 +5,7 @@ import { auditar } from './auditoria.js';
 import { torresVisibles, type UsuarioCtx } from './acceso.js';
 
 const SELECT_ALERTA = `
-  SELECT a.id_alerta, a.id_sensor, i.id_instalacion, i.nombre AS torre, tv.nombre AS tipo_variable, tv.unidad_medida AS unidad,
+  SELECT a.id_alerta, a.id_sensor, i.id_instalacion, i.nombre AS torre, cl.nombre AS cliente, tv.nombre AS tipo_variable, tv.unidad_medida AS unidad,
          a.severidad, a.estado, a.valor, a.valor_min, a.valor_max, a.ultimo_valor, a.ts_ultima, a.ocurrencias,
          a.fecha_generacion, a.fecha_resolucion, ur.nombre AS resuelta_por, a.comentario, a.notificacion_estado
     FROM alerta a
@@ -13,6 +13,7 @@ const SELECT_ALERTA = `
     JOIN tipo_variable tv ON tv.id_tipo_variable = s.id_tipo_variable
     JOIN dispositivo d ON d.id_dispositivo = s.id_dispositivo
     JOIN instalacion i ON i.id_instalacion = d.id_instalacion
+    JOIN cliente cl ON cl.id_cliente = i.id_cliente
     LEFT JOIN usuario ur ON ur.id_usuario = a.resuelta_por`;
 
 /** CU-04 Gestionar alertas (consulta y resolución). */

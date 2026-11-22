@@ -242,6 +242,8 @@ export class IngestaService {
     );
     if (prev.rows[0]?.estado === 'sin_senal') {
       const ultima = prev.rows[0].ultima_comunicacion;
+      // RN-13: la incidencia sigue abierta (la cierra el Técnico), pero se anota que volvió la señal.
+      await tx.query(`UPDATE incidencia SET senal_recuperada_en = now() WHERE id_dispositivo = $1 AND estado <> 'cerrada'`, [idDispositivo]);
       await registrarEvento(tx, idDispositivo, 'reconexion', 'El dispositivo volvió a comunicarse', {
         sin_comunicacion_desde: ultima?.toISOString() ?? null,
         segundos_sin_comunicacion: ultima ? Math.round((Date.now() - ultima.getTime()) / 1000) : null,

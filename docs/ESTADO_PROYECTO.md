@@ -5,8 +5,11 @@ _Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir e
 ## Sesión 8 — Sugerencias recibidas (2026-11-22)
 - **1. Indicador de alertas (campana + número en el menú y en la barra del celular): publicado el 2026-11-22 (`98b34bd`); falta verlo con sesión iniciada y datos reales** (`componentes/IndicadorAlertas.tsx`; ver PRUEBAS, sesión 8).
 - **3. Filtros de usuarios (texto, rol, estado): publicados el 2026-11-22 (`fcb33e9`); falta verlos con sesión iniciada y datos reales.** Incluye el arreglo del desborde de tablas en celular. Sin paginación.
-- **Filtros de torres (texto, estado, conexión), pedido del usuario: publicados el 2026-11-22 (`e181077`); falta verlos con sesión iniciada y datos reales.**
-- **2. GPS por dispositivo, 4. rol Técnico (incidencias como alerta), 5. AquaPlants → Supervisor → Encargados: sin empezar, por validar** con quien las propuso. La 4 cambia la Tabla 48; la 5 cambia RN-10 y CU-09.
+- **Filtros de torres (texto, estado, conexión), pedido del usuario: publicados el 2026-11-22 (`e181077`); el usuario confirmó que se ven bien con su sesión.**
+- **2. GPS por dispositivo, 4. rol Técnico con incidencias, 5. clientes → Supervisor → Encargados + Administrador principal (Anexo C, D-37): implementadas en la rama local `estructura-clientes`, sin commit y sin publicar.** Cambian la Tabla 48 (5 roles, 16 funcionalidades), RN-10 y CU-09.
+  - **Probado**: typecheck completo; shared 8/8; backend sin base de datos 103/103 (incluye `rolesAnexoC.test.ts`, 88 casos de la matriz de permisos y alcance); simulador 6/6; frontend 66/66 (incluye `rolesPantallas.test.tsx`); build del frontend; pantallas vistas en el navegador con una API simulada local (Técnico, Supervisor, Administrador).
+  - **Sin probar**: la migración `012_clientes_roles_incidencias.sql`, las consultas SQL nuevas y el aislamiento real entre clientes (`test/estructura.test.ts` y las suites de integración necesitan PostgreSQL: correrán en el CI cuando el usuario autorice subir la rama a GitHub).
+  - **Orden para publicar** (cada paso requiere autorización): 1) CI verde en la rama; 2) aplicar la migración 012 en Supabase (Render no migra solo; el `DEFAULT 1` deja funcionando el código anterior mientras tanto); 3) unir a `main` (Render y Vercel se actualizan); 4) designar a los Administradores principales con `npm run admin:principal -w packages/backend -- --email <correo>` (con la conexión de Supabase en el entorno); 5) crear los clientes reales y mover sus torres desde «Cliente inicial».
 - Por corregir: el fondo del modal «Resolver» cubre solo la tarjeta en la página Alertas.
 
 ## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Vercel (D-30, D-36)

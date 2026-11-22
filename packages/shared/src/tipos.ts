@@ -27,6 +27,9 @@ export interface UsuarioSesion {
   debe_cambiar_password: boolean;
   /** D-32: correos de alerta crítica. */
   aviso_alertas: AvisoAlertas;
+  /** D-37: cliente del Supervisor o Encargado (null para los demás roles). */
+  id_cliente: number | null;
+  cliente: string | null;
 }
 
 export type AvisoAlertas = 'todas' | 'urgentes' | 'ninguna';
@@ -63,6 +66,9 @@ export interface DispositivoEstado {
   /** D-35: última intensidad de señal informada (RSSI, dBm) y su clasificación. */
   rssi_dbm: number | null;
   calidad_enlace: CalidadEnlace;
+  /** D-37: GPS ingresado a mano (opcional). */
+  latitud: number | null;
+  longitud: number | null;
 }
 
 export interface EstadoTorre {
@@ -70,6 +76,9 @@ export interface EstadoTorre {
   nombre: string;
   tipo: 'aeroponica' | 'hidroponica';
   ubicacion: string;
+  /** D-37: cliente dueño de la torre. */
+  id_cliente: number;
+  cliente: string;
   estado_registro: 'activo' | 'baja';
   cultivo: { id_cultivo: number; especie: string; fecha_inicio: string } | null;
   estado_general: EstadoVariable;
@@ -89,6 +98,7 @@ export interface Alerta {
   id_sensor: number;
   id_instalacion: number;
   torre: string;
+  cliente: string;
   tipo_variable: string;
   unidad: string;
   severidad: Severidad;
@@ -104,6 +114,30 @@ export interface Alerta {
   resuelta_por: string | null;
   comentario: string | null;
   notificacion_estado: string;
+}
+
+/** D-37 / RN-13: incidencia de un equipo, para el Técnico. */
+export interface Incidencia {
+  id_incidencia: number;
+  id_dispositivo: number;
+  dispositivo: string;
+  id_instalacion: number;
+  torre: string;
+  cliente: string;
+  tipo: 'sin_senal';
+  estado: 'abierta' | 'en_atencion' | 'cerrada';
+  abierta_en: string;
+  ocurrencias: number;
+  senal_recuperada_en: string | null;
+  /** Estado actual del dispositivo (sigue sin señal o ya se comunica). */
+  sigue_sin_senal: boolean;
+  atendida_por: string | null;
+  atendida_en: string | null;
+  cerrada_por: string | null;
+  cerrada_en: string | null;
+  comentario_cierre: string | null;
+  latitud: number | null;
+  longitud: number | null;
 }
 
 export interface Paginado<T> {

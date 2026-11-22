@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom';
-import { Bell, ChartLine, Clock, Cpu, Sprout, TriangleAlert } from 'lucide-react';
+import { Bell, Building2, ChartLine, Clock, Cpu, Sprout, TriangleAlert } from 'lucide-react';
 import type { EstadoTorre } from '@aquaplants/shared';
 import { InsigniaConectividad, InsigniaEstado, InsigniaSenal } from './ui';
+import { EnlaceGps } from './Ubicacion';
 import { duracion, fechaHora, hace, numero } from '../util/formato';
 
-/** Tarjeta de estado por torre (CU-03): cultivo, variables, unidades, estados, umbrales y timestamps. */
-export function TarjetaTorre({ torre, servidorCaido }: { torre: EstadoTorre; servidorCaido?: boolean }) {
+/**
+ * Tarjeta de estado por torre (CU-03): cultivo, variables, unidades, estados, umbrales y timestamps.
+ * Anexo C (D-37): `mostrarCliente` para quien ve varios clientes; `veAlertas` = false para el Técnico.
+ */
+export function TarjetaTorre({ torre, servidorCaido, mostrarCliente, veAlertas = true }: { torre: EstadoTorre; servidorCaido?: boolean; mostrarCliente?: boolean; veAlertas?: boolean }) {
   const desactualizado = torre.dispositivos.some((d) => d.datos_desactualizados) || servidorCaido;
   return (
     <article className="tarjeta vidrio torre" aria-labelledby={`torre-${torre.id_instalacion}`}>
@@ -16,6 +20,11 @@ export function TarjetaTorre({ torre, servidorCaido }: { torre: EstadoTorre; ser
             <Sprout size={14} aria-hidden />
             {torre.cultivo ? `${torre.cultivo.especie} desde ${torre.cultivo.fecha_inicio}` : 'Sin cultivo en curso'} · {torre.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'}
           </p>
+          {mostrarCliente && torre.cliente && (
+            <p className="muted pequeno" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Building2 size={14} aria-hidden /> {torre.cliente}
+            </p>
+          )}
         </div>
         <InsigniaEstado estado={torre.estado_general} />
       </div>
@@ -69,6 +78,7 @@ export function TarjetaTorre({ torre, servidorCaido }: { torre: EstadoTorre; ser
               <Clock size={12} aria-hidden /> última comunicación {hace(d.ultima_comunicacion)}
             </span>
             {d.conectividad === 'sincronizando' && d.pendientes_reportados != null && <span className="muted">· {d.pendientes_reportados} lotes pendientes</span>}
+            <EnlaceGps latitud={d.latitud ?? null} longitud={d.longitud ?? null} />
           </div>
         ))}
       </div>
@@ -89,9 +99,11 @@ export function TarjetaTorre({ torre, servidorCaido }: { torre: EstadoTorre; ser
         <Link className="boton boton-secundario boton-pequeno" to={`/historicos?torre=${torre.id_instalacion}`}>
           <ChartLine size={16} aria-hidden /> Históricos
         </Link>
-        <Link className="boton boton-fantasma boton-pequeno" to={`/alertas?torre=${torre.id_instalacion}`}>
-          <Bell size={16} aria-hidden /> {torre.alertas_activas} alertas activas
-        </Link>
+        {veAlertas && (
+          <Link className="boton boton-fantasma boton-pequeno" to={`/alertas?torre=${torre.id_instalacion}`}>
+            <Bell size={16} aria-hidden /> {torre.alertas_activas} alertas activas
+          </Link>
+        )}
         <Link className="boton boton-fantasma boton-pequeno" to={`/torres/${torre.id_instalacion}`}>
           Ficha
         </Link>

@@ -60,18 +60,21 @@ export class EstadoService {
       nombre: string;
       tipo: 'aeroponica' | 'hidroponica';
       ubicacion: string;
+      id_cliente: number;
+      cliente: string;
       estado: 'activo' | 'baja';
       id_cultivo: number | null;
       especie: string | null;
       fecha_inicio: string | null;
       alertas_activas: number;
     }>(
-      `SELECT i.id_instalacion, i.nombre, i.tipo, i.ubicacion, i.estado,
+      `SELECT i.id_instalacion, i.nombre, i.tipo, i.ubicacion, i.estado, i.id_cliente, cl.nombre AS cliente,
               c.id_cultivo, e.nombre AS especie, to_char(c.fecha_inicio, 'YYYY-MM-DD') AS fecha_inicio,
               (SELECT count(*)::int FROM alerta a JOIN sensor s ON s.id_sensor = a.id_sensor
                  JOIN dispositivo d ON d.id_dispositivo = s.id_dispositivo
                 WHERE d.id_instalacion = i.id_instalacion AND a.estado = 'activa') AS alertas_activas
          FROM instalacion i
+         JOIN cliente cl ON cl.id_cliente = i.id_cliente
          LEFT JOIN cultivo c ON c.id_instalacion = i.id_instalacion AND c.estado = 'en_curso'
          LEFT JOIN especie e ON e.id_especie = c.id_especie
         WHERE ($1::int[] IS NULL OR i.id_instalacion = ANY($1::int[]))
@@ -93,9 +96,11 @@ export class EstadoService {
       pendientes_reportados: number | null;
       pendientes_reportados_en: Date | null;
       rssi_dbm: number | null;
+      latitud: number | null;
+      longitud: number | null;
     }>(
       `SELECT id_dispositivo, id_instalacion, nombre, estado, ultima_comunicacion, ultima_lectura_ts, intervalo_muestreo_s,
-              pendientes_reportados, pendientes_reportados_en, rssi_dbm
+              pendientes_reportados, pendientes_reportados_en, rssi_dbm, latitud, longitud
          FROM dispositivo WHERE id_instalacion = ANY($1::int[]) ORDER BY nombre`,
       [ids],
     );
@@ -146,6 +151,8 @@ export class EstadoService {
             datos_desactualizados: !d.ultima_lectura_ts || ahora - d.ultima_lectura_ts.getTime() > limite * 1000,
             rssi_dbm: d.rssi_dbm,
             calidad_enlace: calidadEnlace(d.rssi_dbm),
+            latitud: d.latitud,
+            longitud: d.longitud,
           };
         });
       const variables: VariableEstado[] = vars.rows
@@ -171,6 +178,8 @@ export class EstadoService {
         nombre: t.nombre,
         tipo: t.tipo,
         ubicacion: t.ubicacion,
+        id_cliente: t.id_cliente,
+        cliente: t.cliente,
         estado_registro: t.estado,
         cultivo: t.id_cultivo ? { id_cultivo: t.id_cultivo, especie: t.especie!, fecha_inicio: t.fecha_inicio! } : null,
         estado_general,

@@ -13,6 +13,7 @@
     "start:worker": "node dist/worker.js",
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
+    "admin:principal": "tsx src/scripts/principal.ts",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand"
   },
   "dependencies": {

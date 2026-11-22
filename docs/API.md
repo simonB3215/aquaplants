@@ -35,6 +35,19 @@ Errores uniformes (Tabla 11): `{ "codigo": "...", "mensaje": "...", "campos": [{
 | `GET /health` | RF-14 | público | | |
 | `GET /demo/estado`, `POST /demo/escenarios/{A..G}` | demo | — | — | ✔ (solo `DEMO_MODE=true`) |
 
+### Anexo C — clientes, Técnico e incidencias (D-37, rama `estructura-clientes`, sin publicar)
+Roles: Encargado, Supervisor, Técnico, Administrador y Administrador principal (este último = Administrador + gestionar Administradores).
+
+| Método y ruta | Encargado | Supervisor | Técnico | Admin |
+|---|---|---|---|---|
+| `GET /clientes`, `POST /clientes`, `PATCH /clientes/{id}` (nombre, estado; baja solo sin torres ni usuarios activos → 409 `CLIENTE_EN_USO`) | 403 | 403 | 403 | ✔ |
+| `GET /incidencias?estado=activas\|abierta\|en_atencion\|cerrada&torre=&pagina=&por_pagina=` | 403 | su cliente (lectura) | sus clientes | ✔ |
+| `PATCH /incidencias/{id}/atender`, `PATCH /incidencias/{id}/cerrar` `{comentario}` (422 `SIN_SENAL_PERSISTE` si el equipo sigue sin señal) | 403 | 403 | sus clientes | ✔ |
+| `GET/POST /usuarios`, `PATCH /usuarios/{id}`, `GET /roles`, invitaciones | 403 | solo Encargados de su cliente | 403 | ✔ (Administradores: solo el principal) |
+| `GET /alertas`, `GET /cultivos` | sus torres | su cliente | 403 | ✔ |
+| `GET /torres/estado`, `/torres`, `/dispositivos`, `/continuidad` | sus torres | su cliente | sus clientes (lectura) | ✔ |
+| `POST /torres`, `PATCH /torres/{id}` aceptan `id_cliente`; `POST/PATCH /dispositivos` aceptan `latitud` y `longitud` (juntas o ninguna) | 403 | 403 | 403 | ✔ |
+
 ## Telemetría (CU-01)
 
 ```http

@@ -20,6 +20,8 @@ import { InvitacionService } from './services/invitacionService.js';
 import { CultivoService } from './services/cultivoService.js';
 import { ContinuidadService } from './services/continuidadService.js';
 import { DemoService } from './services/demoService.js';
+import { ClienteService } from './services/clienteService.js';
+import { IncidenciaService } from './services/incidenciaService.js';
 
 /** Punto único de composición: aquí se inyectan los adaptadores en los servicios. */
 export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?: IPayloadStore; notificador?: INotificador }) {
@@ -49,6 +51,8 @@ export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?:
     cultivos: new CultivoService(db),
     continuidad: new ContinuidadService(db, payloads, cfg),
     demo: new DemoService(cfg, db),
+    clientes: new ClienteService(db),
+    incidencias: new IncidenciaService(db),
   };
 }
 export type Servicios = ReturnType<typeof crearServicios>;

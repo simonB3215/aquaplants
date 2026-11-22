@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import type { Funcionalidad } from '@aquaplants/shared';
+import { esAdministracion, type Funcionalidad } from '@aquaplants/shared';
 import { ProveedorSesion, useSesion } from './estado/sesion';
 import { ProveedorConexion } from './estado/conexion';
 import { ProveedorAvisos, useAvisos } from './estado/avisos';
@@ -11,7 +11,8 @@ import { FichaTorre, Torres } from './paginas/Torres';
 import { Historicos } from './paginas/Historicos';
 import { Alertas } from './paginas/Alertas';
 import { Continuidad } from './paginas/Continuidad';
-import { Auditoria, Infraestructura, Perfil, Umbrales, Usuarios } from './paginas/Gestion';
+import { Auditoria, Clientes, Infraestructura, Perfil, Umbrales, Usuarios } from './paginas/Gestion';
+import { Incidencias } from './paginas/Incidencias';
 import { OlvideContrasena, RestablecerContrasena } from './paginas/Recuperar';
 import { ConfirmarRegistro, Registro } from './paginas/Registro';
 import { Demo } from './paginas/Demo';
@@ -28,7 +29,7 @@ function Rutas() {
   const { usuario, verificando } = useSesion();
   const [demo, setDemo] = useState(false);
   useEffect(() => {
-    if (usuario?.rol !== 'administrador') return setDemo(false);
+    if (!usuario || !esAdministracion(usuario.rol)) return setDemo(false);
     api
       .get('/demo/estado')
       .then(() => setDemo(true))
@@ -66,14 +67,16 @@ function Rutas() {
         <Route path="torres" element={<Torres />} />
         <Route path="torres/:id" element={<FichaTorre />} />
         <Route path="historicos" element={<Historicos />} />
-        <Route path="alertas" element={<Alertas />} />
+        <Route path="alertas" element={<Requiere f="alertas.ver" accion="leer"><Alertas /></Requiere>} />
+        <Route path="incidencias" element={<Requiere f="incidencias.atender" accion="leer"><Incidencias /></Requiere>} />
         <Route path="continuidad" element={<Continuidad />} />
         <Route path="perfil" element={<Perfil />} />
         <Route path="infraestructura" element={<Requiere f="infraestructura.gestionar" accion="leer"><Infraestructura /></Requiere>} />
         <Route path="umbrales" element={<Requiere f="umbrales.gestionar" accion="leer"><Umbrales /></Requiere>} />
         <Route path="usuarios" element={<Requiere f="usuarios.gestionar"><Usuarios /></Requiere>} />
+        <Route path="clientes" element={<Requiere f="clientes.gestionar" accion="leer"><Clientes /></Requiere>} />
         <Route path="auditoria" element={<Requiere f="auditoria.consultar" accion="leer"><Auditoria /></Requiere>} />
-        <Route path="demo" element={<Requiere f="usuarios.gestionar"><Demo /></Requiere>} />
+        <Route path="demo" element={<Requiere f="clientes.gestionar"><Demo /></Requiere>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

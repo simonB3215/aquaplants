@@ -285,5 +285,22 @@ Cambio solo de interfaz en Torres / Mis torres: buscador (nombre, cultivo, tipo,
 | Navegador (API simulada): entrar a una ficha y volver | Conserva el filtro |
 | Publicación `e181077`: https://aquaplants.vercel.app | OK: sirve el JS y CSS nuevos; el login abre sin errores de consola; `/api/v1/torres/estado` sin sesión 401 |
 | Render tras el push | OK: sin redespliegue; API y simulador siguieron respondiendo |
-| Con sesión, API y datos reales | **No ejecutado** |
+| Con sesión, API y datos reales | Revisión visual del usuario (2026-11-22): «se ven bien». Las combinaciones no se probaron con datos reales |
 | Pruebas del backend | No ejecutadas en este equipo (sin cambios en backend); CI de GitHub en `e181077` OK |
+
+## Sesión 8 — Estructura del Anexo C: clientes, Técnico, incidencias, GPS (2026-11-22, D-37)
+Rama local `estructura-clientes`, sin commit ni publicación. Ejecutado en el PC del usuario (Node 26, sin PostgreSQL local).
+
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (shared, backend, simulador, frontend) | **✔** sin errores |
+| shared (`permisos.test.ts`: 5 roles, 16 funcionalidades, RN-12) | **8/8 ✔** |
+| backend sin base de datos: `rolesAnexoC` (88), `demoEscenarioB`, `notificador`, `config`, `conexion` | **103/103 ✔** |
+| backend con base de datos: `api`, `datos`, `sesion`, `invitaciones`, `variablesEnlace`, `estructura` (nueva) | **No ejecutadas**: 97 fallan por `ECONNREFUSED 127.0.0.1:5432` (no hay PostgreSQL en este PC). Quedan para el CI |
+| simulador | **6/6 ✔** |
+| frontend (incluye `rolesPantallas.test.tsx`: menú por rol, Incidencias del Técnico, Supervisor en solo lectura) | **66/66 ✔** |
+| `npm run build -w packages/frontend` | **✔** |
+| Pantallas en el navegador integrado con una API simulada local (datos ficticios, sin Supabase) | **✔** Técnico: Inicio, Incidencias (solo sus clientes, «Atender», GPS), Infraestructura en lectura, sin Alertas; Supervisor: «Mis Encargados» solo de su cliente; Administrador: Clientes. Sin errores en la consola |
+| Migración `012_clientes_roles_incidencias.sql` | **Sin probar** (no se aplicó en ninguna base) |
+
+Ajustes en pruebas existentes: `invitaciones.test.ts` (el Supervisor ahora puede invitar Encargados de su cliente: 201), fixtures del frontend con `id_cliente`, `cliente`, `latitud` y `longitud`, y el usuario simulado de `filtrosUsuarios.test.tsx` con rol Administrador (las acciones ahora dependen del rol).

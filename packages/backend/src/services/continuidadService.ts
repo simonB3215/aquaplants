@@ -38,6 +38,14 @@ export class ContinuidadService {
         [this.cfg.SIN_SENAL_FACTOR],
       );
       for (const d of r.rows) {
+        // RN-13 (D-37): incidencia de equipo para el Técnico del cliente. Una abierta por
+        // dispositivo; si ya había una (la señal volvió y se perdió otra vez) se reabre la cuenta.
+        await tx.query(
+          `INSERT INTO incidencia (id_dispositivo, abierta_en) VALUES ($1, now())
+           ON CONFLICT (id_dispositivo) WHERE estado <> 'cerrada'
+           DO UPDATE SET ocurrencias = incidencia.ocurrencias + 1, senal_recuperada_en = NULL`,
+          [d.id_dispositivo],
+        );
         await registrarEvento(
           tx,
           d.id_dispositivo,
@@ -105,9 +113,11 @@ export class ContinuidadService {
       pendientes_reportados: number | null;
       pendientes_reportados_en: Date | null;
       rssi_dbm: number | null;
+      latitud: number | null;
+      longitud: number | null;
     }>(
       `SELECT d.id_dispositivo, d.nombre, d.id_instalacion, i.nombre AS torre, d.estado, d.ultima_comunicacion, d.ultima_lectura_ts,
-              d.intervalo_muestreo_s, d.pendientes_reportados, d.pendientes_reportados_en, d.rssi_dbm
+              d.intervalo_muestreo_s, d.pendientes_reportados, d.pendientes_reportados_en, d.rssi_dbm, d.latitud, d.longitud
          FROM dispositivo d JOIN instalacion i ON i.id_instalacion = d.id_instalacion
         WHERE ($1::int[] IS NULL OR d.id_instalacion = ANY($1::int[])) ORDER BY i.nombre, d.nombre`,
       [vis],
@@ -129,6 +139,8 @@ export class ContinuidadService {
       datos_desactualizados: !x.ultima_lectura_ts || ahora - x.ultima_lectura_ts.getTime() > x.intervalo_muestreo_s * f * 1000,
       rssi_dbm: x.rssi_dbm,
       calidad_enlace: calidadEnlace(x.rssi_dbm),
+      latitud: x.latitud,
+      longitud: x.longitud,
     }));
     const lotes = await this.db.query<{ recuperados: number; lecturas: number; duplicados: number }>(
       `SELECT count(*) FILTER (WHERE l.recuperado)::int AS recuperados,

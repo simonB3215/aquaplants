@@ -1146,3 +1146,65 @@ table.tabla {
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------- D-37: GPS e incidencias */
+.campo-grupo {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-md, 8px);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  margin: 0;
+  display: grid;
+  gap: var(--space-sm);
+}
+.fila-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 360px) {
+  .fila-2 {
+    grid-template-columns: 1fr;
+  }
+}
+.enlace-gps {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 0.875rem;
+  color: var(--color-info);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.enlace-gps:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+.incidencia {
+  display: grid;
+  gap: var(--space-sm);
+  border-left: 4px solid var(--estado-sin-senal);
+}
+.incidencia[data-estado='en_atencion'] {
+  border-left-color: var(--estado-sincronizando);
+}
+.incidencia[data-estado='cerrada'] {
+  border-left-color: var(--estado-neutro);
+}
+.incidencia-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.incidencia-cab h3 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.incidencia-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--space-md);
+}

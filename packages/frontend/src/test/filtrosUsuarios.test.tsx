@@ -6,7 +6,7 @@ vi.mock('../api/cliente', async (original) => {
   const real = await original<typeof import('../api/cliente')>();
   return { ...real, api: { ...real.api, get: m.get, patch: m.patch } };
 });
-vi.mock('../estado/sesion', () => ({ useSesion: () => ({ usuario: { id_usuario: 1 }, puede: () => true }) }));
+vi.mock('../estado/sesion', () => ({ useSesion: () => ({ usuario: { id_usuario: 1, rol: 'administrador' }, puede: () => true }) }));
 vi.mock('../estado/conexion', () => ({ useConexion: () => 'en_linea' }));
 vi.mock('../estado/avisos', () => ({ useAvisos: () => vi.fn() }));
 vi.mock('../componentes/Layout', () => ({ BarraSuperior: () => null }));

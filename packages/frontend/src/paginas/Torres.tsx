@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Sprout } from 'lucide-react';
-import type { RespuestaEstado } from '@aquaplants/shared';
+import { rolConCliente, type RespuestaEstado } from '@aquaplants/shared';
 import { api, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
 import { useSesion } from '../estado/sesion';
@@ -16,7 +16,7 @@ import { hoyISO } from '../util/formato';
 import { filtrarTorres, guardarFiltroTorres, leerFiltroTorres, type FiltroTorres } from '../util/torres';
 
 export function Torres() {
-  const { usuario } = useSesion();
+  const { usuario, puede } = useSesion();
   const conexion = useConexion();
   const estado = useDatos<RespuestaEstado>((s) => api.get('/torres/estado', s), [], { cadaMs: 5000 });
   const [filtro, setFiltro] = useState(() => leerFiltroTorres(usuario?.id_usuario));
@@ -29,7 +29,10 @@ export function Torres() {
   return (
     <>
       <BarraSuperior actualizadoEn={estado.actualizadoEn} desactualizado={estado.desactualizado} />
-      <Encabezado titulo={usuario?.rol === 'encargado' ? 'Mis torres' : 'Torres'} descripcion="Estado actual por torre, actualizado cada 5 segundos (CU-03)" />
+      <Encabezado
+        titulo={usuario?.rol === 'encargado' ? 'Mis torres' : usuario?.rol === 'supervisor' ? `Torres de ${usuario.cliente ?? 'su cliente'}` : usuario?.rol === 'tecnico' ? 'Torres de mis clientes' : 'Torres'}
+        descripcion="Estado actual por torre, actualizado cada 5 segundos (CU-03)"
+      />
       <MensajeError error={estado.datos ? null : estado.error} reintentar={estado.refrescar} />
       {torres.length > 0 && (
         <Tarjeta etiqueta="Filtros de torres" className="tarjeta-filtros">
@@ -45,7 +48,7 @@ export function Torres() {
       ) : torres.length ? (
         <div className="rejilla rejilla-torres">
           {visibles.map((t) => (
-            <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={conexion !== 'en_linea' || estado.desactualizado} />
+            <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={conexion !== 'en_linea' || estado.desactualizado} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} veAlertas={puede('alertas.ver', 'leer')} />
           ))}
         </div>
       ) : (
@@ -73,10 +76,12 @@ interface Catalogos {
 /** Ficha de la torre: estado, histórico y ciclo de cultivos (CU-10). Usable en terreno desde el móvil. */
 export function FichaTorre() {
   const id = Number(useParams().id);
-  const { puede } = useSesion();
+  const { puede, usuario } = useSesion();
   const avisar = useAvisos();
   const estado = useDatos<RespuestaEstado>((s) => api.get(`/torres/${id}/estado`, s), [id], { cadaMs: 5000 });
-  const cultivos = useDatos<Cultivo[]>((s) => api.get(`/cultivos?torre=${id}`, s), [id]);
+  // Anexo C (D-37): el Técnico no ve cultivos; no se pide la lista para no recibir un 403.
+  const veCultivos = puede('cultivos.gestionar', 'leer');
+  const cultivos = useDatos<Cultivo[]>((s) => api.get(`/cultivos?torre=${id}`, s), [id], { activo: veCultivos });
   const catalogos = useDatos<Catalogos>((s) => api.get('/catalogos', s), []);
   const [modal, setModal] = useState<'nuevo' | 'cerrar' | null>(null);
   const [especie, setEspecie] = useState('');
@@ -125,11 +130,12 @@ export function FichaTorre() {
       ) : (
         <div className="rejilla rejilla-principal">
           <div className="rejilla" style={{ alignContent: 'start' }}>
-            <TarjetaTorre torre={torre} />
+            <TarjetaTorre torre={torre} veAlertas={puede('alertas.ver', 'leer')} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} />
             <Tarjeta titulo="Histórico">
               <PanelHistorico torres={[torre]} />
             </Tarjeta>
           </div>
+          {veCultivos && (
           <Tarjeta
             titulo="Cultivos"
             descripcion="Un cultivo en curso por torre"
@@ -162,6 +168,7 @@ export function FichaTorre() {
               <Vacio titulo="Sin cultivos registrados" icono={Sprout} />
             )}
           </Tarjeta>
+          )}
         </div>
       )}
       <Modal titulo={modal === 'nuevo' ? 'Registrar cultivo' : 'Cerrar cultivo en curso'} abierto={!!modal} onCerrar={() => setModal(null)}>

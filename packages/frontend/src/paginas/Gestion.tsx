@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Ban, KeyRound, Link2, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
-import { ETIQUETA_ROL, ROLES, type AvisoAlertas, type Rol } from '@aquaplants/shared';
+import { Ban, Building2, KeyRound, Link2, MapPin, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+import { ETIQUETA_ROL, esAdministracion, puedeGestionarRol, rolConCliente, rolesAsignables, type AvisoAlertas, type Rol } from '@aquaplants/shared';
+import { EnlaceGps, leerGps } from '../componentes/Ubicacion';
 import { api, qs, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
 import { useSesion } from '../estado/sesion';
@@ -12,7 +13,7 @@ import { fechaHora, hace, numero } from '../util/formato';
 import { FiltrosUsuarios } from '../componentes/FiltrosUsuarios';
 import { ESTADOS_USUARIO, estadoUsuario, filtrarUsuarios, SIN_FILTROS } from '../util/usuarios';
 
-/* =================================================================== Usuarios (CU-09) */
+/* =================================================================== Usuarios (CU-09 + Anexo C) */
 interface UsuarioFila {
   id_usuario: number;
   nombre: string;
@@ -22,6 +23,10 @@ interface UsuarioFila {
   bloqueado: boolean;
   debe_cambiar_password: boolean;
   torres: number[];
+  /** D-37: cliente del Supervisor/Encargado y clientes que atiende un Técnico. */
+  id_cliente: number | null;
+  cliente: string | null;
+  clientes: number[];
 }
 interface TorreFila {
   id_instalacion: number;
@@ -30,7 +35,23 @@ interface TorreFila {
   ubicacion: string;
   estado: string;
   dispositivos: number;
+  id_cliente: number;
+  cliente: string;
   responsables: { id_usuario: number; nombre: string; rol: string }[];
+}
+export interface ClienteFila {
+  id_cliente: number;
+  nombre: string;
+  estado: 'activo' | 'baja';
+  torres: number;
+  usuarios: number;
+  tecnicos: number;
+}
+
+/** Clientes visibles para quien puede verlos (solo Administradores). */
+function useClientes() {
+  const { puede } = useSesion();
+  return useDatos<ClienteFila[]>((s) => api.get('/clientes', s), [], { activo: puede('clientes.gestionar', 'leer') });
 }
 
 export function Usuarios() {
@@ -38,12 +59,48 @@ export function Usuarios() {
   const avisar = useAvisos();
   const lista = useDatos<UsuarioFila[]>((s) => api.get('/usuarios', s), []);
   const torres = useDatos<TorreFila[]>((s) => api.get('/torres', s), []);
+  const clientes = useClientes();
   const [edit, setEdit] = useState<Partial<UsuarioFila> | null>(null);
   const [filtro, setFiltro] = useState(SIN_FILTROS);
   const visibles = filtrarUsuarios(lista.datos ?? [], filtro);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [secreto, setSecreto] = useState<{ email: string; pass: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  if (!usuario) return null;
+  const admin = esAdministracion(usuario.rol);
+  const asignables = rolesAsignables(usuario.rol);
+  const clientesActivos = (clientes.datos ?? []).filter((c) => c.estado === 'activo');
+  const esYo = (u: Partial<UsuarioFila>) => u.id_usuario === usuario.id_usuario;
+  /** RN-12: solo se ofrece gestionar a quien el backend también lo permite. */
+  const gestionable = (u: UsuarioFila) => esYo(u) || puedeGestionarRol(usuario.rol, u.rol);
+  const nombreTorre = (id: number) => torres.datos?.find((t) => t.id_instalacion === id)?.nombre ?? `#${id}`;
+  const nombreCliente = (id: number) => clientes.datos?.find((c) => c.id_cliente === id)?.nombre ?? `#${id}`;
+
+  function alcance(u: UsuarioFila) {
+    if (esAdministracion(u.rol)) return 'Todos los clientes';
+    if (u.rol === 'tecnico') return u.clientes.length ? `Atiende: ${u.clientes.map(nombreCliente).join(', ')}` : 'Sin clientes asignados';
+    const cliente = u.cliente ?? 'Sin cliente';
+    if (u.rol === 'supervisor') return `${cliente} · todas sus torres`;
+    return `${admin ? `${cliente} · ` : ''}${u.torres.map(nombreTorre).join(', ') || 'Sin torres'}`;
+  }
+
+  function nuevo() {
+    setErrores({});
+    // El Supervisor solo crea Encargados de su propio cliente.
+    setEdit({ rol: 'encargado', torres: [], clientes: [], id_cliente: admin ? (clientesActivos.length === 1 ? clientesActivos[0].id_cliente : null) : usuario!.id_cliente });
+  }
+
+  function cuerpo(e: Partial<UsuarioFila>) {
+    if (esYo(e)) return { nombre: e.nombre };
+    const rol = e.rol as Rol;
+    return {
+      nombre: e.nombre,
+      rol,
+      ...(admin && rolConCliente(rol) && e.id_cliente ? { id_cliente: e.id_cliente } : {}),
+      ...(rol === 'encargado' ? { torres: e.torres ?? [] } : {}),
+      ...(rol === 'tecnico' ? { clientes: e.clientes ?? [] } : {}),
+    };
+  }
 
   async function guardar(e: FormEvent) {
     e.preventDefault();
@@ -51,22 +108,28 @@ export function Usuarios() {
     const err: Record<string, string> = {};
     if (!edit.nombre?.trim()) err.nombre = 'Obligatorio';
     if (!edit.id_usuario && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(edit.email ?? '')) err.email = 'Email inválido';
+    if (!esYo(edit) && admin && rolConCliente(edit.rol as Rol) && !edit.id_cliente) err.id_cliente = 'Seleccione el cliente';
     setErrores(err);
     if (Object.keys(err).length) return;
     setEnviando(true);
     try {
       if (edit.id_usuario) {
-        await api.patch(`/usuarios/${edit.id_usuario}`, { nombre: edit.nombre, rol: edit.rol, torres: edit.rol === 'encargado' ? edit.torres ?? [] : [] });
+        await api.patch(`/usuarios/${edit.id_usuario}`, cuerpo(edit));
         avisar('Usuario actualizado');
       } else {
-        const r = await api.post<{ password_temporal: string }>('/usuarios', { nombre: edit.nombre, email: edit.email, rol: edit.rol, torres: edit.rol === 'encargado' ? edit.torres ?? [] : [] });
+        const r = await api.post<{ password_temporal: string }>('/usuarios', { ...cuerpo(edit), email: edit.email });
         setSecreto({ email: edit.email!, pass: r.password_temporal });
       }
       setEdit(null);
       void lista.refrescar();
     } catch (x) {
       const a = x as ApiError;
-      setErrores({ general: a.message, email: a.campo('email') ?? (a.codigo === 'EMAIL_DUPLICADO' ? a.message : '') });
+      setErrores({
+        general: a.message,
+        email: a.campo('email') ?? (a.codigo === 'EMAIL_DUPLICADO' ? a.message : ''),
+        id_cliente: a.campo('id_cliente') ?? '',
+        torres: a.campo('torres') ?? '',
+      });
     } finally {
       setEnviando(false);
     }
@@ -90,17 +153,25 @@ export function Usuarios() {
       avisar((x as ApiError).message);
     }
   }
-  const nombreTorre = (id: number) => torres.datos?.find((t) => t.id_instalacion === id)?.nombre ?? `#${id}`;
+
+  // Torres que se pueden asignar a un Encargado: activas y del cliente elegido (RN-11).
+  const torresDelCliente = (idCliente: number | null | undefined) =>
+    (torres.datos ?? []).filter((t) => t.estado === 'activo' && (!admin || t.id_cliente === idCliente)).map((t) => ({ id: t.id_instalacion, texto: t.nombre }));
+  const rolesDelFormulario = edit && esYo(edit) ? [edit.rol as Rol] : asignables;
 
   return (
     <>
       <BarraSuperior />
       <Encabezado
-        titulo="Usuarios y roles"
-        descripcion="Alta, edición, desactivación y asignación de torres (CU-09). Un rol activo por usuario."
+        titulo={admin ? 'Usuarios y roles' : 'Mis Encargados'}
+        descripcion={
+          admin
+            ? 'Alta, edición, desactivación y asignación (CU-09). Cada nivel gestiona solo los niveles inferiores (RN-12).'
+            : `Encargados de ${usuario.cliente ?? 'su cliente'}: créelos, asígneles torres o desactívelos (CU-09).`
+        }
         acciones={
-          <Boton variante="primario" icono={UserPlus} onClick={() => (setErrores({}), setEdit({ rol: 'encargado', torres: [] }))}>
-            Nuevo usuario
+          <Boton variante="primario" icono={UserPlus} onClick={nuevo}>
+            {admin ? 'Nuevo usuario' : 'Nuevo Encargado'}
           </Boton>
         }
       />
@@ -109,7 +180,9 @@ export function Usuarios() {
         {lista.datos && <FiltrosUsuarios filtro={filtro} alCambiar={setFiltro} visibles={visibles.length} total={lista.datos.length} />}
         {!lista.datos ? (
           <Esqueleto n={3} alto={48} />
-        ) : lista.datos.length > 0 && visibles.length === 0 ? (
+        ) : lista.datos.length === 0 ? (
+          <Vacio titulo={admin ? 'Sin usuarios' : 'Todavía no tiene Encargados'}>{admin ? '' : 'Use «Nuevo Encargado» o un enlace de invitación.'}</Vacio>
+        ) : visibles.length === 0 ? (
           <Vacio titulo="Ningún usuario coincide">Pruebe con otro texto, rol o estado, o use «Limpiar filtros».</Vacio>
         ) : (
           <div className="tabla-contenedor">
@@ -119,7 +192,7 @@ export function Usuarios() {
                   <th scope="col">Nombre</th>
                   <th scope="col">Email</th>
                   <th scope="col">Rol</th>
-                  <th scope="col">Torres</th>
+                  <th scope="col">Alcance</th>
                   <th scope="col">Estado</th>
                   <th scope="col">
                     <span className="sr-only">Acciones</span>
@@ -131,26 +204,32 @@ export function Usuarios() {
                   <tr key={u.id_usuario}>
                     <td>
                       <strong>{u.nombre}</strong>
-                      {u.id_usuario === usuario?.id_usuario && <span className="muted pequeno"> (usted)</span>}
+                      {esYo(u) && <span className="muted pequeno"> (usted)</span>}
                     </td>
                     <td>{u.email}</td>
                     <td>{ETIQUETA_ROL[u.rol]}</td>
-                    <td className="pequeno">{u.rol === 'encargado' ? u.torres.map(nombreTorre).join(', ') || 'Sin torres' : 'Todas'}</td>
+                    <td className="pequeno">{alcance(u)}</td>
                     <td>
                       <span className={`insignia ${ESTADOS_USUARIO[estadoUsuario(u)].clase}`}>{ESTADOS_USUARIO[estadoUsuario(u)].texto}</span>
                     </td>
                     <td>
-                      <div className="acciones" style={{ flexWrap: 'nowrap' }}>
-                        <Boton pequeno variante="fantasma" onClick={() => (setErrores({}), setEdit(u))}>
-                          Editar
-                        </Boton>
-                        <Boton pequeno variante="fantasma" icono={KeyRound} onClick={() => void restablecer(u)} aria-label={`Restablecer contraseña de ${u.nombre}`} />
-                        {u.id_usuario !== usuario?.id_usuario && (
-                          <Boton pequeno variante="fantasma" onClick={() => void alternarActivo(u)}>
-                            {u.activo ? 'Desactivar' : 'Reactivar'}
+                      {gestionable(u) ? (
+                        <div className="acciones" style={{ flexWrap: 'nowrap' }}>
+                          <Boton pequeno variante="fantasma" onClick={() => (setErrores({}), setEdit(u))}>
+                            Editar
                           </Boton>
-                        )}
-                      </div>
+                          <Boton pequeno variante="fantasma" icono={KeyRound} onClick={() => void restablecer(u)} aria-label={`Restablecer contraseña de ${u.nombre}`} />
+                          {!esYo(u) && (
+                            <Boton pequeno variante="fantasma" onClick={() => void alternarActivo(u)}>
+                              {u.activo ? 'Desactivar' : 'Reactivar'}
+                            </Boton>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="muted pequeno" title="Cada nivel gestiona solo niveles inferiores (RN-12)">
+                          Solo lectura
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -160,28 +239,60 @@ export function Usuarios() {
         )}
       </Tarjeta>
 
-      <PanelInvitaciones torres={torres.datos ?? []} alRegistrar={() => void lista.refrescar()} />
+      <PanelInvitaciones torres={torres.datos ?? []} varios={admin} alRegistrar={() => void lista.refrescar()} />
 
-      <Modal titulo={edit?.id_usuario ? 'Editar usuario' : 'Nuevo usuario'} abierto={!!edit} onCerrar={() => setEdit(null)}>
+      <Modal titulo={edit?.id_usuario ? 'Editar usuario' : admin ? 'Nuevo usuario' : 'Nuevo Encargado'} abierto={!!edit} onCerrar={() => setEdit(null)}>
         {edit && (
           <form className="formulario" onSubmit={guardar} noValidate>
             <Campo etiqueta="Nombre" value={edit.nombre ?? ''} onChange={(e) => setEdit({ ...edit, nombre: e.target.value })} error={errores.nombre} />
             <Campo etiqueta="Email" type="email" disabled={!!edit.id_usuario} value={edit.email ?? ''} onChange={(e) => setEdit({ ...edit, email: e.target.value })} error={errores.email || undefined} />
-            <Selector etiqueta="Rol" value={edit.rol} disabled={edit.id_usuario === usuario?.id_usuario} onChange={(e) => setEdit({ ...edit, rol: e.target.value as Rol })}>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ETIQUETA_ROL[r]}
-                </option>
-              ))}
-            </Selector>
-            {edit.rol === 'encargado' && (
+            {rolesDelFormulario.length > 1 ? (
+              <Selector etiqueta="Rol" value={edit.rol} onChange={(e) => setEdit({ ...edit, rol: e.target.value as Rol })}>
+                {rolesDelFormulario.map((r) => (
+                  <option key={r} value={r}>
+                    {ETIQUETA_ROL[r]}
+                  </option>
+                ))}
+              </Selector>
+            ) : (
+              <p className="pequeno">
+                Rol: <strong>{ETIQUETA_ROL[(edit.rol ?? rolesDelFormulario[0]) as Rol]}</strong>
+                {esYo(edit) && <span className="muted"> · usted no puede cambiar su propio rol ni sus asignaciones</span>}
+              </p>
+            )}
+            {!esYo(edit) && admin && rolConCliente(edit.rol as Rol) && (
+              <Selector
+                etiqueta="Cliente (RN-11)"
+                value={edit.id_cliente ?? ''}
+                onChange={(e) => setEdit({ ...edit, id_cliente: e.target.value ? Number(e.target.value) : null, torres: [] })}
+                error={errores.id_cliente || undefined}
+              >
+                <option value="">Seleccione…</option>
+                {clientesActivos.map((c) => (
+                  <option key={c.id_cliente} value={c.id_cliente}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </Selector>
+            )}
+            {!esYo(edit) && edit.rol === 'encargado' && (
               <SeleccionMultiple
                 etiqueta="Torres asignadas (RN-10)"
-                opciones={(torres.datos ?? []).filter((t) => t.estado === 'activo').map((t) => ({ id: t.id_instalacion, texto: t.nombre }))}
+                opciones={torresDelCliente(edit.id_cliente)}
                 seleccion={edit.torres ?? []}
                 alCambiar={(ids) => setEdit({ ...edit, torres: ids })}
+                error={errores.torres || undefined}
               />
             )}
+            {!esYo(edit) && edit.rol === 'tecnico' && (
+              <SeleccionMultiple
+                etiqueta="Clientes que atiende (incidencias de equipos)"
+                opciones={clientesActivos.map((c) => ({ id: c.id_cliente, texto: c.nombre }))}
+                seleccion={edit.clientes ?? []}
+                alCambiar={(ids) => setEdit({ ...edit, clientes: ids })}
+              />
+            )}
+            {!esYo(edit) && edit.rol === 'supervisor' && <p className="muted pequeno">El Supervisor ve todas las torres de su cliente y gestiona a sus Encargados.</p>}
             {!edit.id_usuario && <p className="muted pequeno">Se generará una contraseña temporal que el usuario deberá cambiar en su primer acceso.</p>}
             {errores.general && (
               <div className="aviso fondo-critico" role="alert">
@@ -215,6 +326,126 @@ export function Usuarios() {
   );
 }
 
+/* =================================================================== Clientes (D-37, RN-11) */
+export function Clientes() {
+  const avisar = useAvisos();
+  const lista = useClientes();
+  const [form, setForm] = useState<{ id_cliente?: number; nombre: string } | null>(null);
+  const [error, setError] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  async function guardar(e: FormEvent) {
+    e.preventDefault();
+    if (!form) return;
+    if (!form.nombre.trim()) return setError('Obligatorio');
+    setEnviando(true);
+    try {
+      if (form.id_cliente) await api.patch(`/clientes/${form.id_cliente}`, { nombre: form.nombre.trim() });
+      else await api.post('/clientes', { nombre: form.nombre.trim() });
+      avisar(form.id_cliente ? 'Cliente actualizado' : 'Cliente creado');
+      setForm(null);
+      void lista.refrescar();
+    } catch (x) {
+      setError((x as ApiError).message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+  async function cambiarEstado(c: ClienteFila) {
+    const baja = c.estado === 'activo';
+    if (baja && !window.confirm(`¿Dar de baja a ${c.nombre}? Debe no tener torres activas ni usuarios activos. Sus datos se conservan.`)) return;
+    try {
+      await api.patch(`/clientes/${c.id_cliente}`, { estado: baja ? 'baja' : 'activo' });
+      avisar(baja ? 'Cliente dado de baja' : 'Cliente reactivado');
+      void lista.refrescar();
+    } catch (x) {
+      avisar((x as ApiError).message);
+    }
+  }
+
+  return (
+    <>
+      <BarraSuperior />
+      <Encabezado
+        titulo="Clientes"
+        descripcion="Cada torre pertenece a un cliente; su Supervisor y sus Encargados solo ven ese cliente (RN-11)."
+        acciones={
+          <Boton variante="primario" icono={Building2} onClick={() => (setError(''), setForm({ nombre: '' }))}>
+            Nuevo cliente
+          </Boton>
+        }
+      />
+      <MensajeError error={lista.error} />
+      <Tarjeta etiqueta="Clientes">
+        {!lista.datos ? (
+          <Esqueleto n={3} alto={48} />
+        ) : !lista.datos.length ? (
+          <Vacio titulo="Sin clientes" icono={Building2} />
+        ) : (
+          <div className="tabla-contenedor">
+            <table className="tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Cliente</th>
+                  <th scope="col">Torres activas</th>
+                  <th scope="col">Usuarios activos</th>
+                  <th scope="col">Técnicos</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.datos.map((c) => (
+                  <tr key={c.id_cliente}>
+                    <td>
+                      <strong>{c.nombre}</strong>
+                      {c.id_cliente === 1 && <span className="muted pequeno"> · datos anteriores a la separación por clientes</span>}
+                    </td>
+                    <td className="dato">{c.torres}</td>
+                    <td className="dato">{c.usuarios}</td>
+                    <td className="dato">{c.tecnicos}</td>
+                    <td>
+                      <span className={`insignia ${c.estado === 'activo' ? 'e-normal' : 'e-neutro'}`}>{c.estado === 'activo' ? 'Activo' : 'De baja'}</span>
+                    </td>
+                    <td>
+                      <div className="acciones" style={{ flexWrap: 'nowrap' }}>
+                        <Boton pequeno variante="fantasma" onClick={() => (setError(''), setForm({ id_cliente: c.id_cliente, nombre: c.nombre }))}>
+                          Renombrar
+                        </Boton>
+                        <Boton pequeno variante="fantasma" onClick={() => void cambiarEstado(c)}>
+                          {c.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}
+                        </Boton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Tarjeta>
+      <Modal titulo={form?.id_cliente ? 'Renombrar cliente' : 'Nuevo cliente'} abierto={!!form} onCerrar={() => setForm(null)}>
+        {form && (
+          <form className="formulario" onSubmit={guardar} noValidate>
+            <Campo etiqueta="Nombre del cliente" maxLength={120} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} error={error || undefined} />
+            <p className="muted pequeno">Después asigne torres al cliente en Infraestructura y cree su Supervisor en Usuarios.</p>
+            <div className="acciones">
+              <Boton type="button" variante="fantasma" onClick={() => setForm(null)}>
+                Cancelar
+              </Boton>
+              <Boton type="submit" variante="primario" cargando={enviando}>
+                Guardar
+              </Boton>
+            </div>
+          </form>
+        )}
+      </Modal>
+    </>
+  );
+}
+
 /* =================================================================== Invitaciones (D-28) */
 interface InvitacionFila {
   id_invitacion: number;
@@ -226,6 +457,7 @@ interface InvitacionFila {
   por_confirmar: number;
   estado: 'vigente' | 'vencida' | 'agotada' | 'anulada';
   creada_por: string;
+  cliente?: string;
   torres: { id_instalacion: number; nombre: string }[];
 }
 const ETIQUETA_INVITACION: Record<InvitacionFila['estado'], { texto: string; clase: string }> = {
@@ -239,7 +471,8 @@ const ETIQUETA_INVITACION: Record<InvitacionFila['estado'], { texto: string; cla
  * Enlaces de invitación por torre: quien se registra con uno queda como Encargado
  * de esas torres tras confirmar su email. Rol fijo, vencimiento y cupo (D-28).
  */
-function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alRegistrar: () => void }) {
+function PanelInvitaciones({ torres, varios, alRegistrar }: { torres: TorreFila[]; varios: boolean; alRegistrar: () => void }) {
+  const etiqueta = (t: TorreFila) => (varios ? `${t.nombre} · ${t.cliente}` : t.nombre);
   const avisar = useAvisos();
   const lista = useDatos<InvitacionFila[]>((s) => api.get('/invitaciones', s), []);
   const [form, setForm] = useState<{ torres: number[]; dias: string; max_usos: string; descripcion: string } | null>(null);
@@ -289,7 +522,7 @@ function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alReg
       <Tarjeta
         etiqueta="Enlaces de invitación"
         titulo="Enlaces de invitación"
-        descripcion="Comparta un enlace por torre: cada persona crea su cuenta y confirma su email. Siempre entran como Encargado de cultivo."
+        descripcion={`Comparta un enlace por torre: cada persona crea su cuenta y confirma su email. Siempre entran como Encargado de cultivo${varios ? ' del cliente de esas torres' : ''}.`}
         acciones={
           <Boton variante="primario" icono={Link2} onClick={() => (setErrores({}), setForm({ torres: [], dias: '7', max_usos: '20', descripcion: '' }))}>
             Nuevo enlace
@@ -319,7 +552,10 @@ function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alReg
               <tbody>
                 {lista.datos.map((i) => (
                   <tr key={i.id_invitacion}>
-                    <td className="pequeno">{i.torres.map((t) => t.nombre).join(', ')}</td>
+                    <td className="pequeno">
+                      {i.torres.map((t) => t.nombre).join(', ')}
+                      {varios && i.cliente && <span className="muted"> · {i.cliente}</span>}
+                    </td>
                     <td className="pequeno">{i.descripcion || <span className="muted">—</span>}</td>
                     <td>
                       {i.usos} / {i.max_usos}
@@ -348,8 +584,8 @@ function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alReg
         {form && (
           <form className="formulario" onSubmit={crear} noValidate>
             <SeleccionMultiple
-              etiqueta="Torres a las que tendrán acceso"
-              opciones={torres.filter((t) => t.estado === 'activo').map((t) => ({ id: t.id_instalacion, texto: t.nombre }))}
+              etiqueta={varios ? 'Torres a las que tendrán acceso (de un mismo cliente)' : 'Torres a las que tendrán acceso'}
+              opciones={torres.filter((t) => t.estado === 'activo').map((t) => ({ id: t.id_instalacion, texto: etiqueta(t) }))}
               seleccion={form.torres}
               alCambiar={(ids) => setForm({ ...form, torres: ids })}
               error={errores.torres}
@@ -357,7 +593,7 @@ function PanelInvitaciones({ torres, alRegistrar }: { torres: TorreFila[]; alReg
             <Campo etiqueta="Válido por (días)" type="number" min={1} max={30} inputMode="numeric" value={form.dias} onChange={(e) => setForm({ ...form, dias: e.target.value })} error={errores.dias} />
             <Campo etiqueta="Máximo de personas" type="number" min={1} max={500} inputMode="numeric" value={form.max_usos} onChange={(e) => setForm({ ...form, max_usos: e.target.value })} error={errores.max_usos} ayuda="Cuando se llena el cupo, el enlace deja de funcionar." />
             <Campo etiqueta="Descripción (opcional)" maxLength={120} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} ayuda="Por ejemplo: «Turno mañana, temporada 2027»." />
-            <p className="muted pequeno">Rol que se otorga: Encargado de cultivo (fijo). Para Supervisores o Administradores use «Nuevo usuario».</p>
+            <p className="muted pequeno">Rol que se otorga: Encargado de cultivo (fijo).{varios ? ' Para otros roles use «Nuevo usuario».' : ''}</p>
             {errores.general && (
               <div className="aviso fondo-critico" role="alert">
                 <p>{errores.general}</p>
@@ -402,18 +638,24 @@ interface DispositivoFila {
   estado: string;
   intervalo_muestreo_s: number;
   ultima_comunicacion: string | null;
+  latitud: number | null;
+  longitud: number | null;
   sensores: { id_sensor: number; id_tipo_variable: number; tipo_variable: string; unidad: string; estado: string }[];
 }
 
 export function Infraestructura() {
-  const { puede } = useSesion();
+  const { puede, usuario } = useSesion();
   const escribir = puede('infraestructura.gestionar');
+  const clientes = useClientes();
+  const clientesActivos = (clientes.datos ?? []).filter((c) => c.estado === 'activo');
+  // Supervisor y Encargado ven un solo cliente: no hace falta repetirlo en cada torre.
+  const verCliente = !!usuario && !rolConCliente(usuario.rol);
   const avisar = useAvisos();
   const torres = useDatos<TorreFila[]>((s) => api.get('/torres', s), []);
   const disps = useDatos<DispositivoFila[]>((s) => api.get('/dispositivos', s), []);
   const usuarios = useDatos<UsuarioFila[]>((s) => api.get('/usuarios', s), [], { activo: puede('usuarios.gestionar') });
   const cat = useDatos<{ tipos_variable: { id_tipo_variable: number; nombre: string; unidad: string }[] }>((s) => api.get('/catalogos', s), []);
-  const [modal, setModal] = useState<null | { tipo: 'torre' | 'dispositivo' | 'sensor' | 'baja' | 'asignar'; datos: Record<string, unknown> }>(null);
+  const [modal, setModal] = useState<null | { tipo: 'torre' | 'dispositivo' | 'sensor' | 'baja' | 'asignar' | 'gps'; datos: Record<string, unknown> }>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [credencial, setCredencial] = useState<{ nombre: string; credencial: string } | null>(null);
   const refrescar = () => void Promise.all([torres.refrescar(), disps.refrescar()]);
@@ -425,12 +667,16 @@ export function Infraestructura() {
     try {
       if (modal.tipo === 'torre') {
         if (!String(d.nombre ?? '').trim()) return setErrores({ nombre: 'Obligatorio' });
-        if (d.id_instalacion) await api.patch(`/torres/${d.id_instalacion}`, { nombre: d.nombre, tipo: d.tipo, ubicacion: d.ubicacion });
-        else await api.post('/torres', { nombre: d.nombre, tipo: d.tipo ?? 'aeroponica', ubicacion: d.ubicacion ?? '' });
+        const cliente = d.id_cliente ? { id_cliente: Number(d.id_cliente) } : {};
+        if (!d.id_cliente && clientesActivos.length > 1) return setErrores({ id_cliente: 'Seleccione el cliente' });
+        if (d.id_instalacion) await api.patch(`/torres/${d.id_instalacion}`, { nombre: d.nombre, tipo: d.tipo, ubicacion: d.ubicacion, ...cliente });
+        else await api.post('/torres', { nombre: d.nombre, tipo: d.tipo ?? 'aeroponica', ubicacion: d.ubicacion ?? '', ...cliente });
         avisar('Torre guardada');
       } else if (modal.tipo === 'dispositivo') {
         if (!String(d.nombre ?? '').trim()) return setErrores({ nombre: 'Obligatorio' });
-        const r = await api.post<{ credencial: string; nombre: string }>('/dispositivos', { nombre: d.nombre, id_instalacion: Number(d.id_instalacion), intervalo_muestreo_s: Number(d.intervalo ?? 60) });
+        const gps = leerGps(d.latitud, d.longitud);
+        if ('error' in gps) return setErrores({ gps: gps.error });
+        const r = await api.post<{ credencial: string; nombre: string }>('/dispositivos', { nombre: d.nombre, id_instalacion: Number(d.id_instalacion), intervalo_muestreo_s: Number(d.intervalo ?? 60), ...gps });
         setCredencial({ nombre: r.nombre, credencial: r.credencial });
       } else if (modal.tipo === 'sensor') {
         await api.post('/sensores', { id_dispositivo: Number(d.id_dispositivo), id_tipo_variable: Number(d.id_tipo_variable ?? 1) });
@@ -440,6 +686,11 @@ export function Infraestructura() {
         if (!d.confirmar) return setErrores({ confirmar: 'Debe confirmar la baja' });
         await api.patch(`${d.ruta}/baja`, { motivo: d.motivo, confirmar: true });
         avisar('Baja lógica registrada (el histórico se conserva)');
+      } else if (modal.tipo === 'gps') {
+        const gps = leerGps(d.latitud, d.longitud);
+        if ('error' in gps) return setErrores({ gps: gps.error });
+        await api.patch(`/dispositivos/${d.id_dispositivo}`, gps);
+        avisar(gps.latitud === null ? 'Ubicación borrada' : 'Ubicación guardada');
       } else if (modal.tipo === 'asignar') {
         await api.put(`/torres/${d.id_instalacion}/usuarios`, { usuarios: d.usuarios });
         avisar('Responsables actualizados');
@@ -448,7 +699,7 @@ export function Infraestructura() {
       refrescar();
     } catch (x) {
       const a = x as ApiError;
-      setErrores({ general: a.message, nombre: a.campo('nombre') ?? (a.codigo === 'NOMBRE_DUPLICADO' ? a.message : '') });
+      setErrores({ general: a.message, nombre: a.campo('nombre') ?? (a.codigo === 'NOMBRE_DUPLICADO' ? a.message : ''), gps: a.campo('longitud') ?? a.campo('latitud') ?? '' });
     }
   }
   async function regenerar(dv: DispositivoFila) {
@@ -473,7 +724,7 @@ export function Infraestructura() {
         acciones={
           escribir && (
             <>
-              <Boton variante="secundario" icono={Plus} onClick={() => abrir('torre', { tipo: 'aeroponica' })}>
+              <Boton variante="secundario" icono={Plus} onClick={() => abrir('torre', { tipo: 'aeroponica', id_cliente: clientesActivos.length === 1 ? clientesActivos[0].id_cliente : undefined })}>
                 Torre
               </Boton>
               <Boton variante="primario" icono={Plus} onClick={() => abrir('dispositivo', { id_instalacion: torres.datos?.find((t) => t.estado === 'activo')?.id_instalacion, intervalo: 60 })}>
@@ -492,7 +743,7 @@ export function Infraestructura() {
             <Tarjeta
               key={t.id_instalacion}
               titulo={t.nombre}
-              descripcion={`${t.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'} · ${t.ubicacion || 'sin ubicación'}`}
+              descripcion={`${verCliente ? `${t.cliente} · ` : ''}${t.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'} · ${t.ubicacion || 'sin ubicación'}`}
               acciones={<span className={`insignia ${t.estado === 'activo' ? 'e-normal' : 'e-neutro'}`}>{t.estado === 'activo' ? 'Activa' : 'De baja'}</span>}
             >
               <p className="pequeno muted" style={{ marginBottom: 8 }}>
@@ -509,6 +760,7 @@ export function Infraestructura() {
                       <p className="muted pequeno">
                         Intervalo {d.intervalo_muestreo_s} s · última comunicación {hace(d.ultima_comunicacion)}
                       </p>
+                      {d.latitud != null ? <EnlaceGps latitud={d.latitud} longitud={d.longitud} /> : <p className="muted pequeno">Sin ubicación GPS</p>}
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {d.sensores.map((s) => (
                           <span key={s.id_sensor} className={`insignia ${s.estado === 'activo' ? 'e-neutro' : 'e-sin-senal'}`} style={{ fontWeight: 500 }}>
@@ -535,6 +787,9 @@ export function Infraestructura() {
                           <Boton pequeno variante="fantasma" icono={KeyRound} onClick={() => void regenerar(d)}>
                             Credencial
                           </Boton>
+                          <Boton pequeno variante="fantasma" icono={MapPin} onClick={() => abrir('gps', { id_dispositivo: d.id_dispositivo, nombre: d.nombre, latitud: d.latitud ?? '', longitud: d.longitud ?? '' })}>
+                            Ubicación
+                          </Boton>
                           <Boton pequeno variante="fantasma" onClick={() => abrir('baja', { ruta: `/dispositivos/${d.id_dispositivo}`, nombre: d.nombre })}>
                             Dar de baja
                           </Boton>
@@ -548,7 +803,7 @@ export function Infraestructura() {
                   <Boton pequeno variante="fantasma" onClick={() => abrir('torre', { ...t })}>
                     Editar
                   </Boton>
-                  <Boton pequeno variante="fantasma" onClick={() => abrir('asignar', { id_instalacion: t.id_instalacion, nombre: t.nombre, usuarios: t.responsables.map((r) => r.id_usuario) })}>
+                  <Boton pequeno variante="fantasma" onClick={() => abrir('asignar', { id_instalacion: t.id_instalacion, id_cliente: t.id_cliente, nombre: t.nombre, usuarios: t.responsables.filter((r) => r.rol === 'encargado').map((r) => r.id_usuario) })}>
                     Responsables
                   </Boton>
                   <Boton pequeno variante="fantasma" onClick={() => abrir('baja', { ruta: `/torres/${t.id_instalacion}`, nombre: t.nombre })}>
@@ -562,7 +817,7 @@ export function Infraestructura() {
       )}
 
       <Modal
-        titulo={{ torre: 'Torre', dispositivo: 'Nuevo dispositivo AquaBrain', sensor: 'Nuevo sensor', baja: `Dar de baja ${String(modal?.datos.nombre ?? '')}`, asignar: `Responsables de ${String(modal?.datos.nombre ?? '')}` }[modal?.tipo ?? 'torre']}
+        titulo={{ torre: 'Torre', dispositivo: 'Nuevo dispositivo AquaBrain', sensor: 'Nuevo sensor', baja: `Dar de baja ${String(modal?.datos.nombre ?? '')}`, asignar: `Responsables de ${String(modal?.datos.nombre ?? '')}`, gps: `Ubicación GPS de ${String(modal?.datos.nombre ?? '')}` }[modal?.tipo ?? 'torre']}
         abierto={!!modal}
         onCerrar={() => setModal(null)}
       >
@@ -576,7 +831,35 @@ export function Infraestructura() {
                   <option value="hidroponica">Hidropónica</option>
                 </Selector>
                 <Campo etiqueta="Ubicación" value={String(modal.datos.ubicacion ?? '')} onChange={(e) => set('ubicacion', e.target.value)} />
+                {clientesActivos.length > 0 && (
+                  <Selector
+                    etiqueta="Cliente (RN-11)"
+                    value={String(modal.datos.id_cliente ?? '')}
+                    onChange={(e) => set('id_cliente', e.target.value ? Number(e.target.value) : undefined)}
+                    error={errores.id_cliente || undefined}
+                  >
+                    <option value="">Seleccione…</option>
+                    {clientesActivos.map((c) => (
+                      <option key={c.id_cliente} value={c.id_cliente}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </Selector>
+                )}
+                {!!modal.datos.id_instalacion && (
+                  <p className="muted pequeno">Al cambiar de cliente, la torre deja de estar asignada a sus Encargados. Solo se mueven torres del «Cliente inicial» o sin dispositivos.</p>
+                )}
               </>
+            )}
+            {(modal.tipo === 'gps' || modal.tipo === 'dispositivo') && (
+              <fieldset className="campo-grupo">
+                <legend className="pequeno">Ubicación GPS {modal.tipo === 'dispositivo' && '(opcional)'}</legend>
+                <div className="fila-2">
+                  <Campo etiqueta="Latitud" inputMode="decimal" placeholder="-33.45" value={String(modal.datos.latitud ?? '')} onChange={(e) => set('latitud', e.target.value)} />
+                  <Campo etiqueta="Longitud" inputMode="decimal" placeholder="-70.66" value={String(modal.datos.longitud ?? '')} onChange={(e) => set('longitud', e.target.value)} />
+                </div>
+                {errores.gps ? <span className="campo-error">{errores.gps}</span> : <p className="muted pequeno">Ingreso manual (el AquaBrain no tiene GPS). Deje ambos vacíos para no guardar ubicación.</p>}
+              </fieldset>
             )}
             {modal.tipo === 'dispositivo' && (
               <>
@@ -617,7 +900,9 @@ export function Infraestructura() {
                 etiqueta="Encargados responsables"
                 nombreItem="encargado"
                 femenino={false}
-                opciones={(usuarios.datos ?? []).filter((u) => u.activo && u.rol === 'encargado').map((u) => ({ id: u.id_usuario, texto: `${u.nombre} (${u.email})` }))}
+                opciones={(usuarios.datos ?? [])
+                  .filter((u) => u.activo && u.rol === 'encargado' && u.id_cliente === modal.datos.id_cliente)
+                  .map((u) => ({ id: u.id_usuario, texto: `${u.nombre} (${u.email})` }))}
                 seleccion={(modal.datos.usuarios as number[]) ?? []}
                 alCambiar={(ids) => set('usuarios', ids)}
               />
@@ -928,13 +1213,20 @@ export function Perfil() {
               <dt className="muted pequeno">Rol</dt>
               <dd style={{ margin: 0 }}>{ETIQUETA_ROL[usuario.rol]}</dd>
             </div>
+            {usuario.cliente && (
+              <div>
+                <dt className="muted pequeno">Cliente</dt>
+                <dd style={{ margin: 0 }}>{usuario.cliente}</dd>
+              </div>
+            )}
             <div>
               <dt className="muted pequeno">Sesión válida hasta</dt>
               <dd style={{ margin: 0 }}>{fechaHora(expiraEn)}</dd>
             </div>
           </dl>
         </Tarjeta>
-        {!usuario.debe_cambiar_password && <PreferenciaAvisos />}
+        {/* El Técnico no recibe correos de alertas de cultivo: sus incidencias llegan en la aplicación (RN-13). */}
+        {!usuario.debe_cambiar_password && usuario.rol !== 'tecnico' && <PreferenciaAvisos />}
       </div>
     </>
   );
@@ -968,11 +1260,13 @@ function PreferenciaAvisos() {
       setGuardando(null);
     }
   }
-  const opciones = OPCIONES_AVISO.filter((o) => !o.soloAdmin || usuario.rol === 'administrador');
+  const opciones = OPCIONES_AVISO.filter((o) => !o.soloAdmin || esAdministracion(usuario.rol));
   return (
     <Tarjeta titulo="Avisos por correo">
       <fieldset className="opciones-aviso" disabled={guardando !== null}>
-        <legend className="muted pequeno">Alertas críticas de {usuario.rol === 'encargado' ? 'sus torres' : 'todas las torres'}</legend>
+        <legend className="muted pequeno">
+          Alertas críticas de {usuario.rol === 'encargado' ? 'sus torres' : usuario.rol === 'supervisor' ? `las torres de ${usuario.cliente ?? 'su cliente'}` : 'todas las torres'}
+        </legend>
         {opciones.map((o) => (
           <label key={o.valor} className="opcion-aviso" data-activa={usuario.aviso_alertas === o.valor || undefined}>
             <input type="radio" name="aviso_alertas" value={o.valor} checked={usuario.aviso_alertas === o.valor} onChange={() => elegir(o.valor)} />

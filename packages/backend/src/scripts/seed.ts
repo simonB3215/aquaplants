@@ -79,8 +79,12 @@ export async function sembrar(url: string, opciones: { historialHoras?: number; 
     await c.query('BEGIN');
     await c.query(`INSERT INTO rol (nombre, descripcion) VALUES
       ('encargado','Encargado de cultivo: monitorea sus torres asignadas'),
-      ('supervisor','Supervisor: revisa, compara, exporta y resuelve alertas críticas'),
-      ('administrador','Administrador: gestiona usuarios, infraestructura, umbrales y auditoría')`);
+      ('supervisor','Supervisor del cliente: revisa sus torres, resuelve alertas críticas y gestiona sus Encargados'),
+      ('administrador','Administrador: gestiona usuarios, infraestructura, umbrales y auditoría'),
+      ('tecnico','Técnico de AquaPlants: atiende las incidencias de equipos de sus clientes'),
+      ('administrador_principal','Administrador principal: gestiona Administradores y todo lo de un Administrador')
+      ON CONFLICT (nombre) DO UPDATE SET descripcion = EXCLUDED.descripcion`);
+    // D-37: la migración 012 crea el «Cliente inicial» (id 1); las torres y usuarios de prueba son suyos.
     const tipoId: Record<string, number> = {};
     for (const t of TIPOS) {
       const r = await c.query<{ id: number }>(
@@ -113,9 +117,10 @@ export async function sembrar(url: string, opciones: { historialHoras?: number; 
     for (const u of usuarios) {
       const hash = await bcrypt.hash(u.pass, 10);
       const r = await c.query<{ id: number }>(
-        `INSERT INTO usuario (nombre, email, hash_password, id_rol, debe_cambiar_password, aviso_alertas)
-         VALUES ($1,$2,$3,(SELECT id_rol FROM rol WHERE nombre=$4), false,
-                 CASE WHEN $4 = 'administrador' THEN 'ninguna' ELSE 'todas' END) RETURNING id_usuario AS id`,
+        `INSERT INTO usuario (nombre, email, hash_password, id_rol, debe_cambiar_password, aviso_alertas, id_cliente)
+         VALUES ($1,$2,$3,(SELECT id_rol FROM rol WHERE nombre=$4::text), false,
+                 CASE WHEN $4::text = 'administrador' THEN 'ninguna' ELSE 'todas' END,
+                 CASE WHEN $4::text IN ('supervisor','encargado') THEN 1 END) RETURNING id_usuario AS id`,
         [u.nombre, u.email, hash, u.rol],
       );
       if (u.rol === 'administrador') idAdmin = r.rows[0].id;

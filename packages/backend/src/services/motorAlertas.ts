@@ -140,10 +140,15 @@ export class MotorAlertas {
    */
   private destinatarios(idInstalacion: number, preferencia: 'todas' | 'urgentes') {
     return this.db.query<{ email: string }>(
+      // CU-04 (Anexo C): Encargados asignados y Supervisores del cliente de la torre;
+      // los Administradores, según su preferencia (D-32). El Técnico no: recibe incidencias.
       `SELECT DISTINCT u.email FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
-        LEFT JOIN usuario_instalacion ui ON ui.id_usuario = u.id_usuario
+         JOIN instalacion i ON i.id_instalacion = $1
         WHERE u.activo AND u.aviso_alertas = $2
-          AND (r.nombre IN ('supervisor', 'administrador') OR ui.id_instalacion = $1)`,
+          AND (r.nombre IN ('administrador', 'administrador_principal')
+               OR (r.nombre = 'supervisor' AND u.id_cliente = i.id_cliente)
+               OR (r.nombre = 'encargado' AND u.id_cliente = i.id_cliente
+                   AND EXISTS (SELECT 1 FROM usuario_instalacion ui WHERE ui.id_usuario = u.id_usuario AND ui.id_instalacion = $1)))`,
       [idInstalacion, preferencia],
     );
   }

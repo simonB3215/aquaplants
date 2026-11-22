@@ -1,7 +1,10 @@
 import type { IBaseDatos } from '../ports/index.js';
 import { ConflictoError, NoEncontradoError, ReglaNegocioError } from '../errores.js';
 import { auditar, registrarEvento } from './auditoria.js';
-import { torresVisibles, type UsuarioCtx } from './acceso.js';
+import { clientePorDefecto, torresVisibles, type UsuarioCtx } from './acceso.js';
+
+/** Cliente que guarda los datos anteriores a D-37: sus torres pueden repartirse a otros clientes. */
+export const CLIENTE_INICIAL = 1;
 import { generarTokenDispositivo, hashToken } from './authService.js';
 
 /**
@@ -16,43 +19,63 @@ export class InfraService {
   async listarTorres(u: UsuarioCtx) {
     const vis = await torresVisibles(this.db, u);
     const r = await this.db.query(
-      `SELECT i.id_instalacion, i.nombre, i.tipo, i.ubicacion, i.estado, i.creado_en,
+      `SELECT i.id_instalacion, i.nombre, i.tipo, i.ubicacion, i.estado, i.creado_en, i.id_cliente, c.nombre AS cliente,
               (SELECT count(*)::int FROM dispositivo d WHERE d.id_instalacion = i.id_instalacion AND d.estado <> 'baja') AS dispositivos,
               COALESCE((SELECT json_agg(json_build_object('id_usuario', us.id_usuario, 'nombre', us.nombre, 'rol', ro.nombre) ORDER BY us.nombre)
                  FROM usuario_instalacion ui JOIN usuario us ON us.id_usuario = ui.id_usuario JOIN rol ro ON ro.id_rol = us.id_rol
-                WHERE ui.id_instalacion = i.id_instalacion), '[]') AS responsables
-         FROM instalacion i WHERE ($1::int[] IS NULL OR i.id_instalacion = ANY($1::int[])) ORDER BY i.estado, i.nombre`,
+                WHERE ui.id_instalacion = i.id_instalacion AND us.id_cliente = i.id_cliente), '[]') AS responsables
+         FROM instalacion i JOIN cliente c ON c.id_cliente = i.id_cliente
+        WHERE ($1::int[] IS NULL OR i.id_instalacion = ANY($1::int[])) ORDER BY i.estado, c.nombre, i.nombre`,
       [vis],
     );
     return r.rows;
   }
 
-  async crearTorre(u: UsuarioCtx, d: { nombre: string; tipo: string; ubicacion: string }) {
+  async crearTorre(u: UsuarioCtx, d: { nombre: string; tipo: string; ubicacion: string; id_cliente?: number }) {
     return this.db.transaccion(async (tx) => {
-      const dup = await tx.query(`SELECT 1 FROM instalacion WHERE lower(nombre) = lower($1)`, [d.nombre]);
-      if (dup.rowCount) throw new ConflictoError('Ya existe una torre con ese nombre', 'NOMBRE_DUPLICADO');
+      const idCliente = await clientePorDefecto(tx, d.id_cliente);
+      // RN-11: el nombre es único dentro del cliente.
+      const dup = await tx.query(`SELECT 1 FROM instalacion WHERE lower(nombre) = lower($1) AND id_cliente = $2`, [d.nombre, idCliente]);
+      if (dup.rowCount) throw new ConflictoError('Ya existe una torre con ese nombre en el cliente', 'NOMBRE_DUPLICADO');
       const r = await tx.query<{ id_instalacion: number }>(
-        `INSERT INTO instalacion (nombre, tipo, ubicacion) VALUES ($1, $2, $3) RETURNING *`,
-        [d.nombre, d.tipo, d.ubicacion],
+        `INSERT INTO instalacion (nombre, tipo, ubicacion, id_cliente) VALUES ($1, $2, $3, $4) RETURNING *`,
+        [d.nombre, d.tipo, d.ubicacion, idCliente],
       );
-      await auditar(tx, u, 'crear_torre', 'instalacion', r.rows[0].id_instalacion, { nuevo: d });
+      await auditar(tx, u, 'crear_torre', 'instalacion', r.rows[0].id_instalacion, { nuevo: { ...d, id_cliente: idCliente } });
       return r.rows[0];
     });
   }
 
-  async editarTorre(u: UsuarioCtx, id: number, d: Partial<{ nombre: string; tipo: string; ubicacion: string }>) {
+  async editarTorre(u: UsuarioCtx, id: number, d: Partial<{ nombre: string; tipo: string; ubicacion: string; id_cliente: number }>) {
     return this.db.transaccion(async (tx) => {
-      const prev = await tx.query<{ nombre: string; tipo: string; ubicacion: string; estado: string }>(`SELECT * FROM instalacion WHERE id_instalacion = $1 FOR UPDATE`, [id]);
+      const prev = await tx.query<{ nombre: string; tipo: string; ubicacion: string; estado: string; id_cliente: number }>(`SELECT * FROM instalacion WHERE id_instalacion = $1 FOR UPDATE`, [id]);
       if (!prev.rows[0]) throw new NoEncontradoError('Torre no encontrada');
-      if (d.nombre) {
-        const dup = await tx.query(`SELECT 1 FROM instalacion WHERE lower(nombre) = lower($1) AND id_instalacion <> $2`, [d.nombre, id]);
-        if (dup.rowCount) throw new ConflictoError('Ya existe una torre con ese nombre', 'NOMBRE_DUPLICADO');
+      const cambiaCliente = d.id_cliente !== undefined && d.id_cliente !== prev.rows[0].id_cliente;
+      if (cambiaCliente) {
+        await clientePorDefecto(tx, d.id_cliente);
+        // El histórico viaja con la torre: solo se reparten torres del cliente inicial o
+        // torres que nunca tuvieron dispositivos, para no mostrar datos de un cliente a otro.
+        const conEquipos = await tx.query(`SELECT 1 FROM dispositivo WHERE id_instalacion = $1 LIMIT 1`, [id]);
+        if (prev.rows[0].id_cliente !== CLIENTE_INICIAL && conEquipos.rowCount) {
+          throw new ConflictoError('Esta torre ya tiene datos de su cliente: no puede pasar a otro cliente', 'TORRE_CON_HISTORICO');
+        }
+      }
+      const destino = d.id_cliente ?? prev.rows[0].id_cliente;
+      if (d.nombre || cambiaCliente) {
+        const dup = await tx.query(`SELECT 1 FROM instalacion WHERE lower(nombre) = lower($1) AND id_cliente = $2 AND id_instalacion <> $3`, [
+          d.nombre ?? prev.rows[0].nombre,
+          destino,
+          id,
+        ]);
+        if (dup.rowCount) throw new ConflictoError('Ya existe una torre con ese nombre en el cliente', 'NOMBRE_DUPLICADO');
       }
       const r = await tx.query(
-        `UPDATE instalacion SET nombre = COALESCE($2, nombre), tipo = COALESCE($3, tipo), ubicacion = COALESCE($4, ubicacion)
+        `UPDATE instalacion SET nombre = COALESCE($2, nombre), tipo = COALESCE($3, tipo), ubicacion = COALESCE($4, ubicacion), id_cliente = $5
           WHERE id_instalacion = $1 RETURNING *`,
-        [id, d.nombre ?? null, d.tipo ?? null, d.ubicacion ?? null],
+        [id, d.nombre ?? null, d.tipo ?? null, d.ubicacion ?? null, destino],
       );
+      // RN-11: los Encargados del cliente anterior dejan de tener la torre.
+      if (cambiaCliente) await tx.query(`DELETE FROM usuario_instalacion WHERE id_instalacion = $1`, [id]);
       await auditar(tx, u, 'editar_torre', 'instalacion', id, { anterior: prev.rows[0], nuevo: d });
       return r.rows[0];
     });
@@ -73,8 +96,17 @@ export class InfraService {
 
   async asignarUsuarios(u: UsuarioCtx, idTorre: number, usuarios: number[]) {
     return this.db.transaccion(async (tx) => {
-      const t = await tx.query(`SELECT 1 FROM instalacion WHERE id_instalacion = $1`, [idTorre]);
-      if (!t.rowCount) throw new NoEncontradoError('Torre no encontrada');
+      const t = await tx.query<{ id_cliente: number }>(`SELECT id_cliente FROM instalacion WHERE id_instalacion = $1`, [idTorre]);
+      if (!t.rows[0]) throw new NoEncontradoError('Torre no encontrada');
+      // RN-11: solo Encargados del mismo cliente que la torre.
+      const validos = await tx.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM usuario us JOIN rol ro ON ro.id_rol = us.id_rol
+          WHERE us.id_usuario = ANY($1::int[]) AND ro.nombre = 'encargado' AND us.id_cliente = $2`,
+        [usuarios, t.rows[0].id_cliente],
+      );
+      if (validos.rows[0].n !== new Set(usuarios).size) {
+        throw new ReglaNegocioError('Solo se asignan Encargados del cliente de la torre', [{ campo: 'usuarios', mensaje: 'Usuario de otro cliente o con otro rol' }]);
+      }
       const prev = await tx.query<{ id_usuario: number }>(`SELECT id_usuario FROM usuario_instalacion WHERE id_instalacion = $1`, [idTorre]);
       await tx.query(`DELETE FROM usuario_instalacion WHERE id_instalacion = $1 AND NOT (id_usuario = ANY($2::int[]))`, [idTorre, usuarios]);
       await tx.query(
@@ -90,29 +122,29 @@ export class InfraService {
   async listarDispositivos(u: UsuarioCtx) {
     const vis = await torresVisibles(this.db, u);
     const r = await this.db.query(
-      `SELECT d.id_dispositivo, d.nombre, d.id_instalacion, i.nombre AS torre, d.estado, d.intervalo_muestreo_s,
-              d.ultima_comunicacion, d.motivo_baja,
+      `SELECT d.id_dispositivo, d.nombre, d.id_instalacion, i.nombre AS torre, i.id_cliente, c.nombre AS cliente, d.estado, d.intervalo_muestreo_s,
+              d.ultima_comunicacion, d.motivo_baja, d.latitud, d.longitud,
               COALESCE((SELECT json_agg(json_build_object('id_sensor', s.id_sensor, 'id_tipo_variable', s.id_tipo_variable,
                          'tipo_variable', tv.nombre, 'unidad', tv.unidad_medida, 'estado', s.estado) ORDER BY s.id_sensor)
                   FROM sensor s JOIN tipo_variable tv ON tv.id_tipo_variable = s.id_tipo_variable WHERE s.id_dispositivo = d.id_dispositivo), '[]') AS sensores
-         FROM dispositivo d JOIN instalacion i ON i.id_instalacion = d.id_instalacion
-        WHERE ($1::int[] IS NULL OR d.id_instalacion = ANY($1::int[])) ORDER BY i.nombre, d.nombre`,
+         FROM dispositivo d JOIN instalacion i ON i.id_instalacion = d.id_instalacion JOIN cliente c ON c.id_cliente = i.id_cliente
+        WHERE ($1::int[] IS NULL OR d.id_instalacion = ANY($1::int[])) ORDER BY c.nombre, i.nombre, d.nombre`,
       [vis],
     );
     return r.rows;
   }
 
   /** Alta: genera credencial de 256 bits, guarda solo su SHA-256 y la devuelve UNA vez. */
-  async crearDispositivo(u: UsuarioCtx, d: { nombre: string; id_instalacion: number; intervalo_muestreo_s: number }) {
+  async crearDispositivo(u: UsuarioCtx, d: { nombre: string; id_instalacion: number; intervalo_muestreo_s: number; latitud?: number | null; longitud?: number | null }) {
     return this.db.transaccion(async (tx) => {
       const t = await tx.query<{ estado: string }>(`SELECT estado FROM instalacion WHERE id_instalacion = $1`, [d.id_instalacion]);
       if (!t.rows[0]) throw new ReglaNegocioError('La torre indicada no existe', [{ campo: 'id_instalacion', mensaje: 'No existe' }]);
       if (t.rows[0].estado !== 'activo') throw new ConflictoError('La torre de destino está de baja');
       const token = generarTokenDispositivo();
       const r = await tx.query<{ id_dispositivo: number }>(
-        `INSERT INTO dispositivo (id_instalacion, nombre, credencial_hash, intervalo_muestreo_s) VALUES ($1, $2, $3, $4)
-         RETURNING id_dispositivo, id_instalacion, nombre, estado, intervalo_muestreo_s`,
-        [d.id_instalacion, d.nombre, hashToken(token), d.intervalo_muestreo_s],
+        `INSERT INTO dispositivo (id_instalacion, nombre, credencial_hash, intervalo_muestreo_s, latitud, longitud) VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id_dispositivo, id_instalacion, nombre, estado, intervalo_muestreo_s, latitud, longitud`,
+        [d.id_instalacion, d.nombre, hashToken(token), d.intervalo_muestreo_s, d.latitud ?? null, d.longitud ?? null],
       );
       const id = r.rows[0].id_dispositivo;
       await registrarEvento(tx, id, 'alta', 'Dispositivo registrado', { id_instalacion: d.id_instalacion });
@@ -121,21 +153,35 @@ export class InfraService {
     });
   }
 
-  async editarDispositivo(u: UsuarioCtx, id: number, d: { nombre?: string; id_instalacion?: number; intervalo_muestreo_s?: number }) {
+  async editarDispositivo(
+    u: UsuarioCtx,
+    id: number,
+    d: { nombre?: string; id_instalacion?: number; intervalo_muestreo_s?: number; latitud?: number | null; longitud?: number | null },
+  ) {
     return this.db.transaccion(async (tx) => {
-      const prev = await tx.query<{ estado: string }>(`SELECT nombre, id_instalacion, intervalo_muestreo_s, estado FROM dispositivo WHERE id_dispositivo = $1 FOR UPDATE`, [id]);
+      const prev = await tx.query<{ estado: string; id_cliente: number }>(
+        `SELECT d.nombre, d.id_instalacion, d.intervalo_muestreo_s, d.estado, d.latitud, d.longitud, i.id_cliente
+           FROM dispositivo d JOIN instalacion i ON i.id_instalacion = d.id_instalacion WHERE d.id_dispositivo = $1 FOR UPDATE OF d`,
+        [id],
+      );
       if (!prev.rows[0]) throw new NoEncontradoError('Dispositivo no encontrado');
       if (prev.rows[0].estado === 'baja') throw new ConflictoError('El dispositivo está de baja');
       if (d.id_instalacion) {
-        const t = await tx.query<{ estado: string }>(`SELECT estado FROM instalacion WHERE id_instalacion = $1`, [d.id_instalacion]);
+        const t = await tx.query<{ estado: string; id_cliente: number }>(`SELECT estado, id_cliente FROM instalacion WHERE id_instalacion = $1`, [d.id_instalacion]);
         if (!t.rows[0]) throw new ReglaNegocioError('La torre indicada no existe');
         if (t.rows[0].estado !== 'activo') throw new ConflictoError('La torre de destino está de baja');
+        // El histórico del equipo es del cliente: no se mueve a la torre de otro cliente.
+        if (t.rows[0].id_cliente !== prev.rows[0].id_cliente) throw new ConflictoError('La torre de destino es de otro cliente', 'DISPOSITIVO_OTRO_CLIENTE');
       }
+      const gps = d.latitud !== undefined;
       const r = await tx.query(
         `UPDATE dispositivo SET nombre = COALESCE($2, nombre), id_instalacion = COALESCE($3, id_instalacion),
-                intervalo_muestreo_s = COALESCE($4, intervalo_muestreo_s) WHERE id_dispositivo = $1
-         RETURNING id_dispositivo, nombre, id_instalacion, estado, intervalo_muestreo_s`,
-        [id, d.nombre ?? null, d.id_instalacion ?? null, d.intervalo_muestreo_s ?? null],
+                intervalo_muestreo_s = COALESCE($4, intervalo_muestreo_s),
+                latitud = CASE WHEN $5::boolean THEN $6::float8 ELSE latitud END,
+                longitud = CASE WHEN $5::boolean THEN $7::float8 ELSE longitud END
+          WHERE id_dispositivo = $1
+         RETURNING id_dispositivo, nombre, id_instalacion, estado, intervalo_muestreo_s, latitud, longitud`,
+        [id, d.nombre ?? null, d.id_instalacion ?? null, d.intervalo_muestreo_s ?? null, gps, d.latitud ?? null, d.longitud ?? null],
       );
       await auditar(tx, u, 'editar_dispositivo', 'dispositivo', id, { anterior: prev.rows[0], nuevo: d });
       return r.rows[0];

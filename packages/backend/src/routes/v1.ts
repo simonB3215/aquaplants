@@ -6,6 +6,10 @@ import {
   AvisosSchema,
   BajaSchema,
   CambiarPasswordSchema,
+  CerrarIncidenciaSchema,
+  ClienteSchema,
+  EditarClienteSchema,
+  FiltroIncidenciasSchema,
   ConfirmarRegistroSchema,
   InvitacionSchema,
   RegistroSchema,
@@ -342,12 +346,13 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
 
   // ------------------------------------------------------------ CU-09 Usuarios y auditoría
   const adminUsuarios = permitir('usuarios.gestionar');
-  r.get('/roles', auth, adminUsuarios, h(async (_req, res) => void res.json(await s.usuarios.roles())));
-  r.get('/usuarios', auth, adminUsuarios, h(async (_req, res) => void res.json(await s.usuarios.listar())));
+  // Anexo C: el Supervisor también entra, pero el servicio lo limita a los Encargados de su cliente (RN-12).
+  r.get('/roles', auth, adminUsuarios, h(async (req, res) => void res.json(await s.usuarios.roles(ctx(req)))));
+  r.get('/usuarios', auth, adminUsuarios, h(async (req, res) => void res.json(await s.usuarios.listar(ctx(req)))));
   r.post('/usuarios', auth, adminUsuarios, validar(UsuarioSchema), h(async (req, res) => void res.status(201).json(await s.usuarios.crear(ctx(req), req.body))));
   r.patch('/usuarios/:id', auth, adminUsuarios, validar(EditarUsuarioSchema), h(async (req, res) => void res.json(await s.usuarios.editar(ctx(req), idParam(req), req.body))));
   r.post('/usuarios/:id/restablecer-password', auth, adminUsuarios, h(async (req, res) => void res.json(await s.usuarios.restablecerPassword(ctx(req), idParam(req)))));
-  r.get('/invitaciones', auth, adminUsuarios, h(async (_req, res) => void res.json(await s.invitaciones.listar())));
+  r.get('/invitaciones', auth, adminUsuarios, h(async (req, res) => void res.json(await s.invitaciones.listar(ctx(req)))));
   r.post('/invitaciones', auth, adminUsuarios, validar(InvitacionSchema), h(async (req, res) => void res.status(201).json(await s.invitaciones.crear(ctx(req), req.body))));
   r.patch('/invitaciones/:id/anular', auth, adminUsuarios, h(async (req, res) => void res.json(await s.invitaciones.anular(ctx(req), idParam(req)))));
   r.get(
@@ -357,6 +362,34 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     validar(FiltroAuditoriaSchema, 'query'),
     h(async (req, res) => void res.json(await s.usuarios.auditoria(q(req)))),
   );
+  // ------------------------------------------------------------ D-37 Clientes (RN-11, solo Administradores)
+  r.get('/clientes', auth, permitir('clientes.gestionar', 'leer'), h(async (_req, res) => void res.json(await s.clientes.listar())));
+  r.post('/clientes', auth, permitir('clientes.gestionar'), validar(ClienteSchema), h(async (req, res) => void res.status(201).json(await s.clientes.crear(ctx(req), req.body))));
+  r.patch(
+    '/clientes/:id',
+    auth,
+    permitir('clientes.gestionar'),
+    validar(EditarClienteSchema),
+    h(async (req, res) => void res.json(await s.clientes.editar(ctx(req), idParam(req), req.body))),
+  );
+
+  // ------------------------------------------------------------ D-37 Incidencias de equipos (RN-13)
+  r.get(
+    '/incidencias',
+    auth,
+    permitir('incidencias.atender', 'leer'),
+    validar(FiltroIncidenciasSchema, 'query'),
+    h(async (req, res) => void res.json(await s.incidencias.listar(ctx(req), q(req)))),
+  );
+  r.patch('/incidencias/:id/atender', auth, permitir('incidencias.atender'), h(async (req, res) => void res.json(await s.incidencias.atender(ctx(req), idParam(req)))));
+  r.patch(
+    '/incidencias/:id/cerrar',
+    auth,
+    permitir('incidencias.atender'),
+    validar(CerrarIncidenciaSchema),
+    h(async (req, res) => void res.json(await s.incidencias.cerrar(ctx(req), idParam(req), req.body.comentario))),
+  );
+
   // RN-07: nadie edita ni elimina la auditoría → 405 (NEG-09, CP-17).
   r.all('/auditoria/:id', auth, (req, _res, next) => {
     if (req.method === 'GET') return next();
@@ -392,7 +425,8 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
 
   // ------------------------------------------------------------ Modo demostración (aislado)
   if (cfg.DEMO_MODE) {
-    const soloAdmin = permitir('usuarios.gestionar');
+    // Solo Administradores (usuarios.gestionar ahora incluye al Supervisor; clientes.gestionar no).
+    const soloAdmin = permitir('clientes.gestionar');
     r.get('/demo/estado', auth, soloAdmin, h(async (_req, res) => void res.json(await s.demo.estado())));
     r.post(
       '/demo/escenarios/:codigo',

@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID, createHash, randomBytes } from 'node:crypto';
-import type { AvisoAlertas, RespuestaLogin, Rol, UsuarioSesion } from '@aquaplants/shared';
+import { esAdministracion, type AvisoAlertas, type RespuestaLogin, type Rol, type UsuarioSesion } from '@aquaplants/shared';
 import type { IBaseDatos } from '../ports/index.js';
 import type { Config } from '../config.js';
 import { ErrorApp, NoAutenticadoError, ReglaNegocioError } from '../errores.js';
@@ -35,7 +35,17 @@ export interface Ingreso {
   sesion: { token: string; expira: Date };
 }
 
-type FilaUsuario = { id_usuario: number; nombre: string; email: string; rol: Rol; debe_cambiar_password: boolean; aviso_alertas: AvisoAlertas; version_token: number };
+type FilaUsuario = {
+  id_usuario: number;
+  nombre: string;
+  email: string;
+  rol: Rol;
+  debe_cambiar_password: boolean;
+  aviso_alertas: AvisoAlertas;
+  version_token: number;
+  id_cliente: number | null;
+  cliente: string | null;
+};
 
 /**
  * CU-02: autenticación con bcrypt, bloqueo tras N intentos, JWT de 8 h con
@@ -66,10 +76,13 @@ export class AuthService {
       debe_cambiar_password: boolean;
       aviso_alertas: AvisoAlertas;
       version_token: number;
+      id_cliente: number | null;
+      cliente: string | null;
     }>(
       `SELECT u.id_usuario, u.nombre, u.email, u.hash_password, u.activo, r.nombre AS rol,
-              u.intentos_fallidos, u.bloqueado_hasta, u.debe_cambiar_password, u.aviso_alertas, u.version_token
-         FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
+              u.intentos_fallidos, u.bloqueado_hasta, u.debe_cambiar_password, u.aviso_alertas, u.version_token,
+              u.id_cliente, c.nombre AS cliente
+         FROM usuario u JOIN rol r ON r.id_rol = u.id_rol LEFT JOIN cliente c ON c.id_cliente = u.id_cliente
         WHERE lower(u.email) = lower($1)`,
       [email],
     );
@@ -129,6 +142,8 @@ export class AuthService {
       rol: u.rol,
       debe_cambiar_password: u.debe_cambiar_password,
       aviso_alertas: u.aviso_alertas,
+      id_cliente: u.id_cliente,
+      cliente: u.cliente,
     };
     return { token, expira_en: expira.toISOString(), usuario };
   }
@@ -141,10 +156,12 @@ export class AuthService {
   async reanudar(sesion: string | undefined): Promise<Ingreso> {
     if (!sesion || !/^[A-Za-z0-9_-]{43}$/.test(sesion)) throw new NoAutenticadoError('Sin sesión', 'SIN_SESION');
     const r = await this.db.query<FilaUsuario & { expira_en: Date }>(
-      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password, u.aviso_alertas, u.version_token, s.expira_en
+      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password, u.aviso_alertas, u.version_token, s.expira_en,
+              u.id_cliente, c.nombre AS cliente
          FROM sesion s
          JOIN usuario u ON u.id_usuario = s.id_usuario
          JOIN rol r ON r.id_rol = u.id_rol
+         LEFT JOIN cliente c ON c.id_cliente = u.id_cliente
         WHERE s.hash_token = $1 AND s.revocada_en IS NULL AND s.expira_en > now()
           AND u.activo AND u.version_token = s.version_token`,
       [hashToken(sesion)],
@@ -197,8 +214,8 @@ export class AuthService {
 
   async me(id: number): Promise<UsuarioSesion> {
     const r = await this.db.query<UsuarioSesion>(
-      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password, u.aviso_alertas
-         FROM usuario u JOIN rol r ON r.id_rol = u.id_rol WHERE u.id_usuario = $1`,
+      `SELECT u.id_usuario, u.nombre, u.email, r.nombre AS rol, u.debe_cambiar_password, u.aviso_alertas, u.id_cliente, c.nombre AS cliente
+         FROM usuario u JOIN rol r ON r.id_rol = u.id_rol LEFT JOIN cliente c ON c.id_cliente = u.id_cliente WHERE u.id_usuario = $1`,
       [id],
     );
     if (!r.rows[0]) throw new NoAutenticadoError();
@@ -207,7 +224,7 @@ export class AuthService {
 
   /** D-32: preferencia propia de correos de alerta crítica. «ninguna» solo para Administrador. */
   async cambiarAvisos(u: UsuarioToken, aviso: AvisoAlertas, ip: string | null): Promise<{ aviso_alertas: AvisoAlertas }> {
-    if (aviso === 'ninguna' && u.rol !== 'administrador') {
+    if (aviso === 'ninguna' && !esAdministracion(u.rol)) {
       throw new ReglaNegocioError('Las alertas urgentes siempre se avisan por correo', [
         { campo: 'aviso_alertas', mensaje: 'Elija «todas» o «solo urgentes»' },
       ]);

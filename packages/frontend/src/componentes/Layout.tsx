@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity,
   Bell,
+  Building2,
   ChartLine,
   ClipboardList,
   Cpu,
@@ -18,9 +19,11 @@ import {
   UserRound,
   Users,
   WifiOff,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import { ETIQUETA_ROL } from '@aquaplants/shared';
+import type { FuenteAvisos } from './IndicadorAlertas';
 import { useSesion } from '../estado/sesion';
 import { useConexion } from '../estado/conexion';
 import { iniciales } from '../util/formato';
@@ -42,14 +45,18 @@ function itemsPara(puede: ReturnType<typeof useSesion>['puede'], rol: string, de
     { ruta: '/', texto: 'Inicio', icono: House, movil: true },
     { ruta: '/torres', texto: rol === 'encargado' ? 'Mis torres' : 'Torres', icono: Sprout, movil: true },
     { ruta: '/historicos', texto: 'Históricos', icono: ChartLine, movil: true },
-    { ruta: '/alertas', texto: 'Alertas', icono: Bell, movil: true, contador: true },
-    { ruta: '/continuidad', texto: 'Continuidad', icono: Activity },
   ];
+  // Anexo C (D-37): el Técnico no recibe alertas de cultivo; su contador es el de incidencias.
+  if (puede('alertas.ver', 'leer')) items.push({ ruta: '/alertas', texto: 'Alertas', icono: Bell, movil: true, contador: true });
+  if (puede('incidencias.atender', 'leer'))
+    items.push({ ruta: '/incidencias', texto: 'Incidencias', icono: Wrench, movil: rol === 'tecnico', contador: !puede('alertas.ver', 'leer') });
+  items.push({ ruta: '/continuidad', texto: 'Continuidad', icono: Activity });
   if (puede('infraestructura.gestionar', 'leer') && rol !== 'encargado') items.push({ ruta: '/infraestructura', texto: 'Infraestructura', icono: Cpu, grupo: 'Gestión' });
   if (puede('umbrales.gestionar', 'leer') && rol !== 'encargado') items.push({ ruta: '/umbrales', texto: 'Umbrales', icono: SlidersHorizontal, grupo: 'Gestión' });
-  if (puede('usuarios.gestionar')) items.push({ ruta: '/usuarios', texto: 'Usuarios', icono: Users, grupo: 'Gestión' });
+  if (puede('usuarios.gestionar')) items.push({ ruta: '/usuarios', texto: rol === 'supervisor' ? 'Mis Encargados' : 'Usuarios', icono: Users, grupo: 'Gestión' });
+  if (puede('clientes.gestionar', 'leer')) items.push({ ruta: '/clientes', texto: 'Clientes', icono: Building2, grupo: 'Gestión' });
   if (puede('auditoria.consultar', 'leer')) items.push({ ruta: '/auditoria', texto: 'Auditoría', icono: ClipboardList, grupo: 'Gestión' });
-  if (demo && puede('usuarios.gestionar')) items.push({ ruta: '/demo', texto: 'Demostración', icono: FlaskConical, grupo: 'Gestión' });
+  if (demo && puede('clientes.gestionar')) items.push({ ruta: '/demo', texto: 'Demostración', icono: FlaskConical, grupo: 'Gestión' });
   // Barra inferior: máximo 5 destinos (4 + «Más»); Perfil y el resto quedan en «Más».
   items.push({ ruta: '/perfil', texto: 'Perfil', icono: UserRound });
   return items;
@@ -76,6 +83,7 @@ export function Layout({ demoHabilitada }: { demoHabilitada: boolean }) {
   useEffect(() => setHoja(false), [loc.pathname]);
   if (!usuario) return null;
   const items = itemsPara(puede, usuario.rol, demoHabilitada);
+  const fuente: FuenteAvisos = !puede('alertas.ver', 'leer') && puede('incidencias.atender', 'leer') ? 'incidencias' : 'alertas';
   const moviles = items.filter((i) => i.movil);
   const resto = items.filter((i) => !i.movil);
 
@@ -96,7 +104,7 @@ export function Layout({ demoHabilitada }: { demoHabilitada: boolean }) {
 
   return (
     <div className="app">
-      <ProveedorAlertas activo={!usuario.debe_cambiar_password}>
+      <ProveedorAlertas activo={!usuario.debe_cambiar_password} fuente={fuente}>
         <a href="#contenido" className="saltar-contenido">
           Saltar al contenido
         </a>

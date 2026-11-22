@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Cpu, Database, Download, ServerCog, Sprout, Users, WifiOff } from 'lucide-react';
-import type { Alerta, EstadoTorre, Paginado, ResumenContinuidad, RespuestaEstado } from '@aquaplants/shared';
+import { Bell, Cpu, Database, Download, ServerCog, Sprout, Users, WifiOff, Wrench } from 'lucide-react';
+import { esAdministracion, rolConCliente, type Alerta, type EstadoTorre, type Paginado, type ResumenContinuidad, type RespuestaEstado } from '@aquaplants/shared';
 import { api } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
 import { useSesion } from '../estado/sesion';
@@ -10,6 +10,7 @@ import { BarraSuperior } from '../componentes/Layout';
 import { TarjetaTorre } from '../componentes/TarjetaTorre';
 import { PanelHistorico } from '../componentes/PanelHistorico';
 import { ListaAlertas } from '../componentes/PanelAlertas';
+import { useResumenAlertas } from '../componentes/IndicadorAlertas';
 import { DonutEstados } from '../componentes/Graficos';
 import { Aviso, Encabezado, Esqueleto, Kpi, MensajeError, Segmentado, Tarjeta, Vacio } from '../componentes/ui';
 import { fechaHora, fechaLarga, hace } from '../util/formato';
@@ -26,9 +27,12 @@ export function Inicio() {
   const { usuario, puede } = useSesion();
   const conexion = useConexion();
   const estado = useDatos<RespuestaEstado>((s) => api.get('/torres/estado', s), [], { cadaMs: 5000 });
-  const alertas = useDatos<Paginado<Alerta>>((s) => api.get('/alertas?estado=activa&por_pagina=6', s), [], { cadaMs: 10_000 });
+  // Anexo C (D-37): el Técnico no ve alertas de cultivo; su resumen son las incidencias de equipos.
+  const veAlertas = puede('alertas.ver', 'leer');
+  const incidencias = useResumenAlertas();
+  const alertas = useDatos<Paginado<Alerta>>((s) => api.get('/alertas?estado=activa&por_pagina=6', s), [], { cadaMs: 10_000, activo: veAlertas });
   const continuidad = useDatos<ResumenContinuidad>((s) => api.get('/continuidad', s), [], { cadaMs: 15_000 });
-  const esAdmin = usuario?.rol === 'administrador';
+  const esAdmin = !!usuario && esAdministracion(usuario.rol);
   const salud = useDatos<{ estado: string; componentes: Record<string, string>; timescaledb: boolean; outbox: { pendientes: number; cuarentena: number } }>(
     (s) => api.get('/health', s),
     [],
@@ -60,7 +64,14 @@ export function Inicio() {
     ];
   }, [torres]);
 
-  const titulo = usuario?.rol === 'encargado' ? 'Mis cultivos' : usuario?.rol === 'supervisor' ? 'Supervisión general' : 'Panel de administración';
+  const titulo =
+    usuario?.rol === 'encargado'
+      ? 'Mis cultivos'
+      : usuario?.rol === 'supervisor'
+        ? `Supervisión · ${usuario.cliente ?? 'sin cliente'}`
+        : usuario?.rol === 'tecnico'
+          ? 'Equipos de mis clientes'
+          : 'Panel de administración';
 
   return (
     <>
@@ -119,7 +130,11 @@ export function Inicio() {
               tono={sinSenal.length ? 'fondo-sin-senal' : 'fondo-normal'}
               pie={sinSenal.length ? `Desde ${hace(sinSenal[0].ultima_comunicacion)} · causa no determinada` : 'Todos reportando'}
             />
-            <Kpi icono={Bell} etiqueta="Alertas activas" valor={totalAlertas} tono={totalAlertas ? 'fondo-critico' : 'fondo-normal'} pie={<Link to="/alertas">Ver panel de alertas</Link>} />
+            {veAlertas ? (
+              <Kpi icono={Bell} etiqueta="Alertas activas" valor={totalAlertas} tono={totalAlertas ? 'fondo-critico' : 'fondo-normal'} pie={<Link to="/alertas">Ver panel de alertas</Link>} />
+            ) : (
+              <Kpi icono={Wrench} etiqueta="Incidencias activas" valor={incidencias.total ?? '—'} tono={incidencias.total ? 'fondo-sin-senal' : 'fondo-normal'} pie={<Link to="/incidencias">Ver incidencias</Link>} />
+            )}
           </div>
 
           <div className="rejilla rejilla-principal seccion">
@@ -132,6 +147,7 @@ export function Inicio() {
                   <DonutEstados conteo={distribucion} />
                 </Tarjeta>
               )}
+              {veAlertas && (
               <Tarjeta
                 titulo="Alertas activas"
                 descripcion={usuario?.rol === 'encargado' ? 'De sus torres asignadas' : 'Ordenadas por gravedad'}
@@ -143,6 +159,7 @@ export function Inicio() {
               >
                 {alertas.datos ? <ListaAlertas alertas={alertas.datos.datos} alResolver={() => void Promise.all([alertas.refrescar(), estado.refrescar()])} compacta /> : <Esqueleto alto={80} n={2} />}
               </Tarjeta>
+              )}
             </div>
           </div>
 
@@ -199,7 +216,7 @@ export function Inicio() {
             ) : (
               <div className="rejilla rejilla-torres">
                 {visibles.map((t) => (
-                  <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={servidorCaido} />
+                  <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={servidorCaido} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} veAlertas={veAlertas} />
                 ))}
               </div>
             )}

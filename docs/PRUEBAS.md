@@ -271,3 +271,17 @@ Cambio solo de interfaz en Usuarios: buscador por nombre o email (sin tildes ni 
 | Pruebas del backend | No ejecutadas en este equipo (sin cambios en backend); CI de GitHub en `fcb33e9` OK |
 
 Defecto anterior encontrado y corregido: con filas, Usuarios medía 720 px en una pantalla de 360 porque el `.sr-only` de «Acciones» escapaba de la tabla. Se agregó `position: relative` a `.tabla-contenedor` (lo usan también las demás tablas; con datos solo se volvió a probar Usuarios).
+
+## Sesión 8 — Filtros de torres (2026-11-22, pedido del usuario)
+
+Cambio solo de interfaz en Torres / Mis torres: buscador (nombre, cultivo, tipo, ubicación, dispositivo), Estado (el de la tarjeta, o «Con alertas activas») y Conexión (basta un dispositivo). Filtra lo que ya entrega `GET /torres/estado`, que respeta RN-10. Se recuerda por usuario mientras dure la pestaña. La barra se comparte con Usuarios (`BarraFiltros`).
+
+| Prueba | Resultado |
+|---|---|
+| `npm test -w packages/frontend` (25 casos nuevos en `filtrosTorres.test.tsx`) | 59/59 OK. La primera ejecución falló: «torre b» calzaba con «AquaBrain»; corregido (un carácter suelto exige palabra completa) |
+| `npm run typecheck` y `npm run build -w packages/frontend` | OK |
+| Navegador con **API simulada** (8 torres): 7 estados × 5 conexiones, a 1280 px | 35/35 contador igual a tarjetas |
+| Navegador (API simulada): Torres y Usuarios × 7 anchos (320–1440 px) × 4 búsquedas | 56/56 sin scroll horizontal; controles de 44 px o más |
+| Navegador (API simulada): entrar a una ficha y volver | Conserva el filtro |
+| Con sesión, API y datos reales | **No ejecutado** |
+| Pruebas del backend | **No ejecutadas** (sin cambios en backend) |

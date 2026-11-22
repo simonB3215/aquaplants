@@ -755,8 +755,14 @@ textarea {
 .filtros .campo {
   flex: 1 1 180px;
 }
-.filtros-usuarios {
+.barra-filtros {
   margin-bottom: var(--space-sm);
+}
+.tarjeta-filtros {
+  margin-bottom: var(--space-md);
+}
+.tarjeta-filtros .barra-filtros {
+  margin-bottom: 0;
 }
 .filtros-resumen {
   display: flex;

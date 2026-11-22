@@ -11,22 +11,40 @@ import { BarraSuperior } from '../componentes/Layout';
 import { TarjetaTorre } from '../componentes/TarjetaTorre';
 import { PanelHistorico } from '../componentes/PanelHistorico';
 import { Boton, Campo, Encabezado, Esqueleto, MensajeError, Modal, Selector, Tarjeta, Vacio } from '../componentes/ui';
+import { FiltrosTorres } from '../componentes/FiltrosTorres';
 import { hoyISO } from '../util/formato';
+import { filtrarTorres, guardarFiltroTorres, leerFiltroTorres, type FiltroTorres } from '../util/torres';
 
 export function Torres() {
   const { usuario } = useSesion();
   const conexion = useConexion();
   const estado = useDatos<RespuestaEstado>((s) => api.get('/torres/estado', s), [], { cadaMs: 5000 });
+  const [filtro, setFiltro] = useState(() => leerFiltroTorres(usuario?.id_usuario));
+  const torres = estado.datos?.torres ?? [];
+  const visibles = filtrarTorres(torres, filtro);
+  function cambiarFiltro(f: FiltroTorres) {
+    setFiltro(f);
+    guardarFiltroTorres(usuario?.id_usuario, f);
+  }
   return (
     <>
       <BarraSuperior actualizadoEn={estado.actualizadoEn} desactualizado={estado.desactualizado} />
       <Encabezado titulo={usuario?.rol === 'encargado' ? 'Mis torres' : 'Torres'} descripcion="Estado actual por torre, actualizado cada 5 segundos (CU-03)" />
       <MensajeError error={estado.datos ? null : estado.error} reintentar={estado.refrescar} />
+      {torres.length > 0 && (
+        <Tarjeta etiqueta="Filtros de torres" className="tarjeta-filtros">
+          <FiltrosTorres filtro={filtro} alCambiar={cambiarFiltro} visibles={visibles.length} total={torres.length} />
+        </Tarjeta>
+      )}
       {estado.cargando && !estado.datos ? (
         <Esqueleto n={3} alto={220} />
-      ) : estado.datos?.torres.length ? (
+      ) : torres.length > 0 && visibles.length === 0 ? (
+        <Tarjeta etiqueta="Sin resultados">
+          <Vacio titulo="Ninguna torre coincide">Pruebe con otro texto, estado o conexión, o use «Limpiar filtros».</Vacio>
+        </Tarjeta>
+      ) : torres.length ? (
         <div className="rejilla rejilla-torres">
-          {estado.datos.torres.map((t) => (
+          {visibles.map((t) => (
             <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={conexion !== 'en_linea' || estado.desactualizado} />
           ))}
         </div>

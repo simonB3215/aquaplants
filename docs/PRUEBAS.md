@@ -239,7 +239,7 @@ Cambio solo de interfaz (además, el mismo número junto a «Alertas» en el men
 | `npm test -w packages/frontend` (14 casos nuevos en `indicadorAlertas.test.tsx`: 9 de campana y 5 del menú; + 6 existentes) | 20/20 OK |
 | `npm test -w packages/shared` | 6/6 OK |
 | `npm run typecheck` y `npm run build -w packages/frontend` (Node 26.13.1) | OK |
-| Navegador con web compilada y **API simulada**: 11 rutas como Administrador a 360 px | Campana en las 11, sin scroll horizontal |
+| Navegador con web compilada y **API simulada**: 11 rutas como Administrador a 360 px | Campana en las 11, sin scroll horizontal **con tablas vacías** (corrección: con filas, Usuarios sí desbordaba; ver Sugerencia 3) |
 | Navegador (API simulada): 360, 768, 1024 y 1440 px; casos 0, 3 con crítica y 120 | OK: «0», «3 · Hay críticas», «99+»; 44 px de alto; el clic lleva a /alertas |
 | Navegador (API simulada): resolver la única crítica | OK: baja a 2 y pasa a ámbar sin esperar el refresco |
 | Navegador (API simulada): número del menú lateral, 11 rutas como Administrador a 1280 px | «3» en las 11, sin scroll horizontal |
@@ -252,3 +252,20 @@ Cambio solo de interfaz (además, el mismo número junto a «Alertas» en el men
 Observado, sin corregir: en la página Alertas el fondo oscuro del modal «Resolver» cubre solo la tarjeta y no toda la pantalla (defecto anterior a este cambio).
 
 Nota: correr una sola suite del backend reescribe `docs/evidencias/pruebas-backend.json` con solo esa suite. No confirmar ese archivo salvo tras una ejecución completa.
+
+## Sesión 8 — Sugerencia 3: filtros de usuarios (2026-11-22)
+
+Cambio solo de interfaz en Usuarios: buscador por nombre o email (sin tildes ni mayúsculas, palabras en cualquier orden), filtros por rol y por estado, contador y «Limpiar filtros». Filtra en el navegador la lista que ya entrega `GET /usuarios` (solo Administrador). Sin paginación.
+
+| Prueba | Resultado |
+|---|---|
+| `npm test -w packages/frontend` (14 casos nuevos en `filtrosUsuarios.test.tsx`) | 34/34 OK |
+| `npm test -w packages/shared` | 6/6 OK |
+| `npm run typecheck` y `npm run build -w packages/frontend` | OK |
+| Navegador con **API simulada** (12 usuarios): 4 roles × 4 estados, contando «Todos», a 1280 px | 16/16 coinciden contador y filas; la tabla no salta |
+| Navegador (API simulada): 320, 360, 375, 390, 768, 1024 y 1440 px × (sin filtro, con resultado, sin resultado) | 21/21 sin scroll horizontal; controles de 44 px o más |
+| Navegador (API simulada): limpiar, editar desde la lista, buscador de torres del formulario | OK |
+| Con sesión, API y datos reales | **No ejecutado** |
+| Pruebas del backend | **No ejecutadas** (sin cambios en backend) |
+
+Defecto anterior encontrado y corregido: con filas, Usuarios medía 720 px en una pantalla de 360 porque el `.sr-only` de «Acciones» escapaba de la tabla. Se agregó `position: relative` a `.tabla-contenedor` (lo usan también las demás tablas; con datos solo se volvió a probar Usuarios).

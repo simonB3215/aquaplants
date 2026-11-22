@@ -9,6 +9,8 @@ import { BarraSuperior } from '../componentes/Layout';
 import { SeleccionMultiple } from '../componentes/SeleccionMultiple';
 import { Aviso, Boton, Campo, Encabezado, Esqueleto, MensajeError, Modal, Paginador, Selector, Tarjeta, Vacio } from '../componentes/ui';
 import { fechaHora, hace, numero } from '../util/formato';
+import { FiltrosUsuarios } from '../componentes/FiltrosUsuarios';
+import { ESTADOS_USUARIO, estadoUsuario, filtrarUsuarios, SIN_FILTROS } from '../util/usuarios';
 
 /* =================================================================== Usuarios (CU-09) */
 interface UsuarioFila {
@@ -37,6 +39,8 @@ export function Usuarios() {
   const lista = useDatos<UsuarioFila[]>((s) => api.get('/usuarios', s), []);
   const torres = useDatos<TorreFila[]>((s) => api.get('/torres', s), []);
   const [edit, setEdit] = useState<Partial<UsuarioFila> | null>(null);
+  const [filtro, setFiltro] = useState(SIN_FILTROS);
+  const visibles = filtrarUsuarios(lista.datos ?? [], filtro);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [secreto, setSecreto] = useState<{ email: string; pass: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -102,8 +106,11 @@ export function Usuarios() {
       />
       <MensajeError error={lista.error} />
       <Tarjeta etiqueta="Usuarios">
+        {lista.datos && <FiltrosUsuarios filtro={filtro} alCambiar={setFiltro} visibles={visibles.length} total={lista.datos.length} />}
         {!lista.datos ? (
           <Esqueleto n={3} alto={48} />
+        ) : lista.datos.length > 0 && visibles.length === 0 ? (
+          <Vacio titulo="Ningún usuario coincide">Pruebe con otro texto, rol o estado, o use «Limpiar filtros».</Vacio>
         ) : (
           <div className="tabla-contenedor">
             <table className="tabla">
@@ -120,7 +127,7 @@ export function Usuarios() {
                 </tr>
               </thead>
               <tbody>
-                {lista.datos.map((u) => (
+                {visibles.map((u) => (
                   <tr key={u.id_usuario}>
                     <td>
                       <strong>{u.nombre}</strong>
@@ -130,7 +137,7 @@ export function Usuarios() {
                     <td>{ETIQUETA_ROL[u.rol]}</td>
                     <td className="pequeno">{u.rol === 'encargado' ? u.torres.map(nombreTorre).join(', ') || 'Sin torres' : 'Todas'}</td>
                     <td>
-                      <span className={`insignia ${u.activo ? (u.bloqueado ? 'e-advertencia' : 'e-normal') : 'e-neutro'}`}>{u.activo ? (u.bloqueado ? 'Bloqueado temporalmente' : 'Activo') : 'Inactivo'}</span>
+                      <span className={`insignia ${ESTADOS_USUARIO[estadoUsuario(u)].clase}`}>{ESTADOS_USUARIO[estadoUsuario(u)].texto}</span>
                     </td>
                     <td>
                       <div className="acciones" style={{ flexWrap: 'nowrap' }}>

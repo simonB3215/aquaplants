@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import { CircleAlert } from 'lucide-react';
+import { normalizar } from '../util/texto';
 import { Boton, Campo } from './ui';
 
 export interface OpcionSeleccion {
@@ -34,7 +35,6 @@ export function SeleccionMultiple({
   const id = useId();
   const a = femenino ? 'a' : 'o';
   const [filtro, setFiltro] = useState('');
-  const normalizar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const visibles = useMemo(() => {
     const f = normalizar(filtro.trim());
     return f ? opciones.filter((o) => normalizar(o.texto).includes(f)) : opciones;

@@ -755,6 +755,18 @@ textarea {
 .filtros .campo {
   flex: 1 1 180px;
 }
+.filtros-usuarios {
+  margin-bottom: var(--space-sm);
+}
+.filtros-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 var(--space-sm);
+  /* Alto fijo para que la tabla no salte al aparecer «Limpiar filtros». */
+  min-height: calc(var(--toque-min) + var(--space-sm));
+}
 .seleccion-multiple {
   border: 0;
   padding: 0;
@@ -813,6 +825,7 @@ textarea {
 
 /* Tablas: desplazamiento dentro del contenedor, nunca de la página */
 .tabla-contenedor {
+  position: relative; /* retiene el texto .sr-only de las cabeceras: sin esto la página se ensancha en celular */
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radio-md);

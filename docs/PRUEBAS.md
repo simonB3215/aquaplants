@@ -265,7 +265,9 @@ Cambio solo de interfaz en Usuarios: buscador por nombre o email (sin tildes ni 
 | Navegador con **API simulada** (12 usuarios): 4 roles × 4 estados, contando «Todos», a 1280 px | 16/16 coinciden contador y filas; la tabla no salta |
 | Navegador (API simulada): 320, 360, 375, 390, 768, 1024 y 1440 px × (sin filtro, con resultado, sin resultado) | 21/21 sin scroll horizontal; controles de 44 px o más |
 | Navegador (API simulada): limpiar, editar desde la lista, buscador de torres del formulario | OK |
+| Publicación `fcb33e9`: https://aquaplants.vercel.app | OK: sirve el JS y CSS nuevos; el login abre sin errores de consola; `/api/v1/usuarios` sin sesión 401 |
+| Render tras el push | OK: sin redespliegue; API y simulador siguieron respondiendo |
 | Con sesión, API y datos reales | **No ejecutado** |
-| Pruebas del backend | **No ejecutadas** (sin cambios en backend) |
+| Pruebas del backend | No ejecutadas en este equipo (sin cambios en backend); CI de GitHub en `fcb33e9` OK |
 
 Defecto anterior encontrado y corregido: con filas, Usuarios medía 720 px en una pantalla de 360 porque el `.sr-only` de «Acciones» escapaba de la tabla. Se agregó `position: relative` a `.tabla-contenedor` (lo usan también las demás tablas; con datos solo se volvió a probar Usuarios).

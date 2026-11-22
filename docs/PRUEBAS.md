@@ -301,6 +301,7 @@ Rama local `estructura-clientes`, sin commit ni publicación. Ejecutado en el PC
 | frontend (incluye `rolesPantallas.test.tsx`: menú por rol, Incidencias del Técnico, Supervisor en solo lectura) | **66/66 ✔** |
 | `npm run build -w packages/frontend` | **✔** |
 | Pantallas en el navegador integrado con una API simulada local (datos ficticios, sin Supabase) | **✔** Técnico: Inicio, Incidencias (solo sus clientes, «Atender», GPS), Infraestructura en lectura, sin Alertas; Supervisor: «Mis Encargados» solo de su cliente; Administrador: Clientes. Sin errores en la consola |
-| Migración `012_clientes_roles_incidencias.sql` | **Sin probar** (no se aplicó en ninguna base) |
+| CI de GitHub Actions en la rama `estructura-clientes` (TimescaleDB + MongoDB de prueba: migraciones con la 012, typecheck, `npm test`, build, audit) | 1.ª ejecución ✖: backend 199/200; falló `estructura.test.ts` porque la prueba esperaba que la sesión se revocara al instante tras el script `admin:principal`, y la API guarda la versión de sesión 30 s. Se corrigió la prueba (no el código). **Ejecución 45074918100 sobre `e5102bb`: ✔ verde** (migración 012 aplicada y todas las suites, incluidas las de aislamiento entre clientes) |
+| Migración 012 en Supabase | **No aplicada** (requiere autorización) |
 
 Ajustes en pruebas existentes: `invitaciones.test.ts` (el Supervisor ahora puede invitar Encargados de su cliente: 201), fixtures del frontend con `id_cliente`, `cliente`, `latitud` y `longitud`, y el usuario simulado de `filtrosUsuarios.test.tsx` con rol Administrador (las acciones ahora dependen del rol).

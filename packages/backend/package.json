@@ -14,6 +14,7 @@
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
     "admin:principal": "tsx src/scripts/principal.ts",
+    "demo:personas": "tsx src/scripts/demoPersonas.ts",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand"
   },
   "dependencies": {

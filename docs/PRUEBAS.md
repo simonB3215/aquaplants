@@ -321,3 +321,17 @@ El usuario inició sesión él mismo en el navegador integrado; Claude solo ley�
 | Consola | **✔** sin errores de la aplicación (solo los 401 de la verificación de sesión antes de iniciar sesión y avisos de CSP por scripts de la herramienta de inspección) |
 
 No probado aún: pantallas de Supervisor, Encargado y Técnico con sesión real (no hay Técnico creado), crear un cliente, guardar un GPS y cerrar una incidencia en producción.
+
+### Personas de muestra en Supabase (2026-11-23)
+`demoPersonas.ts`: typecheck **✔**; ensayo `--seco` contra Supabase **✔** (todo en una transacción con ROLLBACK); carga real **✔** (autorizada por el usuario). Verificado con una consulta de solo lectura: 2 clientes con sus torres, 10 usuarios con rol, cliente y clientes atendidos correctos, GPS en AquaBrain-A y B. La sesión abierta de Ana se cerró sola al pasar a Administrador principal (esperado). Pendiente: revisar las pantallas con cada rol.
+
+### Anexo C en producción con sesión de cada rol (2026-11-23)
+El usuario inició cada sesión en el navegador integrado; Claude solo leyó las pantallas (sin crear ni modificar datos). Consola sin errores de la aplicación en todas.
+
+| Cuenta | Resultado |
+|---|---|
+| Teo Técnico (atiende ambos clientes) | **✔** «Equipos de mis clientes», 3 torres de los 2 clientes, KPI «Incidencias activas» en vez de alertas, campana de incidencias; 3 incidencias con cliente, GPS, «Atender» y «Cerrar» (bloqueado mientras sigue sin señal); Infraestructura y Umbrales «Solo lectura»; `/alertas` y `/usuarios` → «Sin acceso» |
+| Paula Soto (Técnica, solo Huerta Norte) | **✔** solo Torre C y 1 incidencia (AquaBrain-C) con «Atender» y «Cerrar»; no ve torres A ni B |
+| Rodrigo Rojas (Administrador) | **✔** 10 cuentas con su alcance; Ana (Administrador principal) en «Solo lectura» (RN-12: solo el principal gestiona Administradores) |
+| Carla Muñoz (Supervisora, Huerta Norte) | **✔** «Supervisión · Huerta Norte», solo Torre C; «Mis Encargados» con solo Diego Pérez y Tomás; incidencia de AquaBrain-C sin botones; `/clientes` → «Sin acceso». Detalle menor: el filtro de rol muestra los 5 roles |
+| Marcela Díaz (Encargada, Torre B) | **✔** «Mis cultivos», solo Torre B; `/incidencias` y `/usuarios` → «Sin acceso» |

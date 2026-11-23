@@ -128,3 +128,18 @@ describe('Filtros de usuarios', () => {
     expect(resumen()).toBe('0 de 5 usuarios');
   });
 });
+
+describe('Filtro de rol según la lista', () => {
+  test('ofrece solo los roles presentes', async () => {
+    await mostrar();
+    const opciones = [...(filtros().getByLabelText('Rol') as HTMLSelectElement).options].map((o) => o.value);
+    expect(opciones).toEqual(['', 'encargado', 'supervisor', 'administrador']);
+  });
+
+  test('con un solo rol (Supervisor: solo Encargados) no muestra el selector', async () => {
+    usuarios = usuarios.filter((x) => x.rol === 'encargado');
+    await mostrar();
+    expect(filtros().queryByLabelText('Rol')).toBeNull();
+    expect(filtros().getByLabelText('Estado')).toBeTruthy();
+  });
+});

@@ -333,5 +333,8 @@ El usuario inició cada sesión en el navegador integrado; Claude solo leyó las
 | Teo Técnico (atiende ambos clientes) | **✔** «Equipos de mis clientes», 3 torres de los 2 clientes, KPI «Incidencias activas» en vez de alertas, campana de incidencias; 3 incidencias con cliente, GPS, «Atender» y «Cerrar» (bloqueado mientras sigue sin señal); Infraestructura y Umbrales «Solo lectura»; `/alertas` y `/usuarios` → «Sin acceso» |
 | Paula Soto (Técnica, solo Huerta Norte) | **✔** solo Torre C y 1 incidencia (AquaBrain-C) con «Atender» y «Cerrar»; no ve torres A ni B |
 | Rodrigo Rojas (Administrador) | **✔** 10 cuentas con su alcance; Ana (Administrador principal) en «Solo lectura» (RN-12: solo el principal gestiona Administradores) |
-| Carla Muñoz (Supervisora, Huerta Norte) | **✔** «Supervisión · Huerta Norte», solo Torre C; «Mis Encargados» con solo Diego Pérez y Tomás; incidencia de AquaBrain-C sin botones; `/clientes` → «Sin acceso». Detalle menor: el filtro de rol muestra los 5 roles |
+| Carla Muñoz (Supervisora, Huerta Norte) | **✔** «Supervisión · Huerta Norte», solo Torre C; «Mis Encargados» con solo Diego Pérez y Tomás; incidencia de AquaBrain-C sin botones; `/clientes` → «Sin acceso». Detalle menor: el filtro de rol muestra los 5 roles (**corregido**: ver abajo) |
 | Marcela Díaz (Encargada, Torre B) | **✔** «Mis cultivos», solo Torre B; `/incidencias` y `/usuarios` → «Sin acceso» |
+
+### Filtro de rol según la lista (2026-11-23)
+`FiltrosUsuarios` ofrece solo los roles presentes y oculta el selector si hay uno solo. frontend **68/68 ✔** (2 pruebas nuevas en `filtrosUsuarios.test.tsx`), typecheck y build **✔**; con la API simulada local: Supervisor sin selector de rol (solo Buscar y Estado), Administrador con los roles de su lista.

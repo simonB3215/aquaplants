@@ -177,7 +177,7 @@ export function Usuarios() {
       />
       <MensajeError error={lista.error} />
       <Tarjeta etiqueta="Usuarios">
-        {lista.datos && <FiltrosUsuarios filtro={filtro} alCambiar={setFiltro} visibles={visibles.length} total={lista.datos.length} />}
+        {lista.datos && <FiltrosUsuarios filtro={filtro} alCambiar={setFiltro} visibles={visibles.length} total={lista.datos.length} roles={[...new Set(lista.datos.map((u) => u.rol as Rol))]} />}
         {!lista.datos ? (
           <Esqueleto n={3} alto={48} />
         ) : lista.datos.length === 0 ? (

@@ -1,6 +1,6 @@
 # Estado del proyecto — AquaPlants / AquaBrain
 
-_Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
+_Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 8 — Sugerencias recibidas (2026-11-22)
 - **1. Indicador de alertas (campana + número en el menú y en la barra del celular): publicado el 2026-11-22 (`98b34bd`); visto en producción con sesión de Administrador el 2026-11-22 (campana en 0, sin alertas activas)** (`componentes/IndicadorAlertas.tsx`; ver PRUEBAS, sesión 8).
@@ -10,7 +10,7 @@ _Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir e
   - **Probado**: typecheck completo; shared 8/8; backend sin base de datos 103/103 (incluye `rolesAnexoC.test.ts`, 88 casos de la matriz de permisos y alcance); simulador 6/6; frontend 66/66 (incluye `rolesPantallas.test.tsx`); build del frontend; pantallas vistas en el navegador con una API simulada local (Técnico, Supervisor, Administrador).
   - **CI verde** en la rama `estructura-clientes` subida a GitHub (ejecución 45074918100, `e5102bb`): migración 012, SQL y aislamiento entre clientes probados en las bases de prueba del CI. **Migración 012 aplicada en Supabase y código publicado el 2026-11-22.** **Datos de muestra cargados en Supabase el 2026-11-23** con `npm run demo:personas -w packages/backend` (autorizado por el usuario; el proyecto es de muestra pero con varias personas): clientes «Agrícola Los Aromos» (ex «Cliente inicial», torres A y B) y «Huerta Norte» (torre C); 10 cuentas: Ana (Administrador principal), Rodrigo Rojas (Administrador), Sergio y Carla Muñoz (Supervisores), Elena, Marcela Díaz, Tomás y Diego Pérez (Encargados), Teo Técnico (ambos clientes) y Paula Soto (Huerta Norte); GPS de muestra en AquaBrain-A y B. Las cuentas nuevas copian el hash de la cuenta del seed de su rol (técnicos: la del Supervisor). Contraseñas propias para las 6 cuentas nuevas, generadas a pedido del usuario y guardadas solo en `secretos/cuentas-demo.txt` (fuera de git). **Revisado en producción con sesión de cada rol el 2026-11-23** (Administrador principal, Administrador, Supervisor, Encargado y los 2 Técnicos): aislamiento entre clientes correcto (ver PRUEBAS). El filtro de rol de Usuarios ahora ofrece solo los roles presentes en la lista y se oculta si hay uno solo (Supervisor): corregido el 2026-11-23, sin publicar. Sin probar en producción: crear un cliente, guardar un GPS desde la pantalla y cerrar una incidencia. Tras `admin:principal`, la sesión abierta de esa cuenta deja de servir en a lo sumo 30 s.
   - **Orden para publicar** (cada paso requiere autorización): 1) CI verde en la rama; 2) aplicar la migración 012 en Supabase (Render no migra solo; el `DEFAULT 1` deja funcionando el código anterior mientras tanto); 3) unir a `main` (Render y Vercel se actualizan); 4) designar a los Administradores principales con `npm run admin:principal -w packages/backend -- --email <correo>` (con la conexión de Supabase en el entorno); 5) crear los clientes reales y mover sus torres desde «Cliente inicial».
-- Por corregir: el fondo del modal «Resolver» cubre solo la tarjeta en la página Alertas.
+- Corregido el 2026-11-23: el fondo del modal «Resolver» cubría solo la tarjeta (ahora se monta en `<body>`).
 
 ## Sesión 5 — Docker eliminado del repositorio; publicación en Render + Supabase + Vercel (D-30, D-36)
 - **D-36** (2026-11-10): la web pasó de Netlify a **Vercel** (`https://aquaplants.vercel.app`, `vercel.json`); `netlify.toml` eliminado. `CORS_ORIGIN` y `APP_URL` en Render ya apuntan a Vercel (CORS verificado el 2026-11-10). Sitio de Netlify deshabilitado por el usuario (404); la web queda solo en Vercel.
@@ -69,8 +69,8 @@ _Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir e
 
 ## Pendiente (por prioridad)
 1. **Dependencias**: resuelto en sesión 3 (D-23): producción sin vulnerabilidades altas/críticas; quedan **2 moderadas** en react-router (corrección = React Router 7, cambio mayor). En desarrollo quedan vite 5 y vitest 2 con avisos que solo afectan al servidor de desarrollo/pruebas (corrección = vite 8 / vitest 5, cambios mayores).
-2. CP-13 rendimiento (histórico de 30 días ≤ 3 s); CP-24 TLS; CP-25 SUS; PWA offline re-verificada (con Chrome/Playwright, no el navegador integrado).
-3. Publicación: **elegida** (D-30, Render + Supabase + Netlify) y preparada; falta crear los servicios y cargar las claves. CP-24 TLS: lo dan Netlify y Render (por verificar una vez publicado).
+2. **CP-13 aprobada** (2026-11-23, en producción: 30 días ≤ 1,3 s, ver PRUEBAS; con el volumen real de Supabase, no con 30 días continuos). **CP-24 aprobada** (2026-11-23: HTTPS válido en Vercel y Render, HSTS de 1 año, HTTP → 308 a HTTPS). Pendientes: CP-25 SUS (encuesta con personas, la hace el equipo) y PWA offline re-verificada (con Chrome/Playwright, no el navegador integrado).
+3. Publicación: **hecha** (D-30, D-36): web en Vercel, API + worker y simulador en Render, bases en Supabase + Neon. Cada push a `main` despliega solo; las migraciones en Supabase se aplican a mano.
 4. CI: resuelto en sesión 3 (`checkout@v7`, `setup-node@v7` con Node 24; `npm audit --omit=dev --audit-level=high` ahora hace fallar el CI).
 5. Resuelto en sesión 3 (D-24): compresión 7 d, retención 2 años, agregado horario 5 años, evidencia inmutable de mediciones con alerta; anonimización de usuarios desactivados tras 1 año (D-25).
 6. **Cerrado por decisión del usuario** (D-26b, 2026-11-10): no se hará respaldo propio de Supabase + Neon; queda como divergencia y trabajo futuro. Antes (D-26): el respaldo cifrado y CP-29 funcionaban con contenedores Docker y se retiraron en la sesión 5. Falta definir el respaldo de Supabase + Neon y repetir la prueba de restauración.
@@ -86,7 +86,7 @@ _Última actualización: 2026-11-22 (sesión 8, PC Windows del usuario). Abrir e
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-32). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente) y D-32 (RF-11, preferencia de avisos). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
+Ver `docs/DECISIONES.md` (D-01…D-37). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente), D-32 (RF-11, preferencia de avisos), D-36 (web en Vercel) y D-37 (Anexo C: clientes, 5 roles, incidencias, GPS). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.
@@ -102,9 +102,8 @@ node tests/e2e/escenarios.mjs
 ```
 
 ## Próximo paso concreto
-**Sesión 3 (2026-11-04)**: bloque 1 (seguridad y calidad) y **bloque 2 (base de datos)** terminados. Resultados en `docs/PRUEBAS.md` (84/84, E2E 8/8, CP-29 APROBADA). La clave privada age está en `secretos/age-respaldo.key` (fuera de git; en producción debe guardarse **fuera del servidor**). Copia previa a las migraciones: `respaldos/pre-bloque2.dump`.
+**Sesión 8 (2026-11-22/23)**: sugerencias 1–5 del Anexo C publicadas y revisadas en producción con sesión de cada rol; personas de muestra cargadas (`npm run demo:personas`, contraseñas en `secretos/cuentas-demo.txt`, fuera de git); CP-13 y CP-24 aprobadas; modal con fondo a pantalla completa.
 
+Siguiente: «Atender» ya probado en producción; faltan cerrar una incidencia con el simulador enviando, guardar un GPS y crear un cliente (sesión de Administrador); PWA offline con Chrome.
 
-Además: **enlaces de invitación (D-28)** probados con Jest (5 nuevas, 89/89) y en el navegador sobre Docker (migración 009 aplicada).
-
-**Siguiente: bloque 3** (k6 CP-27 con 50 dispositivos × 10 min y CP-13 histórico de 30 días ≤ 3 s; PWA offline re-verificada). Luego bloque 4 (CP-08, documentación final, pantalla de especies opcional). Publicación: ver D-30 y `docs/DESPLIEGUE.md`.
+Decisiones del equipo: CP-25 SUS; D-25 (nombre y email en la auditoría); quitar las contraseñas por defecto del código (el usuario dijo «todavía no»); dominio de los correos de muestra (`@aquaplants.cl` podría existir; hoy no reciben nada por `NOTIFICACIONES_SOLO_A`).

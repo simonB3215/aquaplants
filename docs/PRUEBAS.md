@@ -338,3 +338,20 @@ El usuario inició cada sesión en el navegador integrado; Claude solo leyó las
 
 ### Filtro de rol según la lista (2026-11-23)
 `FiltrosUsuarios` ofrece solo los roles presentes y oculta el selector si hay uno solo. frontend **68/68 ✔** (2 pruebas nuevas en `filtrosUsuarios.test.tsx`), typecheck y build **✔**; con la API simulada local: Supervisor sin selector de rol (solo Buscar y Estado), Administrador con los roles de su lista.
+
+### CP-13, CP-24 y fondo del modal (2026-11-23)
+| Verificación | Resultado |
+|---|---|
+| **CP-13** histórico de 30 días ≤ 3 s, en producción (Vercel → Render → Supabase), sesión de Paula Soto (Técnica), 5 sensores de la Torre C × 3 intentos | **✔ APROBADA**: máximo 1.273 ms (primera llamada en frío), resto 228–548 ms; respuesta agregada por hora (77 y 15 puntos, 2–10 KB). Limitación: Supabase solo tiene ~77 h con datos en esos 30 días (el simulador no corre continuo), no 30 días llenos |
+| Aislamiento en la API: la misma Técnica pide el histórico de un sensor de la Torre A (otro cliente) | **✔** 403 `TORRE_NO_ASIGNADA` |
+| **CP-24** TLS | **✔ APROBADA**: certificado válido en `aquaplants.vercel.app` y `aquaplants-api.onrender.com`; HSTS `max-age=31536000`; `http://` → 308 a `https://` |
+| Fondo del modal (defecto «Resolver» en Alertas) | **Corregido**: `Modal` se monta en `<body>` con `createPortal` (dentro de una tarjeta con `backdrop-filter` el fondo quedaba limitado a la tarjeta). Prueba nueva `modal.test.tsx`; frontend **69/69 ✔**, typecheck y build **✔**; con la API simulada local el fondo mide lo mismo que la ventana y el modal queda centrado |
+
+### Acciones de incidencias en producción (2026-11-23, sesión de Paula Soto)
+| Acción | Resultado |
+|---|---|
+| «Atender» la incidencia de AquaBrain-C desde la pantalla | **✔** pasa a «En atención», «Atiende Paula Soto desde 23-nov, 01:37» |
+| Cerrar mientras el equipo sigue sin señal (API) | **✔** 409 `SIN_SENAL_PERSISTE` (API.md decía 422: corregido) |
+| Atender otra vez la misma incidencia (API) | **✔** 409 `INCIDENCIA_EN_ATENCION` |
+
+Sin probar en producción: cerrar con comentario (requiere que el simulador esté enviando), guardar un GPS desde la pantalla y crear un cliente (requieren sesión de Administrador).

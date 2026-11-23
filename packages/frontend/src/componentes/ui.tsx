@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import {
   CircleCheck,
@@ -281,7 +282,9 @@ export function Modal({ titulo, abierto, onCerrar, children }: { titulo: string;
     };
   }, [abierto, onCerrar]);
   if (!abierto) return null;
-  return (
+  // Portal a <body>: dentro de una tarjeta con backdrop-filter, position: fixed queda
+  // relativo a la tarjeta y el fondo cubría solo esa tarjeta (defecto del modal «Resolver»).
+  return createPortal(
     <div className="modal-fondo" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby={id} ref={ref}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
@@ -292,7 +295,8 @@ export function Modal({ titulo, abierto, onCerrar, children }: { titulo: string;
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

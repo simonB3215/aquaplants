@@ -355,3 +355,16 @@ El usuario inició cada sesión en el navegador integrado; Claude solo leyó las
 | Atender otra vez la misma incidencia (API) | **✔** 409 `INCIDENCIA_EN_ATENCION` |
 
 Sin probar en producción: cerrar con comentario (requiere que el simulador esté enviando), guardar un GPS desde la pantalla y crear un cliente (requieren sesión de Administrador).
+
+## Sesión 8 — CRUD completo: Especies y corregir cultivo (2026-11-23, D-38)
+| Verificación | Resultado |
+|---|---|
+| Revisión de CRUD por entidad (API y pantallas) | Clientes, torres, dispositivos (GPS, credencial), sensores, umbrales, usuarios, invitaciones e incidencias ya tenían crear/ver/editar/baja. Faltaban **Especies** (catálogo fijo) y **corregir el cultivo en curso** en la pantalla (la API existía) |
+| `npm run typecheck` (shared, backend, frontend) | **✔** |
+| shared (`permisos.test.ts`, 17 funcionalidades) | **8/8 ✔** |
+| backend sin base de datos (`rolesAnexoC`) | **88/88 ✔** |
+| backend con base de datos: `especies.test.ts` (nueva: permisos, crear con rangos, duplicado 409, mín ≥ máx 422, fuera del rango físico 422, editar y auditoría, baja con cultivos en curso 409, la de baja no aparece en `/catalogos` ni se acepta en cultivos, reactivar) | **No ejecutada en local** (sin PostgreSQL): queda para el CI |
+| frontend (incluye `especies.test.tsx` 3 pruebas) | **72/72 ✔** |
+| `npm run build -w packages/frontend` | **✔** |
+| Pantallas con la API simulada local | **✔** Especies: tabla con rangos, cultivos en curso y estado; formulario con mínimo y máximo por variable. Torre: «Corregir» abre el cultivo en curso con su especie y fecha |
+| Migración `013_especies.sql` | **Sin probar** (correrá en el CI antes de aplicarla en Supabase) |

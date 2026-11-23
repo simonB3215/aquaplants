@@ -203,6 +203,22 @@ export const EditarClienteSchema = z.object({
   estado: z.enum(['activo', 'baja']).optional(),
 });
 
+// ---------- Catálogo de especies (CRUD) ----------
+const RangoReferenciaSchema = z
+  .object({ id_tipo_variable: z.number().int().positive(), valor_min: z.number().finite(), valor_max: z.number().finite() })
+  .refine((r) => r.valor_min < r.valor_max, { message: 'El mínimo debe ser menor que el máximo', path: ['valor_max'] });
+const rangos = z
+  .array(RangoReferenciaSchema)
+  .max(50)
+  .refine((l) => new Set(l.map((r) => r.id_tipo_variable)).size === l.length, { message: 'Una variable aparece dos veces' });
+export const EspecieSchema = z.object({ nombre: texto(80), descripcion: z.string().trim().max(300).default(''), rangos: rangos.default([]) });
+export const EditarEspecieSchema = z.object({
+  nombre: texto(80).optional(),
+  descripcion: z.string().trim().max(300).optional(),
+  rangos: rangos.optional(),
+  estado: z.enum(['activo', 'baja']).optional(),
+});
+
 // ---------- D-37 Incidencias de equipos (RN-13) ----------
 export const ESTADOS_INCIDENCIA = ['abierta', 'en_atencion', 'cerrada'] as const;
 export const FiltroIncidenciasSchema = z.object({

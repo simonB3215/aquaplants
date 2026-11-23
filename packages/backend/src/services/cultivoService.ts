@@ -29,8 +29,8 @@ export class CultivoService {
     return this.db.transaccion(async (tx) => {
       const t = await tx.query<{ estado: string }>(`SELECT estado FROM instalacion WHERE id_instalacion = $1 FOR UPDATE`, [d.id_instalacion]);
       if (t.rows[0].estado !== 'activo') throw new ConflictoError('La torre está de baja', 'TORRE_DE_BAJA');
-      const esp = await tx.query(`SELECT 1 FROM especie WHERE id_especie = $1`, [d.id_especie]);
-      if (!esp.rowCount) throw new ReglaNegocioError('Especie inexistente', [{ campo: 'id_especie', mensaje: 'Seleccione una especie del catálogo' }]);
+      const esp = await tx.query(`SELECT 1 FROM especie WHERE id_especie = $1 AND estado = 'activo'`, [d.id_especie]);
+      if (!esp.rowCount) throw new ReglaNegocioError('Especie inexistente o de baja', [{ campo: 'id_especie', mensaje: 'Seleccione una especie activa del catálogo' }]);
       const enCurso = await tx.query(`SELECT 1 FROM cultivo WHERE id_instalacion = $1 AND estado = 'en_curso'`, [d.id_instalacion]);
       if (enCurso.rowCount) throw new ConflictoError('La torre ya tiene un cultivo en curso: ciérrelo antes de registrar uno nuevo', 'CULTIVO_EN_CURSO');
       const r = await tx.query<{ id_cultivo: number }>(
@@ -57,6 +57,10 @@ export class CultivoService {
     if (c.estado !== 'en_curso') throw new ConflictoError('Solo se puede corregir un cultivo en curso');
     if (d.fecha_inicio && d.fecha_inicio > hoyLocal()) throw new ReglaNegocioError('La fecha de inicio no puede ser futura', [{ campo: 'fecha_inicio', mensaje: 'Fecha futura' }]);
     return this.db.transaccion(async (tx) => {
+      if (d.id_especie && d.id_especie !== c.id_especie) {
+        const esp = await tx.query(`SELECT 1 FROM especie WHERE id_especie = $1 AND estado = 'activo'`, [d.id_especie]);
+        if (!esp.rowCount) throw new ReglaNegocioError('Especie inexistente o de baja', [{ campo: 'id_especie', mensaje: 'Seleccione una especie activa del catálogo' }]);
+      }
       await tx.query(`UPDATE cultivo SET id_especie = COALESCE($2, id_especie), fecha_inicio = COALESCE($3::date, fecha_inicio) WHERE id_cultivo = $1`, [
         id,
         d.id_especie ?? null,

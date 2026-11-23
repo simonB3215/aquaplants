@@ -781,6 +781,15 @@ textarea {
   gap: var(--space-sm);
   min-width: 0;
 }
+.rangos-especie {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.rangos-especie legend,
 .seleccion-multiple legend {
   font-weight: 600;
   font-size: 0.875rem;

@@ -247,8 +247,11 @@ export class InfraService {
   async catalogos() {
     const [tipos, especies, rangos] = await Promise.all([
       this.db.query(`SELECT id_tipo_variable, nombre, clave, unidad_medida AS unidad, min_fisico, max_fisico FROM tipo_variable ORDER BY id_tipo_variable`),
-      this.db.query(`SELECT id_especie, nombre, descripcion FROM especie ORDER BY nombre`),
-      this.db.query(`SELECT id_especie, id_tipo_variable, valor_min, valor_max FROM rango_referencia`),
+      // Solo las especies activas se ofrecen para cultivos nuevos.
+      this.db.query(`SELECT id_especie, nombre, descripcion FROM especie WHERE estado = 'activo' ORDER BY nombre`),
+      this.db.query(
+        `SELECT rr.id_especie, rr.id_tipo_variable, rr.valor_min, rr.valor_max FROM rango_referencia rr JOIN especie e ON e.id_especie = rr.id_especie WHERE e.estado = 'activo'`,
+      ),
     ]);
     return { tipos_variable: tipos.rows, especies: especies.rows, rangos_referencia: rangos.rows };
   }

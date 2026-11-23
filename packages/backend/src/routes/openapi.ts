@@ -117,6 +117,11 @@ export const openapi = {
       get: { summary: 'D-37 Listar clientes (Administradores)', security: seg, responses: { 200: ok('Clientes con conteo de torres, usuarios y técnicos') } },
       post: { summary: 'D-37 Crear cliente', security: seg, responses: { 201: ok('Creado'), 409: err('Nombre duplicado') } },
     },
+    '/especies': {
+      get: { summary: 'Catálogo de especies con rangos de referencia y uso (Administradores)', security: seg, responses: { 200: ok('Especies') } },
+      post: { summary: 'Crear especie con sus rangos de referencia', security: seg, responses: { 201: ok('Creada'), 409: err('Nombre duplicado'), 422: err('Rango inválido') } },
+    },
+    '/especies/{id}': { patch: { summary: 'Editar, cambiar rangos, dar de baja (sin cultivos en curso) o reactivar una especie', security: seg, responses: { 200: ok('Editada'), 409: err('Especie en uso o nombre duplicado') } } },
     '/clientes/{id}': { patch: { summary: 'D-37 Renombrar o dar de baja un cliente (sin torres ni usuarios activos)', security: seg, responses: { 200: ok('Editado'), 409: err('Cliente en uso') } } },
     '/incidencias': { get: { summary: 'D-37 Incidencias de equipos (RN-13): Técnico, Supervisor (lectura) y Administradores', security: seg, responses: { 200: ok('Paginado') } } },
     '/incidencias/{id}/atender': { patch: { summary: 'D-37 Tomar la incidencia (queda en atención)', security: seg, responses: { 200: ok('En atención'), 409: err('Ya en atención o cerrada') } } },

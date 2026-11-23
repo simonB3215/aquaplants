@@ -21,6 +21,7 @@ import { CultivoService } from './services/cultivoService.js';
 import { ContinuidadService } from './services/continuidadService.js';
 import { DemoService } from './services/demoService.js';
 import { ClienteService } from './services/clienteService.js';
+import { EspecieService } from './services/especieService.js';
 import { IncidenciaService } from './services/incidenciaService.js';
 
 /** Punto único de composición: aquí se inyectan los adaptadores en los servicios. */
@@ -52,6 +53,7 @@ export function crearServicios(cfg: Config, deps?: { db?: IBaseDatos; payloads?:
     continuidad: new ContinuidadService(db, payloads, cfg),
     demo: new DemoService(cfg, db),
     clientes: new ClienteService(db),
+    especies: new EspecieService(db),
     incidencias: new IncidenciaService(db),
   };
 }

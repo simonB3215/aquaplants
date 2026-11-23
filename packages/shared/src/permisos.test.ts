@@ -24,7 +24,7 @@ test('Tabla 48: telemetría solo para dispositivo; Encargado no gestiona usuario
   assert.equal(autorizado('encargado', 'usuarios.gestionar', 'leer'), false);
   assert.equal(autorizado('supervisor', 'cultivos.gestionar', 'escribir'), false);
   assert.equal(autorizado('encargado', 'cultivos.gestionar', 'escribir'), true);
-  assert.equal(Object.keys(FUNCIONALIDADES).length, 16);
+  assert.equal(Object.keys(FUNCIONALIDADES).length, 17);
 });
 
 test('Anexo C (Tabla 70): Técnico, Supervisor y Administrador principal', () => {

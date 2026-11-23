@@ -12,6 +12,7 @@ import { Historicos } from './paginas/Historicos';
 import { Alertas } from './paginas/Alertas';
 import { Continuidad } from './paginas/Continuidad';
 import { Auditoria, Clientes, Infraestructura, Perfil, Umbrales, Usuarios } from './paginas/Gestion';
+import { Especies } from './paginas/Especies';
 import { Incidencias } from './paginas/Incidencias';
 import { OlvideContrasena, RestablecerContrasena } from './paginas/Recuperar';
 import { ConfirmarRegistro, Registro } from './paginas/Registro';
@@ -75,6 +76,7 @@ function Rutas() {
         <Route path="umbrales" element={<Requiere f="umbrales.gestionar" accion="leer"><Umbrales /></Requiere>} />
         <Route path="usuarios" element={<Requiere f="usuarios.gestionar"><Usuarios /></Requiere>} />
         <Route path="clientes" element={<Requiere f="clientes.gestionar" accion="leer"><Clientes /></Requiere>} />
+        <Route path="especies" element={<Requiere f="especies.gestionar" accion="leer"><Especies /></Requiere>} />
         <Route path="auditoria" element={<Requiere f="auditoria.consultar" accion="leer"><Auditoria /></Requiere>} />
         <Route path="demo" element={<Requiere f="clientes.gestionar"><Demo /></Requiere>} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -83,7 +83,7 @@ export function FichaTorre() {
   const veCultivos = puede('cultivos.gestionar', 'leer');
   const cultivos = useDatos<Cultivo[]>((s) => api.get(`/cultivos?torre=${id}`, s), [id], { activo: veCultivos });
   const catalogos = useDatos<Catalogos>((s) => api.get('/catalogos', s), []);
-  const [modal, setModal] = useState<'nuevo' | 'cerrar' | null>(null);
+  const [modal, setModal] = useState<'nuevo' | 'cerrar' | 'corregir' | null>(null);
   const [especie, setEspecie] = useState('');
   const [fecha, setFecha] = useState(hoyISO());
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -95,7 +95,7 @@ export function FichaTorre() {
   async function guardar(e: FormEvent) {
     e.preventDefault();
     const err: Record<string, string> = {};
-    if (modal === 'nuevo' && !especie) err.id_especie = 'Seleccione una especie del catálogo';
+    if (modal !== 'cerrar' && !especie) err.id_especie = 'Seleccione una especie del catálogo';
     if (!fecha) err.fecha = 'Ingrese una fecha';
     else if (fecha > hoyISO()) err.fecha = 'La fecha no puede ser futura';
     else if (modal === 'cerrar' && enCurso && fecha < enCurso.fecha_inicio) err.fecha = 'Debe ser igual o posterior a la fecha de inicio';
@@ -104,8 +104,9 @@ export function FichaTorre() {
     setEnviando(true);
     try {
       if (modal === 'nuevo') await api.post('/cultivos', { id_instalacion: id, id_especie: Number(especie), fecha_inicio: fecha });
+      else if (modal === 'corregir' && enCurso) await api.patch(`/cultivos/${enCurso.id_cultivo}`, { id_especie: Number(especie), fecha_inicio: fecha });
       else if (enCurso) await api.patch(`/cultivos/${enCurso.id_cultivo}/cerrar`, { fecha_fin: fecha });
-      avisar(modal === 'nuevo' ? 'Cultivo registrado' : 'Cultivo cerrado');
+      avisar(modal === 'nuevo' ? 'Cultivo registrado' : modal === 'corregir' ? 'Cultivo corregido' : 'Cultivo cerrado');
       setModal(null);
       void cultivos.refrescar();
       void estado.refrescar();
@@ -141,9 +142,20 @@ export function FichaTorre() {
             descripcion="Un cultivo en curso por torre"
             acciones={
               escribir && (
-                <Boton pequeno variante="primario" icono={Plus} onClick={() => (setModal(enCurso ? 'cerrar' : 'nuevo'), setErrores({}), setFecha(hoyISO()))}>
-                  {enCurso ? 'Cerrar cultivo' : 'Nuevo cultivo'}
-                </Boton>
+                <div className="acciones" style={{ flexWrap: 'nowrap' }}>
+                  {enCurso && (
+                    <Boton
+                      pequeno
+                      variante="fantasma"
+                      onClick={() => (setModal('corregir'), setErrores({}), setEspecie(String(enCurso.id_especie)), setFecha(enCurso.fecha_inicio))}
+                    >
+                      Corregir
+                    </Boton>
+                  )}
+                  <Boton pequeno variante="primario" icono={Plus} onClick={() => (setModal(enCurso ? 'cerrar' : 'nuevo'), setErrores({}), setEspecie(''), setFecha(hoyISO()))}>
+                    {enCurso ? 'Cerrar cultivo' : 'Nuevo cultivo'}
+                  </Boton>
+                </div>
               )
             }
           >
@@ -171,14 +183,15 @@ export function FichaTorre() {
           )}
         </div>
       )}
-      <Modal titulo={modal === 'nuevo' ? 'Registrar cultivo' : 'Cerrar cultivo en curso'} abierto={!!modal} onCerrar={() => setModal(null)}>
+      <Modal titulo={modal === 'nuevo' ? 'Registrar cultivo' : modal === 'corregir' ? 'Corregir cultivo en curso' : 'Cerrar cultivo en curso'} abierto={!!modal} onCerrar={() => setModal(null)}>
         <form className="formulario" onSubmit={guardar} noValidate>
-          {modal === 'nuevo' && (
+          {modal !== 'cerrar' && (
             <Selector etiqueta="Especie" value={especie} onChange={(e) => setEspecie(e.target.value)} error={errores.id_especie}>
               <option value="">Seleccione…</option>
               {catalogos.datos?.especies.map((e) => (
                 <option key={e.id_especie} value={e.id_especie}>
-                  {e.nombre} ({e.descripcion})
+                  {e.nombre}
+                  {e.descripcion ? ` (${e.descripcion})` : ''}
                 </option>
               ))}
             </Selector>
@@ -188,7 +201,7 @@ export function FichaTorre() {
               {enCurso.especie}, iniciado el {enCurso.fecha_inicio}
             </p>
           )}
-          <Campo etiqueta={modal === 'nuevo' ? 'Fecha de inicio' : 'Fecha de fin (cosecha)'} type="date" max={hoyISO()} value={fecha} onChange={(e) => setFecha(e.target.value)} error={errores.fecha || undefined} />
+          <Campo etiqueta={modal === 'cerrar' ? 'Fecha de fin (cosecha)' : 'Fecha de inicio'} type="date" max={hoyISO()} value={fecha} onChange={(e) => setFecha(e.target.value)} error={errores.fecha || undefined} />
           {errores.general && (
             <div className="aviso fondo-critico" role="alert">
               <p>{errores.general}</p>

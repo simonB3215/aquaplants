@@ -46,6 +46,8 @@ export const FUNCIONALIDADES = {
   // Nuevas (Anexo C).
   'incidencias.atender': fila('RN-13', 'no', 'lectura', 'si', 'si'),
   'clientes.gestionar': fila('RN-11', 'no', 'no', 'no', 'si'),
+  // Catálogo de especies y sus rangos de referencia (antes fijo por el seed). Todos lo leen vía /catalogos.
+  'especies.gestionar': fila('CU-10', 'no', 'no', 'no', 'si'),
   'administradores.gestionar': { ...fila('RN-12', 'no', 'no', 'no', 'no'), administrador_principal: 'si' },
 } as const satisfies Record<string, Fila>;
 

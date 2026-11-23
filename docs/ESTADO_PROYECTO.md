@@ -2,6 +2,11 @@
 
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
+## Sesión 8 — CRUD completo para la demostración final (2026-11-23, D-38)
+- **Especies** con CRUD (migración **013**, `GET/POST/PATCH /especies`, pantalla Gestión → Especies) y botón **«Corregir»** del cultivo en curso. Con esto todas las entidades tienen crear, ver, editar y dar de baja (baja lógica). Guion paso a paso: `docs/GUION_CRUD.md`.
+- **Probado en local**: typecheck; shared 8/8; backend sin base 88/88 (`rolesAnexoC`); frontend 72/72 (nuevas `especies.test.tsx`, `modal.test.tsx`); build; pantallas con la API simulada. **Sin probar**: `test/especies.test.ts` y la migración 013 (necesitan PostgreSQL: correrán en el CI).
+- **Orden para publicar** (cada paso con autorización): 1) subir rama y CI verde; 2) migración 013 en Supabase (el código anterior sigue funcionando: la columna tiene DEFAULT); 3) unir a `main`.
+
 ## Sesión 8 — Sugerencias recibidas (2026-11-22)
 - **1. Indicador de alertas (campana + número en el menú y en la barra del celular): publicado el 2026-11-22 (`98b34bd`); visto en producción con sesión de Administrador el 2026-11-22 (campana en 0, sin alertas activas)** (`componentes/IndicadorAlertas.tsx`; ver PRUEBAS, sesión 8).
 - **3. Filtros de usuarios (texto, rol, estado): publicados el 2026-11-22 (`fcb33e9`); vistos en producción con sesión de Administrador el 2026-11-22 (no se probó filtrar).** Incluye el arreglo del desborde de tablas en celular. Sin paginación.
@@ -86,7 +91,7 @@ _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir e
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-37). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente), D-32 (RF-11, preferencia de avisos), D-36 (web en Vercel) y D-37 (Anexo C: clientes, 5 roles, incidencias, GPS). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
+Ver `docs/DECISIONES.md` (D-01…D-38). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente), D-32 (RF-11, preferencia de avisos), D-36 (web en Vercel) y D-37 (Anexo C: clientes, 5 roles, incidencias, GPS). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.

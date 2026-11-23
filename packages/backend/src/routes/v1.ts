@@ -9,6 +9,8 @@ import {
   CerrarIncidenciaSchema,
   ClienteSchema,
   EditarClienteSchema,
+  EditarEspecieSchema,
+  EspecieSchema,
   FiltroIncidenciasSchema,
   ConfirmarRegistroSchema,
   InvitacionSchema,
@@ -371,6 +373,17 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
     permitir('clientes.gestionar'),
     validar(EditarClienteSchema),
     h(async (req, res) => void res.json(await s.clientes.editar(ctx(req), idParam(req), req.body))),
+  );
+
+  // ------------------------------------------------------------ Catálogo de especies (CRUD)
+  r.get('/especies', auth, permitir('especies.gestionar', 'leer'), h(async (_req, res) => void res.json(await s.especies.listar())));
+  r.post('/especies', auth, permitir('especies.gestionar'), validar(EspecieSchema), h(async (req, res) => void res.status(201).json(await s.especies.crear(ctx(req), req.body))));
+  r.patch(
+    '/especies/:id',
+    auth,
+    permitir('especies.gestionar'),
+    validar(EditarEspecieSchema),
+    h(async (req, res) => void res.json(await s.especies.editar(ctx(req), idParam(req), req.body))),
   );
 
   // ------------------------------------------------------------ D-37 Incidencias de equipos (RN-13)

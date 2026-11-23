@@ -378,3 +378,13 @@ Página única `/crud` (menú Gestión → CRUD, solo Administrador) con una pes
 | Con la API simulada local (Administrador) | **✔** Las 8 pestañas cargan sin errores, cada una con su título h2 y una sola barra superior. «Nuevo cultivo» ofrece solo torres sin cultivo en curso. Móvil 375 px: las pestañas se desplazan en horizontal (44 px de alto), sin desplazamiento horizontal de la página |
 | Backend | Sin cambios (usa `GET /cultivos`, `/torres`, `/catalogos` ya existentes) |
 | En producción | **Pendiente** de publicar |
+
+### Defecto: el foco saltaba a la «X» al escribir en un formulario (2026-11-23)
+Reportado por el usuario al revisar el CRUD en producción: al escribir un número en un campo de una ventana (modal), el cursor pasaba al botón «X» y no se podía seguir escribiendo. Afectaba a **todos** los formularios en ventana (especies, cultivos, usuarios, torres, etc.).
+Causa: el efecto del `Modal` dependía de `onCerrar`, que es una función nueva en cada render; cada tecla volvía a ejecutarlo y enfocaba el primer botón (la «X»). Corrección: `onCerrar` se guarda en una referencia, el efecto solo depende de `abierto` y el foco inicial va al primer campo.
+| Verificación | Resultado |
+|---|---|
+| `modal.test.tsx`: foco en el primer campo y se mantiene al escribir; Escape usa la función más reciente | **✔** (la primera **falla sin la corrección**, comprobado) |
+| frontend completo | **78/78 ✔** |
+| API simulada: «Nueva especie», escribir «Tomate» y «5,8» en pH mín. | **✔** el texto queda completo y el foco sigue en el campo |
+| En producción | **Pendiente** de publicar |

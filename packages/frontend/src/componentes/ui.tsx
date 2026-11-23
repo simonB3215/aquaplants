@@ -264,13 +264,20 @@ export function MensajeError({ error, reintentar }: { error: { message: string; 
 export function Modal({ titulo, abierto, onCerrar, children }: { titulo: string; abierto: boolean; onCerrar: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
+  // onCerrar suele ser una función nueva en cada render (al escribir en un campo). Si fuera
+  // dependencia del efecto, el foco volvía a la «X» con cada tecla y no se podía seguir escribiendo.
+  const cerrar = useRef(onCerrar);
+  cerrar.current = onCerrar;
   useEffect(() => {
     if (!abierto) return;
     const previo = document.activeElement as HTMLElement | null;
-    const primero = ref.current?.querySelector<HTMLElement>('input, select, textarea, button');
+    // Foco inicial en el primer campo del formulario; la «X» solo si no hay campos.
+    const primero =
+      ref.current?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled])') ??
+      ref.current?.querySelector<HTMLElement>('button');
     primero?.focus();
     const tecla = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCerrar();
+      if (e.key === 'Escape') cerrar.current();
       if (e.key === 'Tab' && ref.current) {
         const f = [...ref.current.querySelectorAll<HTMLElement>('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute('disabled'));
         if (!f.length) return;
@@ -288,7 +295,7 @@ export function Modal({ titulo, abierto, onCerrar, children }: { titulo: string;
       document.removeEventListener('keydown', tecla);
       previo?.focus();
     };
-  }, [abierto, onCerrar]);
+  }, [abierto]);
   if (!abierto) return null;
   // Portal a <body>: dentro de una tarjeta con backdrop-filter, position: fixed queda
   // relativo a la tarjeta y el fondo cubría solo esa tarjeta (defecto del modal «Resolver»).

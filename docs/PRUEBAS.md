@@ -388,3 +388,11 @@ Causa: el efecto del `Modal` dependía de `onCerrar`, que es una función nueva 
 | frontend completo | **78/78 ✔** |
 | API simulada: «Nueva especie», escribir «Tomate» y «5,8» en pH mín. | **✔** el texto queda completo y el foco sigue en el campo |
 | En producción | **Pendiente** de publicar |
+
+### Especies: rango permitido visible en el formulario (2026-11-23)
+Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de una especie. Bajo cada variable se muestra «Permitido: mín a máx unidad» (límites físicos de `tipo_variable`, los mismos que valida el backend) y el formulario avisa antes de enviar si un valor queda fuera.
+| Verificación | Resultado |
+|---|---|
+| `especies.test.tsx` (nueva: muestra «Permitido: 0 a 14 pH» y rechaza pH máx. 15 sin llamar a la API) | **4/4 ✔** |
+| API simulada: «Nueva especie» | **✔** «Permitido: 0 a 14 pH» y «Permitido: 0 a 10 mS/cm» bajo cada variable |
+| En producción | **Pendiente** de publicar |

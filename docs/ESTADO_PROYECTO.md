@@ -3,6 +3,7 @@
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 8 — CRUD completo para la demostración final (2026-11-23, D-38)
+- **Especies**: el formulario muestra el rango permitido de cada variable («Permitido: 0 a 14 pH») y avisa si un valor queda fuera.
 - **Corregido**: en los formularios en ventana el cursor saltaba a la «X» con cada tecla (afectaba a todos los modales). Prueba de regresión en `modal.test.tsx`.
 - **Apartado «CRUD»** (`/crud`, menú Gestión → CRUD, solo Administrador): una pestaña por entidad (Clientes, Especies, Torres y equipos, Umbrales, Cultivos, Usuarios, Incidencias, Auditoría). La pestaña elegida queda en la dirección (`?tab=`). Cultivos de todas las torres en una tabla (nuevo, corregir, cerrar). Probado: frontend 76/76, build, API simulada en escritorio y móvil. Sin cambios en backend ni base de datos.
 - **Especies** con CRUD (migración **013**, `GET/POST/PATCH /especies`, pantalla Gestión → Especies) y botón **«Corregir»** del cultivo en curso. Con esto todas las entidades tienen crear, ver, editar y dar de baja (baja lógica). Guion paso a paso: `docs/GUION_CRUD.md`.

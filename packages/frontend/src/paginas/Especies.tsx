@@ -47,6 +47,11 @@ export function Especies() {
   const cat = useDatos<{ tipos_variable: TipoVariable[] }>((s) => api.get('/catalogos', s), []);
   const tipos = cat.datos?.tipos_variable ?? [];
   const nombreTipo = (id: number) => tipos.find((t) => t.id_tipo_variable === id);
+  /** Rango físico de la variable (lo mismo que valida el backend), para mostrarlo bajo los campos. */
+  const permitido = (t: TipoVariable) =>
+    t.min_fisico === null && t.max_fisico === null
+      ? ''
+      : `Permitido: ${t.min_fisico === null ? 'sin mínimo' : numero(t.min_fisico)} a ${t.max_fisico === null ? 'sin máximo' : numero(t.max_fisico)} ${t.unidad}`;
   const [form, setForm] = useState<Form | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
@@ -56,6 +61,11 @@ export function Especies() {
     const rangos: Form['rangos'] = {};
     for (const r of e?.rangos ?? []) rangos[r.id_tipo_variable] = { min: String(r.valor_min), max: String(r.valor_max) };
     setForm({ id_especie: e?.id_especie, nombre: e?.nombre ?? '', descripcion: e?.descripcion ?? '', rangos });
+  }
+
+  function fueraDeRango(id: number, a: number, b: number) {
+    const t = nombreTipo(id);
+    return !!t && ((t.min_fisico !== null && a < t.min_fisico) || (t.max_fisico !== null && b > t.max_fisico));
   }
 
   function leerRangos(f: Form) {
@@ -69,6 +79,7 @@ export function Especies() {
       const b = Number(max);
       if (!min || !max || !Number.isFinite(a) || !Number.isFinite(b)) err[`r${id}`] = 'Ingrese mínimo y máximo, o deje ambos vacíos';
       else if (a >= b) err[`r${id}`] = 'El mínimo debe ser menor que el máximo';
+      else if (fueraDeRango(Number(id), a, b)) err[`r${id}`] = `Fuera del rango permitido. ${permitido(nombreTipo(Number(id))!)}`;
       else rangos.push({ id_tipo_variable: Number(id), valor_min: a, valor_max: b });
     }
     return { err, rangos };
@@ -204,7 +215,13 @@ export function Especies() {
                 const poner = (k: 'min' | 'max', valor: string) => setForm({ ...form, rangos: { ...form.rangos, [t.id_tipo_variable]: { ...v, [k]: valor } } });
                 return (
                   <div key={t.id_tipo_variable} className="filtros" style={{ alignItems: 'flex-start' }}>
-                    <Campo etiqueta={`${t.nombre} mín. (${t.unidad})`} inputMode="decimal" value={v.min} onChange={(e) => poner('min', e.target.value)} />
+                    <Campo
+                      etiqueta={`${t.nombre} mín. (${t.unidad})`}
+                      inputMode="decimal"
+                      value={v.min}
+                      onChange={(e) => poner('min', e.target.value)}
+                      ayuda={permitido(t) || undefined}
+                    />
                     <Campo
                       etiqueta={`${t.nombre} máx. (${t.unidad})`}
                       inputMode="decimal"

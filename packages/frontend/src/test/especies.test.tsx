@@ -68,6 +68,20 @@ describe('Especies (CRUD)', () => {
     expect(m.post).toHaveBeenCalledWith('/especies', { nombre: 'Tomate', descripcion: '', rangos: [{ id_tipo_variable: 1, valor_min: 5.5, valor_max: 6.5 }] });
   });
 
+  test('muestra el rango permitido de cada variable y rechaza valores fuera de él', async () => {
+    await mostrar();
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva especie' }));
+    const d = await screen.findByRole('dialog', { name: 'Nueva especie' });
+    expect(within(d).getByText('Permitido: 0 a 14 pH')).toBeTruthy();
+    expect(within(d).getByText('Permitido: 0 a 10 mS/cm')).toBeTruthy();
+    fireEvent.change(within(d).getByLabelText('Nombre'), { target: { value: 'Tomate' } });
+    fireEvent.change(within(d).getByLabelText('pH mín. (pH)'), { target: { value: '5' } });
+    fireEvent.change(within(d).getByLabelText('pH máx. (pH)'), { target: { value: '15' } });
+    fireEvent.click(within(d).getByRole('button', { name: 'Guardar' }));
+    expect(await within(d).findByText('Fuera del rango permitido. Permitido: 0 a 14 pH')).toBeTruthy();
+    expect(m.post).not.toHaveBeenCalled();
+  });
+
   test('editar carga los rangos actuales y reactivar una especie de baja', async () => {
     await mostrar();
     fireEvent.click(within(fila('Lechuga')).getByRole('button', { name: 'Editar' }));

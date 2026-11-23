@@ -305,3 +305,19 @@ Rama local `estructura-clientes`, sin commit ni publicación. Ejecutado en el PC
 | Migración 012 en Supabase (autorizada por el usuario el 2026-11-22) | **✔ aplicada** con `npm run migrate` y `.env.nube` (solo faltaba la 012). Verificado: «Cliente inicial» (id 1) con las 3 torres; 5 roles; Supervisor y Encargados con cliente 1, Administrador sin cliente; 3 incidencias abiertas creadas para los 3 dispositivos que estaban sin señal (simulador detenido). Los roles `app_*` siguen sin login, igual que antes. Producción con el código anterior: `/health` ok después de migrar |
 
 Ajustes en pruebas existentes: `invitaciones.test.ts` (el Supervisor ahora puede invitar Encargados de su cliente: 201), fixtures del frontend con `id_cliente`, `cliente`, `latitud` y `longitud`, y el usuario simulado de `filtrosUsuarios.test.tsx` con rol Administrador (las acciones ahora dependen del rol).
+
+### Anexo C en producción con sesión de Administrador (2026-11-22, 23:58)
+El usuario inició sesión él mismo en el navegador integrado; Claude solo leyó las pantallas (sin crear ni modificar datos; el formulario de GPS se abrió y se canceló). API despertada antes con `/api/v1/health` (ok).
+
+| Pantalla | Resultado |
+|---|---|
+| Menú del Administrador | **✔** Inicio, Torres, Históricos, Alertas, Incidencias, Continuidad, Infraestructura, Umbrales, Usuarios, Clientes, Auditoría, Demostración, Perfil; sin «Mis Encargados» |
+| Inicio | **✔** 3 torres, 3/3 conectados, 0 sin señal, 0 alertas, 22 variables normales; cada torre muestra «Cliente inicial» |
+| Incidencias | **✔** 3 activas de «Cliente inicial» (AquaBrain-A y C sin atender, B en atención por la Administradora), cada una «Se repitió 2 veces» y «Volvió a comunicarse», «Cerrar» habilitado. No se cerró ninguna |
+| Clientes | **✔** «Cliente inicial»: 3 torres, 3 usuarios, 0 técnicos, activo; acciones Renombrar y Dar de baja |
+| Usuarios | **✔** 4 usuarios con columna Alcance (Administradora: todos los clientes; Supervisor: Cliente inicial · todas sus torres; Encargados con sus torres); filtro de rol con los 5 roles; las invitaciones entran como Encargado del cliente de la torre |
+| Infraestructura | **✔** cliente en cada torre, «Sin ubicación GPS» en los 3 AquaBrain, el botón «Ubicación» abre el formulario de latitud y longitud |
+| Torres | **✔** «Cliente inicial» en las 3 tarjetas |
+| Consola | **✔** sin errores de la aplicación (solo los 401 de la verificación de sesión antes de iniciar sesión y avisos de CSP por scripts de la herramienta de inspección) |
+
+No probado aún: pantallas de Supervisor, Encargado y Técnico con sesión real (no hay Técnico creado), crear un cliente, guardar un GPS y cerrar una incidencia en producción.

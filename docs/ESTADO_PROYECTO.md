@@ -3,6 +3,7 @@
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 8 — CRUD completo para la demostración final (2026-11-23, D-38)
+- **Apartado «CRUD»** (`/crud`, menú Gestión → CRUD, solo Administrador): una pestaña por entidad (Clientes, Especies, Torres y equipos, Umbrales, Cultivos, Usuarios, Incidencias, Auditoría). La pestaña elegida queda en la dirección (`?tab=`). Cultivos de todas las torres en una tabla (nuevo, corregir, cerrar). Probado: frontend 76/76, build, API simulada en escritorio y móvil. Sin cambios en backend ni base de datos.
 - **Especies** con CRUD (migración **013**, `GET/POST/PATCH /especies`, pantalla Gestión → Especies) y botón **«Corregir»** del cultivo en curso. Con esto todas las entidades tienen crear, ver, editar y dar de baja (baja lógica). Guion paso a paso: `docs/GUION_CRUD.md`.
 - **Probado en local**: typecheck; shared 8/8; backend sin base 88/88 (`rolesAnexoC`); frontend 72/72 (nuevas `especies.test.tsx`, `modal.test.tsx`); build; pantallas con la API simulada. **Sin probar**: `test/especies.test.ts` y la migración 013 (necesitan PostgreSQL: correrán en el CI).
 - **Orden para publicar** (cada paso con autorización): 1) subir rama y CI verde; 2) migración 013 en Supabase (el código anterior sigue funcionando: la columna tiene DEFAULT); 3) unir a `main`.

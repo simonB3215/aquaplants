@@ -368,3 +368,13 @@ Sin probar en producción: cerrar con comentario (requiere que el simulador est�
 | `npm run build -w packages/frontend` | **✔** |
 | Pantallas con la API simulada local | **✔** Especies: tabla con rangos, cultivos en curso y estado; formulario con mínimo y máximo por variable. Torre: «Corregir» abre el cultivo en curso con su especie y fecha |
 | Migración `013_especies.sql` | **Sin probar** (correrá en el CI antes de aplicarla en Supabase) |
+
+## Sesión 8 — Apartado «CRUD» para la demostración (2026-11-23)
+Página única `/crud` (menú Gestión → CRUD, solo Administrador) con una pestaña por entidad: Clientes, Especies, Torres y equipos, Umbrales, Cultivos, Usuarios, Incidencias y Auditoría. Reutiliza las pantallas existentes; la pestaña **Cultivos** es nueva y muestra los cultivos de todas las torres.
+| Verificación | Resultado |
+|---|---|
+| `tsc --noEmit` y `npm run build -w packages/frontend` | **✔** |
+| frontend completo (incluye `crud.test.tsx`, 4 pruebas nuevas: pestañas según permisos, `?tab=`, un solo h1, flechas del teclado; nuevo cultivo solo en torres activas sin cultivo en curso; corregir y cerrar con validación de fecha) | **76/76 ✔** |
+| Con la API simulada local (Administrador) | **✔** Las 8 pestañas cargan sin errores, cada una con su título h2 y una sola barra superior. «Nuevo cultivo» ofrece solo torres sin cultivo en curso. Móvil 375 px: las pestañas se desplazan en horizontal (44 px de alto), sin desplazamiento horizontal de la página |
+| Backend | Sin cambios (usa `GET /cultivos`, `/torres`, `/catalogos` ya existentes) |
+| En producción | **Pendiente** de publicar |

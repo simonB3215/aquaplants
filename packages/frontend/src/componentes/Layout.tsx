@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity,
@@ -7,6 +7,7 @@ import {
   ChartLine,
   ClipboardList,
   Cpu,
+  Database,
   Droplets,
   FlaskConical,
   Leaf,
@@ -28,6 +29,7 @@ import type { FuenteAvisos } from './IndicadorAlertas';
 import { useSesion } from '../estado/sesion';
 import { useConexion } from '../estado/conexion';
 import { iniciales } from '../util/formato';
+import { Incrustado } from './ui';
 import { CampanaAlertas, NumeroAlertasNav, ProveedorAlertas } from './IndicadorAlertas';
 
 interface ItemNav {
@@ -57,6 +59,8 @@ function itemsPara(puede: ReturnType<typeof useSesion>['puede'], rol: string, de
   if (puede('usuarios.gestionar')) items.push({ ruta: '/usuarios', texto: rol === 'supervisor' ? 'Mis Encargados' : 'Usuarios', icono: Users, grupo: 'Gestión' });
   if (puede('clientes.gestionar', 'leer')) items.push({ ruta: '/clientes', texto: 'Clientes', icono: Building2, grupo: 'Gestión' });
   if (puede('especies.gestionar', 'leer')) items.push({ ruta: '/especies', texto: 'Especies', icono: Leaf, grupo: 'Gestión' });
+  // Apartado único para la demostración final: todas las entidades con su CRUD en pestañas.
+  if (puede('clientes.gestionar')) items.push({ ruta: '/crud', texto: 'CRUD', icono: Database, grupo: 'Gestión' });
   if (puede('auditoria.consultar', 'leer')) items.push({ ruta: '/auditoria', texto: 'Auditoría', icono: ClipboardList, grupo: 'Gestión' });
   if (demo && puede('clientes.gestionar')) items.push({ ruta: '/demo', texto: 'Demostración', icono: FlaskConical, grupo: 'Gestión' });
   // Barra inferior: máximo 5 destinos (4 + «Más»); Perfil y el resto quedan en «Más».
@@ -174,7 +178,9 @@ export function Layout({ demoHabilitada }: { demoHabilitada: boolean }) {
 
 export function BarraSuperior({ actualizadoEn, desactualizado, extra }: { actualizadoEn?: Date | null; desactualizado?: boolean; extra?: ReactNode }) {
   const { usuario } = useSesion();
-  if (!usuario) return null;
+  const incrustado = useContext(Incrustado);
+  // Dentro del apartado CRUD la barra la pone la página contenedora (una sola).
+  if (!usuario || incrustado) return null;
   const h = new Date().getHours();
   const saludo = h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
   return (

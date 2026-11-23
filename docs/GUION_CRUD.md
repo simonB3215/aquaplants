@@ -9,7 +9,7 @@ Web: https://aquaplants.vercel.app · Cuentas y contraseñas: `secretos/cuentas-
 
 En todas las entidades **«eliminar» es una baja lógica**: el registro queda «De baja», deja de usarse y se conserva el histórico y la auditoría (RN-07). Todo cambio queda en **Auditoría**.
 
-Entrar como **Ana Administradora** (`admin@aquaplants.cl`, Administrador principal).
+Entrar como **Ana Administradora** (`admin@aquaplants.cl`, Administrador principal) y abrir **Gestión → CRUD** (`/crud`): todas las entidades están en pestañas en una sola pantalla. Cada pestaña tiene su propia dirección (por ejemplo `/crud?tab=especies`), útil para abrirlas de antemano.
 
 | # | Entidad | Pantalla | Crear | Ver | Editar | Eliminar (baja) |
 |---|---|---|---|---|---|---|
@@ -19,7 +19,7 @@ Entrar como **Ana Administradora** (`admin@aquaplants.cl`, Administrador princip
 | 4 | Dispositivos AquaBrain | Infraestructura, dentro de la torre | «Dispositivo» (muestra la credencial una sola vez) | estado, última comunicación, GPS | «Ubicación» (GPS), «Credencial» (regenerar) | «Dar de baja» |
 | 5 | Sensores | Infraestructura, dentro del dispositivo | «Sensor» (elegir variable) | lista #id · variable | — (se da de baja y se crea otro) | «Dar de baja» |
 | 6 | Umbrales | Gestión → Umbrales | elegir sensor, escribir mínimo y máximo, «Guardar» | vigente con versión y fecha; rangos de referencia de la especie | volver a guardar (nueva versión) | «Desactivar» |
-| 7 | Cultivos | Torres → tarjeta de la torre → «Cultivos» | «Nuevo cultivo» (solo especies activas) | historial de cultivos de la torre | «Corregir» (especie o fecha de inicio del cultivo en curso) | «Cerrar cultivo» (fecha de fin) |
+| 7 | Cultivos | CRUD → Cultivos (todas las torres) o la ficha de cada torre | «Nuevo cultivo» (solo especies activas) | historial de cultivos de la torre | «Corregir» (especie o fecha de inicio del cultivo en curso) | «Cerrar cultivo» (fecha de fin) |
 | 8 | Usuarios | Gestión → Usuarios | «Nuevo usuario» (rol, cliente, torres o clientes del Técnico) | tabla con rol, alcance y estado; filtros | «Editar» | «Desactivar» · «Reactivar» |
 | 9 | Invitaciones | Usuarios → «Enlaces de invitación» | «Nuevo enlace» | vigencia, usos, por confirmar | — | «Anular» |
 | 10 | Incidencias | Incidencias | se abren solas al perder señal un AquaBrain | lista por estado | «Atender» | «Cerrar» con comentario (cuando vuelve la señal) |
@@ -29,7 +29,7 @@ Entrar como **Ana Administradora** (`admin@aquaplants.cl`, Administrador princip
 2. **Clientes**: crear «Invernaderos del Sur» → «Renombrar».
 3. **Infraestructura**: «Torre» → «Torre D · Tomate» del cliente nuevo → «Dispositivo» (copiar la credencial) → «Ubicación» con `-33.45, -70.66` → «Sensor» pH.
 4. **Umbrales**: elegir el sensor nuevo → se ven los rangos de referencia de las especies → guardar advertencia 5,8–6,3 y crítico 5,3–6,8.
-5. **Torres**: en «Torre D», «Nuevo cultivo» → «Tomate» aparece en la lista.
+5. **Cultivos**: «Nuevo cultivo» → torre «Torre D», especie «Tomate» (aparece en la lista porque está activa).
 6. **Usuarios**: «Nuevo usuario» Supervisor de «Invernaderos del Sur» → «Editar» → «Desactivar».
 7. **Auditoría**: filtrar por acción y mostrar todo lo anterior registrado con usuario y hora.
 8. **Eliminar (bajas)**: cerrar el cultivo de «Torre D» → dar de baja el sensor, el dispositivo y la torre → dar de baja «Tomate» → dar de baja el cliente. Mostrar que todo sigue visible como «De baja» y en Auditoría.

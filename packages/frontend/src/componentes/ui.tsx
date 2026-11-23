@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import {
   CircleCheck,
   CircleDashed,
@@ -128,11 +128,19 @@ export function Kpi({ icono: I, etiqueta, valor, pie, tono = 'fondo-normal' }: {
   );
 }
 
+/**
+ * true dentro del apartado CRUD: cada pantalla de gestión se muestra en una pestaña,
+ * sin su propia barra superior y con el título como h2 (el h1 es «CRUD»).
+ */
+export const Incrustado = createContext(false);
+
 export function Encabezado({ titulo, descripcion, acciones }: { titulo: string; descripcion?: ReactNode; acciones?: ReactNode }) {
+  const incrustado = useContext(Incrustado);
+  const Titulo = incrustado ? 'h2' : 'h1';
   return (
-    <header className="encabezado">
+    <header className={incrustado ? 'encabezado encabezado-incrustado' : 'encabezado'}>
       <div>
-        <h1>{titulo}</h1>
+        <Titulo>{titulo}</Titulo>
         {descripcion && <p>{descripcion}</p>}
       </div>
       {acciones && <div className="barra-acciones">{acciones}</div>}

@@ -12,6 +12,7 @@ import {
   EditarEspecieSchema,
   EspecieSchema,
   FiltroIncidenciasSchema,
+  InformeGestionSchema,
   ConfirmarRegistroSchema,
   InvitacionSchema,
   RegistroSchema,
@@ -40,6 +41,7 @@ import {
   TorreSchema,
   UmbralSchema,
   UsuarioSchema,
+  autorizado,
 } from '@aquaplants/shared';
 import type { Servicios } from '../contenedor.js';
 import type { Config } from '../config.js';
@@ -376,6 +378,17 @@ export function rutasV1(s: Servicios, cfg: Config): Router {
   );
 
   // ------------------------------------------------------------ Catálogo de especies (CRUD)
+  // ------------------------------------------------------------ Informe de gestión (Evaluación 3)
+  r.get(
+    '/informes/gestion',
+    auth,
+    permitir('informes.gestion'),
+    validar(InformeGestionSchema, 'query'),
+    h(async (req, res) => {
+      const u = ctx(req);
+      res.json(await s.informes.gestion(u, q<z.infer<typeof InformeGestionSchema>>(req), autorizado(u.rol, 'auditoria.consultar', 'leer')));
+    }),
+  );
   r.get('/especies', auth, permitir('especies.gestionar', 'leer'), h(async (_req, res) => void res.json(await s.especies.listar())));
   r.post('/especies', auth, permitir('especies.gestionar'), validar(EspecieSchema), h(async (req, res) => void res.status(201).json(await s.especies.crear(ctx(req), req.body))));
   r.patch(

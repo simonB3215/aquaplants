@@ -18,6 +18,7 @@ import { OlvideContrasena, RestablecerContrasena } from './paginas/Recuperar';
 import { ConfirmarRegistro, Registro } from './paginas/Registro';
 import { Demo } from './paginas/Demo';
 import { Crud } from './paginas/Crud';
+import { Informe } from './paginas/Informe';
 import { Vacio } from './componentes/ui';
 import { api } from './api/cliente';
 
@@ -79,6 +80,7 @@ function Rutas() {
         <Route path="clientes" element={<Requiere f="clientes.gestionar" accion="leer"><Clientes /></Requiere>} />
         <Route path="especies" element={<Requiere f="especies.gestionar" accion="leer"><Especies /></Requiere>} />
         <Route path="auditoria" element={<Requiere f="auditoria.consultar" accion="leer"><Auditoria /></Requiere>} />
+        <Route path="informe" element={<Requiere f="informes.gestion"><Informe /></Requiere>} />
         <Route path="crud" element={<Requiere f="clientes.gestionar"><Crud /></Requiere>} />
         <Route path="demo" element={<Requiere f="clientes.gestionar"><Demo /></Requiere>} />
         <Route path="*" element={<Navigate to="/" replace />} />

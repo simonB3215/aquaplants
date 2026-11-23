@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import {
   ArcElement,
+  BarElement,
+  CategoryScale,
   Chart as ChartJS,
   Filler,
   Legend,
@@ -14,10 +16,10 @@ import {
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { es } from 'date-fns/locale';
-import { Doughnut, Line } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import type { PuntoSerie, RespuestaComparar, RespuestaHistorico } from '@aquaplants/shared';
 
-ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Filler, Tooltip, Legend, ArcElement);
+ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Filler, Tooltip, Legend, ArcElement, BarElement, CategoryScale);
 ChartJS.defaults.font.family = "'Fira Sans', system-ui, sans-serif";
 ChartJS.defaults.color = '#334155';
 
@@ -194,6 +196,46 @@ export function DonutEstados({ conteo }: { conteo: { etiqueta: string; valor: nu
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * Informe de gestión: conteos por día (misma unidad → un solo eje). Barras agrupadas,
+ * extremo redondeado de 4 px anclado a la base, 2 px de separación y leyenda (2 series).
+ * Colores: series 2 y 3 del sistema (validadas: CVD ΔE ≥ 20, contraste ≥ 3:1 sobre blanco).
+ */
+export function GraficoConteoDiario({ dias, series }: { dias: string[]; series: { etiqueta: string; valores: number[] }[] }) {
+  const colores = [SERIES[1], SERIES[2]];
+  const etiquetas = dias.map((d) => new Date(`${d}T12:00:00`).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }));
+  const data: ChartData<'bar'> = {
+    labels: etiquetas,
+    datasets: series.map((s, i) => ({
+      label: s.etiqueta,
+      data: s.valores,
+      backgroundColor: colores[i],
+      borderRadius: { topLeft: 4, topRight: 4 },
+      borderSkipped: 'bottom',
+      borderWidth: { left: 1, right: 1 },
+      borderColor: '#ffffff',
+      maxBarThickness: 18,
+    })),
+  };
+  const options: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, boxHeight: 12, useBorderRadius: true, borderRadius: 2 } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 12 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(20,83,45,0.06)' }, ticks: { precision: 0 }, border: { display: false } },
+    },
+  };
+  const resumen = series.map((s) => `${s.etiqueta}: ${s.valores.reduce((a, b) => a + b, 0)}`).join(', ');
+  return (
+    <div style={{ position: 'relative', height: 240 }} role="img" aria-label={`Conteo diario. ${resumen}`}>
+      <Bar data={data} options={options} />
     </div>
   );
 }

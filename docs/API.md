@@ -46,6 +46,7 @@ Roles: Encargado, Supervisor, Técnico, Administrador y Administrador principal 
 | `GET/POST /usuarios`, `PATCH /usuarios/{id}`, `GET /roles`, invitaciones | 403 | solo Encargados de su cliente | 403 | ✔ (Administradores: solo el principal) |
 | `GET /alertas`, `GET /cultivos` | sus torres | su cliente | 403 | ✔ |
 | `GET /torres/estado`, `/torres`, `/dispositivos`, `/continuidad` | sus torres | su cliente | sus clientes (lectura) | ✔ |
+| `GET /informes/gestion?desde=AAAA-MM-DD&hasta=AAAA-MM-DD[&cliente=id]` (informe de gestión del periodo; Supervisor: solo su cliente y sin auditoría; periodo inválido o mayor a un año → 422; D-39) | 403 | ✔ (su cliente) | 403 | ✔ |
 | `GET /especies`, `POST /especies`, `PATCH /especies/{id}` (nombre, descripción, `rangos` [{id_tipo_variable, valor_min, valor_max}], `estado` activo/baja; baja con cultivos en curso → 409 `ESPECIE_EN_USO`; D-38) | 403 | 403 | 403 | ✔ |
 | `POST /torres`, `PATCH /torres/{id}` aceptan `id_cliente`; `POST/PATCH /dispositivos` aceptan `latitud` y `longitud` (juntas o ninguna) | 403 | 403 | 403 | ✔ |
 

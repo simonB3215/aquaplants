@@ -272,6 +272,13 @@ export const EditarCultivoSchema = z.object({
 });
 export const CerrarCultivoSchema = z.object({ fecha_fin: fecha });
 
+// ---------- Informe de gestión ----------
+/** Periodo inclusivo en días calendario de Chile; máximo un año. */
+export const InformeGestionSchema = z
+  .object({ desde: fecha, hasta: fecha, cliente: id.optional() })
+  .refine((f) => f.desde <= f.hasta, { message: '«Desde» debe ser anterior o igual a «Hasta»', path: ['hasta'] })
+  .refine((f) => (Date.parse(f.hasta) - Date.parse(f.desde)) / 86_400_000 <= 366, { message: 'El periodo no puede superar un año', path: ['desde'] });
+
 // ---------- Eventos ----------
 export const FiltroEventosSchema = z.object({
   dispositivo: id.optional(),

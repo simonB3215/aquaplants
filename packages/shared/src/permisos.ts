@@ -48,6 +48,8 @@ export const FUNCIONALIDADES = {
   'clientes.gestionar': fila('RN-11', 'no', 'no', 'no', 'si'),
   // Catálogo de especies y sus rangos de referencia (antes fijo por el seed). Todos lo leen vía /catalogos.
   'especies.gestionar': fila('CU-10', 'no', 'no', 'no', 'si'),
+  // Informe de gestión (Evaluación 3): resumen del periodo. El Supervisor lo ve solo de su cliente.
+  'informes.gestion': fila('CU-11', 'no', 'si', 'no', 'si'),
   'administradores.gestionar': { ...fila('RN-12', 'no', 'no', 'no', 'no'), administrador_principal: 'si' },
 } as const satisfies Record<string, Fila>;
 

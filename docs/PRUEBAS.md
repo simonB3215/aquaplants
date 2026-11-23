@@ -396,3 +396,19 @@ Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de
 | `especies.test.tsx` (nueva: muestra «Permitido: 0 a 14 pH» y rechaza pH máx. 15 sin llamar a la API) | **4/4 ✔** |
 | API simulada: «Nueva especie» | **✔** «Permitido: 0 a 14 pH» y «Permitido: 0 a 10 mS/cm» bajo cada variable |
 | En producción | **Pendiente** de publicar |
+
+## Sesión 8 — Informe de gestión (2026-11-23, D-39)
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (shared, backend, frontend) | **✔** |
+| shared (`permisos.test.ts`, 18 funcionalidades) | **8/8 ✔** |
+| backend sin base de datos (`rolesAnexoC`, `config`, `notificador`) | **97/97 ✔** |
+| backend con base de datos: `informe.test.ts` (nueva: Encargado 403; Administrador ve inventario, 30 días en la serie y auditoría; Supervisor no ve la torre de otro cliente ni aunque lo pida por parámetro, y no ve auditoría; Administrador filtra por cliente; periodo invertido, mayor a un año o mal escrito → 422) | **No ejecutada en local** (sin PostgreSQL): queda para el CI |
+| Consulta del servicio contra **Supabase real** (solo lectura, últimos 30 días) | **✔** 2,6 s; 3 torres, 22 sensores, 327.112 lecturas, 6 alertas (100 % resueltas, 101,4 h promedio), 3 incidencias abiertas, 3 cultivos; Supervisor: solo «Torre A» y «Torre B» de su cliente, sin auditoría |
+| frontend (incluye `informe.test.tsx`, 3 pruebas: 30 días al entrar, indicadores, gráfico, torres y actividad; filtro por cliente y validación del periodo; Supervisor sin cliente ni actividad) | **82/82 ✔** |
+| API simulada: Administrador | **✔** 6 indicadores en 3×2, gráfico de barras por día con leyenda, tablas; «7 días» regenera con 7 filas |
+| API simulada: Supervisor / Encargado | **✔** Supervisor ve el menú y el informe sin selector de cliente; Encargado: sin menú y «Sin acceso» |
+| Móvil 375 px | **✔** sin desplazamiento horizontal de la página |
+| Colores del gráfico (`validate_palette.js`, #0369a1 y #a16207 sobre blanco) | **✔** todas las verificaciones (CVD ΔE 20,1; contraste ≥ 3:1) |
+| Impresión real a PDF | **Sin probar** (los estilos de impresión ocultan menú, filtros y botones) |
+| En producción | **Pendiente** de publicar |

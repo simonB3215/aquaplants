@@ -1272,3 +1272,71 @@ table.tabla {
     border-radius: 16px;
   }
 }
+
+/* Informe de gestión: en pantalla usa las tarjetas; al imprimir (o «Guardar como PDF») queda solo el informe. */
+.informe {
+  display: grid;
+  gap: 16px;
+}
+.informe h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.informe-cabecera h2 {
+  margin: 0 0 4px;
+}
+.informe-cabecera p {
+  margin: 0 0 2px;
+}
+.informe-dos {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .lateral,
+  .nav-inferior,
+  .barra-superior,
+  .saltar-contenido,
+  .no-imprimir,
+  .encabezado,
+  .hoja {
+    display: none !important;
+  }
+  .app,
+  .principal {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .vidrio,
+  .tarjeta {
+    background: #fff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  .tarjeta,
+  .kpi,
+  tr {
+    break-inside: avoid;
+  }
+  .rejilla-kpi {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .tabla-contenedor {
+    overflow: visible !important;
+  }
+}
+@media (min-width: 900px) {
+  .informe-kpi {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

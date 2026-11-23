@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Cpu,
   Database,
+  FileText,
   Droplets,
   FlaskConical,
   Leaf,
@@ -59,6 +60,7 @@ function itemsPara(puede: ReturnType<typeof useSesion>['puede'], rol: string, de
   if (puede('usuarios.gestionar')) items.push({ ruta: '/usuarios', texto: rol === 'supervisor' ? 'Mis Encargados' : 'Usuarios', icono: Users, grupo: 'Gestión' });
   if (puede('clientes.gestionar', 'leer')) items.push({ ruta: '/clientes', texto: 'Clientes', icono: Building2, grupo: 'Gestión' });
   if (puede('especies.gestionar', 'leer')) items.push({ ruta: '/especies', texto: 'Especies', icono: Leaf, grupo: 'Gestión' });
+  if (puede('informes.gestion')) items.push({ ruta: '/informe', texto: 'Informe de gestión', icono: FileText, grupo: 'Gestión' });
   // Apartado único para la demostración final: todas las entidades con su CRUD en pestañas.
   if (puede('clientes.gestionar')) items.push({ ruta: '/crud', texto: 'CRUD', icono: Database, grupo: 'Gestión' });
   if (puede('auditoria.consultar', 'leer')) items.push({ ruta: '/auditoria', texto: 'Auditoría', icono: ClipboardList, grupo: 'Gestión' });

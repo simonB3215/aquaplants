@@ -34,5 +34,8 @@ Entrar como **Ana Administradora** (`admin@aquaplants.cl`, Administrador princip
 7. **Auditoría**: filtrar por acción y mostrar todo lo anterior registrado con usuario y hora.
 8. **Eliminar (bajas)**: cerrar el cultivo de «Torre D» → dar de baja el sensor, el dispositivo y la torre → dar de baja «Tomate» → dar de baja el cliente. Mostrar que todo sigue visible como «De baja» y en Auditoría.
 
+## Informe de gestión
+Gestión → **Informe de gestión**: elegir «30 días» (o un periodo y un cliente) → «Generar informe». Muestra indicadores, alertas e incidencias por día, detalle por torre, cultivos y actividad de usuarios. «Imprimir o PDF» deja solo el informe en A4; «CSV» lo descarga para Excel. Guion completo de 10 minutos y contingencia: `docs/PRESENTACION.md`.
+
 ## Por rol (si preguntan por permisos)
 Cerrar sesión y entrar con `supervisor2@` (Carla, solo «Huerta Norte»), `encargado3@` (Marcela, solo Torre B) o `tecnico2@` (Paula, incidencias de «Huerta Norte»): los menús cambian y las secciones ajenas dicen «Sin acceso»; la API responde 403 aunque se escriba la dirección.

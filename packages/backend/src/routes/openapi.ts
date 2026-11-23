@@ -117,6 +117,13 @@ export const openapi = {
       get: { summary: 'D-37 Listar clientes (Administradores)', security: seg, responses: { 200: ok('Clientes con conteo de torres, usuarios y técnicos') } },
       post: { summary: 'D-37 Crear cliente', security: seg, responses: { 201: ok('Creado'), 409: err('Nombre duplicado') } },
     },
+    '/informes/gestion': {
+      get: {
+        summary: 'Informe de gestión del periodo (desde, hasta AAAA-MM-DD; cliente opcional): inventario, telemetría, alertas, incidencias, cultivos, detalle por torre y por día. Supervisor: solo su cliente',
+        security: seg,
+        responses: { 200: ok('Informe'), 403: err('Sin permiso'), 422: err('Periodo inválido') },
+      },
+    },
     '/especies': {
       get: { summary: 'Catálogo de especies con rangos de referencia y uso (Administradores)', security: seg, responses: { 200: ok('Especies') } },
       post: { summary: 'Crear especie con sus rangos de referencia', security: seg, responses: { 201: ok('Creada'), 409: err('Nombre duplicado'), 422: err('Rango inválido') } },

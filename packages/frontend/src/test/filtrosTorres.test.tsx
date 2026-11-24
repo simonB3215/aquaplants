@@ -45,7 +45,7 @@ beforeEach(() => {
     t(4, 'Torre D', null, 'sin_datos', ['nunca_conectado']),
     t(5, 'Torre E', 'Espinaca', 'sin_clasificar', []),
   ];
-  m.get.mockReset().mockImplementation(async () => ({ generado_en: new Date().toISOString(), torres }));
+  m.get.mockReset().mockImplementation(async (ruta: string) => (ruta === '/cultivos' ? [] : { generado_en: new Date().toISOString(), torres }));
 });
 afterEach(() => {
   cleanup();
@@ -215,5 +215,27 @@ describe('Tiempo de cosecha (días de cultivo)', () => {
     expect(nombres()).toEqual(['Torre B', 'Torre A', 'Torre C']);
     fireEvent.change(filtros().getByLabelText('Mostrar'), { target: { value: 'baja' } });
     expect(nombres()).toEqual(['Torre A', 'Torre B', 'Torre C']);
+  });
+});
+
+describe('Cosecha estimada (opción A)', () => {
+  test('la tarjeta muestra la fecha estimada con el promedio de la especie y la tabla resume la duración', async () => {
+    const { sumarDias } = await import('../util/cosecha');
+    torres = [
+      t(1, 'Torre A', 'Lechuga', 'normal', ['conectado'], 0, { cultivo: { id_cultivo: 9, especie: 'Lechuga', fecha_inicio: '2026-11-10' } }),
+      t(2, 'Torre B', 'Tomate', 'normal', ['conectado'], 0, { cultivo: { id_cultivo: 8, especie: 'Tomate', fecha_inicio: '2026-11-01' } }),
+    ];
+    const historial = [
+      { id_cultivo: 1, especie: 'Lechuga', fecha_inicio: '2026-08-01', fecha_fin: '2026-09-15', estado: 'finalizado' },
+      { id_cultivo: 2, especie: 'Lechuga', fecha_inicio: '2026-09-20', fecha_fin: '2026-11-10', estado: 'finalizado' },
+    ];
+    m.get.mockImplementation(async (ruta: string) => (ruta === '/cultivos' ? historial : { generado_en: new Date().toISOString(), torres }));
+    await mostrar();
+    await screen.findByText('Duración por especie');
+    const tarjeta = (n: string) => document.getElementById(`torre-${n}`)!.closest('article')!.textContent!;
+    expect(tarjeta('1')).toContain(`Cosecha estimada ${sumarDias('2026-11-10', 48)}`);
+    expect(tarjeta('2')).toContain('Sin cosechas previas de Tomate para estimar');
+    const fila = screen.getByText('Lechuga', { selector: 'td strong' }).closest('tr')!;
+    expect(fila.textContent).toBe('Lechuga48 días45 – 51 días2');
   });
 });

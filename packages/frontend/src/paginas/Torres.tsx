@@ -13,6 +13,7 @@ import { PanelHistorico } from '../componentes/PanelHistorico';
 import { Boton, Campo, Encabezado, Esqueleto, MensajeError, Modal, Selector, Tarjeta, Vacio } from '../componentes/ui';
 import { FiltrosTorres } from '../componentes/FiltrosTorres';
 import { diasDeCultivo, hoyISO, textoDias } from '../util/formato';
+import { cosechaEstimada, duracionesPorEspecie, textoFaltan } from '../util/cosecha';
 import { filtrarTorres, guardarFiltroTorres, leerFiltroTorres, type FiltroTorres } from '../util/torres';
 
 export function Torres() {
@@ -20,6 +21,10 @@ export function Torres() {
   const conexion = useConexion();
   const estado = useDatos<RespuestaEstado>((s) => api.get('/torres/estado', s), [], { cadaMs: 5000 });
   const [filtro, setFiltro] = useState(() => leerFiltroTorres(usuario?.id_usuario));
+  // Duración por especie (opción A): promedio de los cultivos ya cosechados. El Técnico no ve cultivos.
+  const veCultivos = puede('cultivos.gestionar', 'leer');
+  const historial = useDatos<Cultivo[]>((s) => api.get('/cultivos', s), [], { activo: veCultivos });
+  const duraciones = historial.datos ? duracionesPorEspecie(historial.datos) : undefined;
   const torres = estado.datos?.torres ?? [];
   const visibles = filtrarTorres(torres, filtro);
   function cambiarFiltro(f: FiltroTorres) {
@@ -48,13 +53,51 @@ export function Torres() {
       ) : torres.length ? (
         <div className="rejilla rejilla-torres">
           {visibles.map((t) => (
-            <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={conexion !== 'en_linea' || estado.desactualizado} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} veAlertas={puede('alertas.ver', 'leer')} />
+            <TarjetaTorre key={t.id_instalacion} torre={t} servidorCaido={conexion !== 'en_linea' || estado.desactualizado} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} veAlertas={puede('alertas.ver', 'leer')} duraciones={duraciones} />
           ))}
         </div>
       ) : (
         <Tarjeta etiqueta="Sin torres">
           <Vacio titulo="No tiene torres asignadas" />
         </Tarjeta>
+      )}
+      {duraciones && (
+        <div className="seccion">
+          <Tarjeta titulo="Duración por especie" descripcion="Días desde el inicio hasta la cosecha, según los cultivos ya cosechados. Se usa para la cosecha estimada.">
+            {duraciones.size === 0 ? (
+              <Vacio titulo="Todavía no hay cosechas registradas" icono={Sprout}>
+                Al cerrar un cultivo con su fecha de cosecha, aquí aparecerá cuánto dura cada especie.
+              </Vacio>
+            ) : (
+              <div className="tabla-contenedor">
+                <table className="tabla">
+                  <thead>
+                    <tr>
+                      <th scope="col">Especie</th>
+                      <th scope="col">Duración promedio</th>
+                      <th scope="col">Más corta – más larga</th>
+                      <th scope="col">Cosechas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...duraciones.values()].map((d) => (
+                      <tr key={d.especie}>
+                        <td>
+                          <strong>{d.especie}</strong>
+                        </td>
+                        <td className="dato">{textoDias(d.promedio)}</td>
+                        <td className="dato">
+                          {d.minimo === d.maximo ? textoDias(d.minimo) : `${d.minimo} – ${textoDias(d.maximo)}`}
+                        </td>
+                        <td className="dato">{d.cosechas}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Tarjeta>
+        </div>
       )}
     </>
   );
@@ -82,6 +125,9 @@ export function FichaTorre() {
   // Anexo C (D-37): el Técnico no ve cultivos; no se pide la lista para no recibir un 403.
   const veCultivos = puede('cultivos.gestionar', 'leer');
   const cultivos = useDatos<Cultivo[]>((s) => api.get(`/cultivos?torre=${id}`, s), [id], { activo: veCultivos });
+  // Historial de todas las torres visibles para la duración promedio de cada especie (cosecha estimada).
+  const historial = useDatos<Cultivo[]>((s) => api.get('/cultivos', s), [], { activo: veCultivos });
+  const duraciones = historial.datos ? duracionesPorEspecie(historial.datos) : undefined;
   const catalogos = useDatos<Catalogos>((s) => api.get('/catalogos', s), []);
   const [modal, setModal] = useState<'nuevo' | 'cerrar' | 'corregir' | null>(null);
   const [especie, setEspecie] = useState('');
@@ -131,7 +177,7 @@ export function FichaTorre() {
       ) : (
         <div className="rejilla rejilla-principal">
           <div className="rejilla" style={{ alignContent: 'start' }}>
-            <TarjetaTorre torre={torre} veAlertas={puede('alertas.ver', 'leer')} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} />
+            <TarjetaTorre torre={torre} veAlertas={puede('alertas.ver', 'leer')} mostrarCliente={!!usuario && !rolConCliente(usuario.rol)} duraciones={duraciones} />
             <Tarjeta titulo="Histórico">
               <PanelHistorico torres={[torre]} />
             </Tarjeta>
@@ -182,6 +228,15 @@ export function FichaTorre() {
                         <strong className="dato">{textoDias(diasDeCultivo(c.fecha_inicio, c.fecha_fin))}</strong>
                         {!c.fecha_fin && ' (aún sin cosechar)'}
                       </p>
+                      {!c.fecha_fin && duraciones && (
+                        <p className="pequeno muted">
+                          {(() => {
+                            const d = duraciones.get(c.especie);
+                            const e = cosechaEstimada(c.fecha_inicio, d);
+                            return e && d ? `Cosecha estimada ${e.fecha} · ${textoFaltan(e.faltan)} (promedio de ${c.especie}: ${textoDias(d.promedio)}, ${d.cosechas} ${d.cosechas === 1 ? 'cosecha' : 'cosechas'})` : `Sin cosechas previas de ${c.especie} para estimar`;
+                          })()}
+                        </p>
+                      )}
                     </div>
                   </li>
                 ))}

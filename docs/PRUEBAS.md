@@ -477,3 +477,13 @@ Pedido del usuario: filtrar por mes y por fechas. Selector «Mes» (últimos 12 
 | `npm run typecheck` y frontend | **✔** 88/88 |
 | API simulada (Administrador): ficha de «Torre Lechugas» muestra el aviso junto a «Corregir» y «Cerrar cultivo» | **✔** |
 | En producción | **Publicado** |
+
+**Cosecha estimada y duración por especie — opción A** (pedido del usuario: «ver cuánto dura el tomate o las plantas»; eligió la opción sin cambiar la base de datos). La duración de cada especie es el promedio de días inicio → cosecha de sus cultivos ya cosechados (`util/cosecha.ts`). En la app principal: tarjeta de torre «Cosecha estimada AAAA-MM-DD · faltan N días» (o «atrasada N días»), o «Sin cosechas previas de X para estimar»; ficha de la torre con el promedio usado; tabla **«Duración por especie»** al final de Torres (promedio, más corta – más larga, n.º de cosechas). Usa `GET /cultivos`, así que el Técnico (sin permiso de cultivos) no la ve. Pendiente si se quiere: opción B (días hasta cosecha configurables por especie, requiere migración).
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (frontend) | **✔** |
+| frontend (nuevas: `cosecha.test.ts` con promedio/mín/máx solo de cosechados, fecha estimada, «es hoy», «atrasada»; pantalla con estimación, especie sin historial y tabla) | **91/91 ✔** |
+| API simulada (Administrador): Torre Lechugas «Cosecha estimada 2027-01-09 · faltan 46 días»; Torre Demo «Sin cosechas previas de Espinaca para estimar»; tabla «Lechuga · 69 días · 69 días · 1»; ficha «faltan 32 días (promedio de Lechuga: 69 días, 1 cosecha)» | **✔** |
+| API simulada (Técnico): sin tabla ni estimación | **✔** |
+| Móvil 375 px | **✔** sin desplazamiento horizontal |
+| En producción | **Publicado** |

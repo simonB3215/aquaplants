@@ -3,7 +3,7 @@
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 9 — Menú lateral con desplazamiento y filtro por mes (2026-11-24)
-Filtro **por mes** (últimos 12 meses) además del filtro por fechas en Informe de gestión, Históricos y Comparar/Exportar; y en **CRUD → Cultivos** filtro por fecha de inicio (mes o rango) y especie; en **Torres** y **CRUD → Torres y equipos** filtro por lectura actual (temperatura, pH…: más alta/baja primero, mayor/menor o igual que). **Tiempo de cosecha** (días de cultivo) en tarjetas, ficha de torre y filtro de Torres (solo app principal); aviso «un cultivo por torre: otro lote = otra torre». Solo frontend.
+Filtro **por mes** (últimos 12 meses) además del filtro por fechas en Informe de gestión, Históricos y Comparar/Exportar; y en **CRUD → Cultivos** filtro por fecha de inicio (mes o rango) y especie; en **Torres** y **CRUD → Torres y equipos** filtro por lectura actual (temperatura, pH…: más alta/baja primero, mayor/menor o igual que). **Tiempo de cosecha** (días de cultivo) en tarjetas, ficha de torre y filtro de Torres (solo app principal); aviso «un cultivo por torre: otro lote = otra torre»; **cosecha estimada y duración por especie** (promedio del historial, opción A; la opción B con días por especie queda como posible mejora). Solo frontend.
 Con muchas opciones (Administrador) el menú lateral de escritorio no se desplazaba y «Perfil» y «Cerrar sesión» quedaban fuera de la pantalla. Ahora solo la lista se desplaza y el logo y «Cerrar sesión» quedan fijos (`app.css`). Pruebas en `docs/PRUEBAS.md` (sesión 9).
 
 ## Sesión 8 — Nombre automático de torre (2026-11-23, D-40)

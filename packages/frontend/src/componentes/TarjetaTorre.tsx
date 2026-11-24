@@ -4,12 +4,15 @@ import type { EstadoTorre } from '@aquaplants/shared';
 import { InsigniaConectividad, InsigniaEstado, InsigniaSenal } from './ui';
 import { EnlaceGps } from './Ubicacion';
 import { diasDeCultivo, duracion, fechaHora, hace, numero, textoDias } from '../util/formato';
+import { cosechaEstimada, textoFaltan, type DuracionEspecie } from '../util/cosecha';
 
 /**
  * Tarjeta de estado por torre (CU-03): cultivo, variables, unidades, estados, umbrales y timestamps.
  * Anexo C (D-37): `mostrarCliente` para quien ve varios clientes; `veAlertas` = false para el Técnico.
  */
-export function TarjetaTorre({ torre, servidorCaido, mostrarCliente, veAlertas = true }: { torre: EstadoTorre; servidorCaido?: boolean; mostrarCliente?: boolean; veAlertas?: boolean }) {
+export function TarjetaTorre({ torre, servidorCaido, mostrarCliente, veAlertas = true, duraciones }: { torre: EstadoTorre; servidorCaido?: boolean; mostrarCliente?: boolean; veAlertas?: boolean; duraciones?: Map<string, DuracionEspecie> }) {
+  // Opción A: cosecha estimada = inicio + duración promedio de la especie en el historial.
+  const estimada = torre.cultivo && duraciones ? cosechaEstimada(torre.cultivo.fecha_inicio, duraciones.get(torre.cultivo.especie)) : null;
   const desactualizado = torre.dispositivos.some((d) => d.datos_desactualizados) || servidorCaido;
   return (
     <article className="tarjeta vidrio torre" aria-labelledby={`torre-${torre.id_instalacion}`}>
@@ -20,6 +23,17 @@ export function TarjetaTorre({ torre, servidorCaido, mostrarCliente, veAlertas =
             <Sprout size={14} aria-hidden />
             {torre.cultivo ? `${torre.cultivo.especie} desde ${torre.cultivo.fecha_inicio} (${textoDias(diasDeCultivo(torre.cultivo.fecha_inicio))})` : 'Sin cultivo en curso'} · {torre.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'}
           </p>
+          {torre.cultivo && duraciones && (
+            <p className="muted pequeno">
+              {estimada ? (
+                <>
+                  Cosecha estimada <strong className="dato">{estimada.fecha}</strong> · {textoFaltan(estimada.faltan)}
+                </>
+              ) : (
+                `Sin cosechas previas de ${torre.cultivo.especie} para estimar`
+              )}
+            </p>
+          )}
           {mostrarCliente && torre.cliente && (
             <p className="muted pequeno" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Building2 size={14} aria-hidden /> {torre.cliente}

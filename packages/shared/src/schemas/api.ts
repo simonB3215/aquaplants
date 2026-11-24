@@ -123,7 +123,8 @@ export const EditarUmbralSchema = z
 export const TIPOS_INSTALACION = ['aeroponica', 'hidroponica'] as const;
 
 export const TorreSchema = z.object({
-  nombre: texto(80),
+  /** Opcional: si viene vacío, el servidor asigna el siguiente nombre libre del cliente (siguienteNombreTorre). */
+  nombre: z.preprocess((v) => (typeof v === 'string' && !v.trim() ? undefined : v), texto(80).optional()),
   tipo: z.enum(TIPOS_INSTALACION),
   ubicacion: z.string().trim().max(160).optional().default(''),
   /** RN-11. Opcional solo si existe un único cliente activo. */

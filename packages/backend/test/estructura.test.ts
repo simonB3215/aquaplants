@@ -52,6 +52,13 @@ describe('RN-11 clientes y aislamiento', () => {
     expect(t.status).toBe(201);
     torreNorte = t.body.id_instalacion;
     expect((await api().post('/api/v1/torres').set(H(admin)).send({ nombre: 'torre a · lechuga', tipo: 'aeroponica', id_cliente: idNorte })).status).toBe(409);
+    // D-40: sin nombre, el servidor asigna el siguiente libre del cliente y el ID lo da la base.
+    const auto1 = await api().post('/api/v1/torres').set(H(admin)).send({ nombre: '  ', tipo: 'aeroponica', id_cliente: idNorte });
+    expect(auto1.status).toBe(201);
+    expect(auto1.body.nombre).toBe('Torre 1');
+    expect(auto1.body.id_instalacion).toBeGreaterThan(torreNorte);
+    const auto2 = await api().post('/api/v1/torres').set(H(admin)).send({ tipo: 'hidroponica', id_cliente: idNorte });
+    expect(auto2.body.nombre).toBe('Torre 2');
     const d = await api().post('/api/v1/dispositivos').set(H(admin)).send({ nombre: 'AquaBrain-Norte', id_instalacion: torreNorte, latitud: -33.45, longitud: -70.66 });
     expect(d.status).toBe(201);
     expect(d.body).toMatchObject({ latitud: -33.45, longitud: -70.66 });

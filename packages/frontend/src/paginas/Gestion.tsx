@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Ban, Building2, KeyRound, Link2, MapPin, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
-import { ETIQUETA_ROL, esAdministracion, puedeGestionarRol, rolConCliente, rolesAsignables, type AvisoAlertas, type Rol } from '@aquaplants/shared';
+import { ETIQUETA_ROL, esAdministracion, puedeGestionarRol, rolConCliente, rolesAsignables, siguienteNombreTorre, type AvisoAlertas, type Rol } from '@aquaplants/shared';
 import { EnlaceGps, leerGps } from '../componentes/Ubicacion';
 import { api, qs, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
@@ -659,6 +659,9 @@ export function Infraestructura() {
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [credencial, setCredencial] = useState<{ nombre: string; credencial: string } | null>(null);
   const refrescar = () => void Promise.all([torres.refrescar(), disps.refrescar()]);
+  /** Nombre propuesto para una torre nueva del cliente (el servidor repite el cálculo si se deja vacío). */
+  const nombreSugerido = (idCliente: unknown) =>
+    siguienteNombreTorre((torres.datos ?? []).filter((t) => !idCliente || t.id_cliente === Number(idCliente)).map((t) => t.nombre));
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -666,12 +669,15 @@ export function Infraestructura() {
     const d = modal.datos;
     try {
       if (modal.tipo === 'torre') {
-        if (!String(d.nombre ?? '').trim()) return setErrores({ nombre: 'Obligatorio' });
+        if (d.id_instalacion && !String(d.nombre ?? '').trim()) return setErrores({ nombre: 'Obligatorio' });
         const cliente = d.id_cliente ? { id_cliente: Number(d.id_cliente) } : {};
         if (!d.id_cliente && clientesActivos.length > 1) return setErrores({ id_cliente: 'Seleccione el cliente' });
         if (d.id_instalacion) await api.patch(`/torres/${d.id_instalacion}`, { nombre: d.nombre, tipo: d.tipo, ubicacion: d.ubicacion, ...cliente });
-        else await api.post('/torres', { nombre: d.nombre, tipo: d.tipo ?? 'aeroponica', ubicacion: d.ubicacion ?? '', ...cliente });
-        avisar('Torre guardada');
+        else {
+          const r = await api.post<{ id_instalacion: number; nombre: string }>('/torres', { nombre: String(d.nombre ?? '').trim(), tipo: d.tipo ?? 'aeroponica', ubicacion: d.ubicacion ?? '', ...cliente });
+          avisar(`Torre «${r.nombre}» creada con ID ${r.id_instalacion}`);
+        }
+        if (d.id_instalacion) avisar('Torre guardada');
       } else if (modal.tipo === 'dispositivo') {
         if (!String(d.nombre ?? '').trim()) return setErrores({ nombre: 'Obligatorio' });
         const gps = leerGps(d.latitud, d.longitud);
@@ -724,7 +730,10 @@ export function Infraestructura() {
         acciones={
           escribir && (
             <>
-              <Boton variante="secundario" icono={Plus} onClick={() => abrir('torre', { tipo: 'aeroponica', id_cliente: clientesActivos.length === 1 ? clientesActivos[0].id_cliente : undefined })}>
+              <Boton variante="secundario" icono={Plus} onClick={() => {
+                  const idCliente = clientesActivos.length === 1 ? clientesActivos[0].id_cliente : undefined;
+                  abrir('torre', { tipo: 'aeroponica', id_cliente: idCliente, nombre: nombreSugerido(idCliente) });
+                }}>
                 Torre
               </Boton>
               <Boton variante="primario" icono={Plus} onClick={() => abrir('dispositivo', { id_instalacion: torres.datos?.find((t) => t.estado === 'activo')?.id_instalacion, intervalo: 60 })}>
@@ -743,7 +752,7 @@ export function Infraestructura() {
             <Tarjeta
               key={t.id_instalacion}
               titulo={t.nombre}
-              descripcion={`${verCliente ? `${t.cliente} · ` : ''}${t.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'} · ${t.ubicacion || 'sin ubicación'}`}
+              descripcion={`ID ${t.id_instalacion} · ${verCliente ? `${t.cliente} · ` : ''}${t.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'} · ${t.ubicacion || 'sin ubicación'}`}
               acciones={<span className={`insignia ${t.estado === 'activo' ? 'e-normal' : 'e-neutro'}`}>{t.estado === 'activo' ? 'Activa' : 'De baja'}</span>}
             >
               <p className="pequeno muted" style={{ marginBottom: 8 }}>
@@ -825,7 +834,13 @@ export function Infraestructura() {
           <form className="formulario" onSubmit={enviar} noValidate>
             {modal.tipo === 'torre' && (
               <>
-                <Campo etiqueta="Nombre" value={String(modal.datos.nombre ?? '')} onChange={(e) => set('nombre', e.target.value)} error={errores.nombre || undefined} />
+                <Campo
+                  etiqueta="Nombre"
+                  value={String(modal.datos.nombre ?? '')}
+                  onChange={(e) => set('nombre', e.target.value)}
+                  error={errores.nombre || undefined}
+                  ayuda={modal.datos.id_instalacion ? `ID ${String(modal.datos.id_instalacion)} (no cambia)` : 'Propuesto según las torres del cliente. El ID lo asigna el sistema al guardar.'}
+                />
                 <Selector etiqueta="Tipo" value={String(modal.datos.tipo ?? 'aeroponica')} onChange={(e) => set('tipo', e.target.value)}>
                   <option value="aeroponica">Aeropónica</option>
                   <option value="hidroponica">Hidropónica</option>
@@ -835,7 +850,12 @@ export function Infraestructura() {
                   <Selector
                     etiqueta="Cliente (RN-11)"
                     value={String(modal.datos.id_cliente ?? '')}
-                    onChange={(e) => set('id_cliente', e.target.value ? Number(e.target.value) : undefined)}
+                    onChange={(e) => {
+                      const id = e.target.value ? Number(e.target.value) : undefined;
+                      // Torre nueva con el nombre propuesto sin tocar: proponer el del cliente elegido.
+                      if (!modal.datos.id_instalacion && modal.datos.nombre === nombreSugerido(modal.datos.id_cliente)) set('nombre', nombreSugerido(id));
+                      set('id_cliente', id);
+                    }}
                     error={errores.id_cliente || undefined}
                   >
                     <option value="">Seleccione…</option>

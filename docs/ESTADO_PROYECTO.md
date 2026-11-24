@@ -2,6 +2,9 @@
 
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
+## Sesión 8 — Nombre automático de torre (2026-11-23, D-40)
+- Al crear una torre el nombre se propone solo («Torre C») y el ID lo da la base; se muestra «ID n» en cada torre. Probado: typecheck, shared 9/9, frontend 82/82, backend sin base 97/97, pantalla con la API simulada. **Sin probar en local**: `estructura.test.ts` (con PostgreSQL, corre en el CI). **Sin publicar**.
+
 ## Sesión 8 — Evaluación 3: informe de gestión y presentación (2026-11-23, D-39)
 - **Informe de gestión** (`/informe`, Supervisor y Administradores): periodo, cliente, 6 indicadores, gráfico diario de alertas e incidencias, detalle por torre, cultivos por especie, actividad de usuarios (solo Administrador); «Imprimir o PDF» y CSV. API `GET /informes/gestion`.
 - **Probado**: typecheck; shared 8/8; backend sin base 97/97; frontend 82/82 (nueva `informe.test.tsx`); la consulta corrió contra **Supabase real** (solo lectura, 2,6 s para 30 días; el Supervisor ve solo las 2 torres de su cliente); pantallas con la API simulada (escritorio, móvil 375 px y por rol). **Sin probar en local**: `test/informe.test.ts` (con PostgreSQL, corre en el CI) y la impresión real a PDF.
@@ -100,7 +103,7 @@ _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir e
 - `npm audit` no revisado en detalle.
 
 ## Decisiones / divergencias
-Ver `docs/DECISIONES.md` (D-01…D-39). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente), D-32 (RF-11, preferencia de avisos), D-36 (web en Vercel) y D-37 (Anexo C: clientes, 5 roles, incidencias, GPS). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
+Ver `docs/DECISIONES.md` (D-01…D-40). **Divergencias del ES2 a mencionar en el informe**: D-28 (CU-09, registro por invitación), D-29 (§4.4, Supabase + Neon), D-30 (infraestructura: Render + Netlify), D-31 (§6.1, sesión persistente), D-32 (RF-11, preferencia de avisos), D-36 (web en Vercel) y D-37 (Anexo C: clientes, 5 roles, incidencias, GPS). Punto abierto D-25: `log_auditoria.detalle` de crear/editar usuario conserva nombre y email (inmutable por RN-07); el equipo debe decidir.
 
 ## UI UX Pro Max
 Skill instalada en `.claude/skills/ui-ux-pro-max/` (sin modificar). Sistema de diseño persistido en `design-system/aquaplants/` y aplicado vía `packages/frontend/src/estilos/tokens.css`. Detalle en `docs/DISENO.md`.

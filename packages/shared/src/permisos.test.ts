@@ -94,3 +94,13 @@ test('granularidad según rango', () => {
   assert.equal(granularidadPara(d, new Date(d.getTime() + 20 * 86400_000)).etiqueta, '1 h');
   assert.equal(granularidadPara(d, new Date(d.getTime() + 60 * 86400_000)).etiqueta, '1 día');
 });
+
+test('Nombre automático de torre: sigue la serie del cliente y no repite', async () => {
+  const { siguienteNombreTorre } = await import('./nombres.js');
+  assert.equal(siguienteNombreTorre([]), 'Torre 1');
+  assert.equal(siguienteNombreTorre(['Torre A', 'Torre B']), 'Torre C');
+  assert.equal(siguienteNombreTorre(['torre a', 'Torre C']), 'Torre D');
+  assert.equal(siguienteNombreTorre(['Torre 1', 'Torre 2', 'Invernadero']), 'Torre 3');
+  assert.equal(siguienteNombreTorre(['Torre Z']), 'Torre 1');
+  assert.equal(siguienteNombreTorre(['Torre 2', 'Torre 3', 'Torre 4']), 'Torre 5');
+});

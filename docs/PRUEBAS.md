@@ -412,3 +412,14 @@ Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de
 | Colores del gráfico (`validate_palette.js`, #0369a1 y #a16207 sobre blanco) | **✔** todas las verificaciones (CVD ΔE 20,1; contraste ≥ 3:1) |
 | Impresión real a PDF | **Sin probar** (los estilos de impresión ocultan menú, filtros y botones) |
 | En producción | **Pendiente** de publicar |
+
+## Sesión 8 — Nombre automático de torre (2026-11-23, D-40)
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` | **✔** |
+| shared (nueva prueba `siguienteNombreTorre`: vacío → Torre 1; A,B → C; a,C → D; 1,2 → 3; Z → Torre 1; 2,3,4 → 5) | **9/9 ✔** |
+| frontend | **82/82 ✔** |
+| backend sin base de datos | **97/97 ✔** |
+| backend con base: `estructura.test.ts` (nombre vacío → «Torre 1» con ID nuevo; sin nombre → «Torre 2») | **No ejecutada en local** (sin PostgreSQL): queda para el CI |
+| API simulada (Administrador): «+ Torre» propone «Torre 1», ayuda «El ID lo asigna el sistema», guardar avisa «Torre «Torre 1» creada con ID 9»; tarjetas muestran «ID 1», «ID 2»… | **✔** |
+| En producción | **Pendiente** de publicar |

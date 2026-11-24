@@ -6,6 +6,7 @@ import { clientePorDefecto, torresVisibles, type UsuarioCtx } from './acceso.js'
 /** Cliente que guarda los datos anteriores a D-37: sus torres pueden repartirse a otros clientes. */
 export const CLIENTE_INICIAL = 1;
 import { generarTokenDispositivo, hashToken } from './authService.js';
+import { siguienteNombreTorre } from '@aquaplants/shared';
 
 /**
  * CU-08 Gestionar torres, dispositivos y sensores. Lectura: todos los roles
@@ -31,9 +32,16 @@ export class InfraService {
     return r.rows;
   }
 
-  async crearTorre(u: UsuarioCtx, d: { nombre: string; tipo: string; ubicacion: string; id_cliente?: number }) {
+  async crearTorre(u: UsuarioCtx, entrada: { nombre?: string; tipo: string; ubicacion: string; id_cliente?: number }) {
     return this.db.transaccion(async (tx) => {
-      const idCliente = await clientePorDefecto(tx, d.id_cliente);
+      const idCliente = await clientePorDefecto(tx, entrada.id_cliente);
+      // Sin nombre: el siguiente libre del cliente («Torre C»), para no depender de escribirlo a mano.
+      let nombre = entrada.nombre;
+      if (!nombre) {
+        const r = await tx.query<{ nombre: string }>(`SELECT nombre FROM instalacion WHERE id_cliente = $1`, [idCliente]);
+        nombre = siguienteNombreTorre(r.rows.map((x) => x.nombre));
+      }
+      const d = { ...entrada, nombre };
       // RN-11: el nombre es único dentro del cliente.
       const dup = await tx.query(`SELECT 1 FROM instalacion WHERE lower(nombre) = lower($1) AND id_cliente = $2`, [d.nombre, idCliente]);
       if (dup.rowCount) throw new ConflictoError('Ya existe una torre con ese nombre en el cliente', 'NOMBRE_DUPLICADO');

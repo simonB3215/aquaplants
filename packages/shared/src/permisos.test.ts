@@ -103,4 +103,9 @@ test('Nombre automático de torre: sigue la serie del cliente y no repite', asyn
   assert.equal(siguienteNombreTorre(['Torre 1', 'Torre 2', 'Invernadero']), 'Torre 3');
   assert.equal(siguienteNombreTorre(['Torre Z']), 'Torre 1');
   assert.equal(siguienteNombreTorre(['Torre 2', 'Torre 3', 'Torre 4']), 'Torre 5');
+  // Nombres reales con el cultivo agregado.
+  assert.equal(siguienteNombreTorre(['Torre A · Lechuga', 'Torre B · Albahaca']), 'Torre C');
+  assert.equal(siguienteNombreTorre(['Torre C · Frutilla']), 'Torre D');
+  assert.equal(siguienteNombreTorre(['Torre 1 - Norte', 'simom']), 'Torre 2');
+  assert.equal(siguienteNombreTorre(['Torreón', 'Torre Alta']), 'Torre 1');
 });

@@ -420,6 +420,6 @@ Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de
 | shared (nueva prueba `siguienteNombreTorre`: vacío → Torre 1; A,B → C; a,C → D; 1,2 → 3; Z → Torre 1; 2,3,4 → 5) | **9/9 ✔** |
 | frontend | **82/82 ✔** |
 | backend sin base de datos | **97/97 ✔** |
-| backend con base: `estructura.test.ts` (nombre vacío → «Torre 1» con ID nuevo; sin nombre → «Torre 2») | **No ejecutada en local** (sin PostgreSQL): queda para el CI |
+| backend con base: `estructura.test.ts` (nombre vacío → «Torre 1» con ID nuevo; sin nombre → «Torre 2») | **✔ en el CI** (commit d110fc9; el primer intento falló porque la prueba del Técnico esperaba una sola torre en el cliente y se ajustó) |
 | API simulada (Administrador): «+ Torre» propone «Torre 1», ayuda «El ID lo asigna el sistema», guardar avisa «Torre «Torre 1» creada con ID 9»; tarjetas muestran «ID 1», «ID 2»… | **✔** |
-| En producción | **Pendiente** de publicar |
+| En producción | **Publicado** (Vercel con el formulario nuevo; no se creó una torre de prueba en producción) |

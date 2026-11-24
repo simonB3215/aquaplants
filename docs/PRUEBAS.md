@@ -433,3 +433,32 @@ Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de
 | Corrección (`app.css`, `.lateral > nav` con desplazamiento propio): logo y «Cerrar sesión» fijos, la lista se desplaza; 1366×800: lista 610 px visibles de 735, «Perfil» alcanzable, «Cerrar sesión» dentro del menú; 1366×650: el menú ya no se desborda | **✔** |
 | frontend 82/82 y `npm run build` | **✔** |
 | En producción | **Publicado** |
+
+## Sesión 9 — Filtro por mes (2026-11-24)
+Pedido del usuario: filtrar por mes y por fechas. Selector «Mes» (últimos 12 meses; el mes en curso llega hasta hoy) en **Informe de gestión**, en **Históricos → Serie temporal** (rango «Mes»; «Otro» pasa a llamarse «Fechas») y en **Comparar torres y exportar**. Elegir un mes llena Desde y Hasta; si se editan a mano, el selector vuelve a «Por fechas». Sin cambios en el backend.
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (frontend) | **✔** |
+| frontend (nuevas: `mesesRecientes` con mes en curso, febrero y cambio de año; Informe elige un mes → pide `desde=AAAA-MM-01&hasta=último día` y al editar «Desde» vuelve a «Por fechas») | **84/84 ✔** |
+| API simulada (Administrador): Históricos → «Mes» = Noviembre 2026 pide desde el 1-11 00:00 hora de Chile hasta ahora; Comparar → «Octubre 2026» llena 01-10 00:00 a 01-11 00:00; Informe → «Octubre 2026» genera «1 de octubre al 31 de octubre de 2026» | **✔** |
+| Móvil 375 px (Históricos e Informe) | **✔** sin desplazamiento horizontal |
+| En producción | **Publicado** |
+
+**Filtro de cultivos por fecha de creación** (pedido del usuario): en **CRUD → Cultivos** se filtra por «Mes de inicio», «Iniciado desde / hasta» (fecha de inicio del cultivo) y especie, con contador «n de N cultivos» y «Limpiar filtros». Filtro en el navegador sobre `GET /cultivos`; sin cambios en el backend.
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (frontend) | **✔** |
+| frontend (nueva en `crud.test.tsx`: rango de fechas, error si «hasta» es anterior, mes, especie sin resultados y limpiar) | **85/85 ✔** |
+| API simulada (Administrador, 3 cultivos): «Octubre 2026» → solo la lechuga del 18-10 (Desde 01-10, Hasta 31-10); especie «Lechuga» → «2 de 3 cultivos» | **✔** |
+| Móvil 375 px | **✔** sin desplazamiento horizontal |
+| En producción | **Publicado** |
+
+**Filtro de torres por lectura** (pedido del usuario: «temperaturas más altas, bajas, etc.», en la app y en el CRUD): en **Torres** y en **CRUD → Torres y equipos** (también Gestión → Infraestructura) se elige una variable (Temperatura, pH…) y «Más alta primero», «Más baja primero», «Mayor o igual que…» o «Menor o igual que…» un valor (acepta coma decimal). Usa la última lectura de cada torre (`GET /torres/estado`); las torres sin dato van al final al ordenar y quedan fuera al comparar. En el CRUD cada tarjeta muestra «Temperatura actual: …». Lógica común en `util/torres.ts` y campos en `CamposFiltroValor`. Sin cambios en el backend.
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (frontend) y `npm run build` | **✔** |
+| frontend (nueva en `filtrosTorres.test.tsx`: alta/baja con sin dato al final, mayor/menor que «21,5», número inválido y limpiar) | **86/86 ✔** |
+| API simulada, Torres (25,8 / 21,4 / 18,3 °C y una sin dato): alta → Demo, Lechugas, Albahaca, Sur; baja → Albahaca, Lechugas, Demo, Sur; ≥ 21 → «2 de 4 torres»; ≤ 21 → Albahaca | **✔** |
+| API simulada, CRUD → Torres y equipos: mismo orden, «Temperatura actual: 25,8 °C… sin dato»; ≥ 21 → 2 de 4 | **✔** |
+| Móvil 375 px (Torres y CRUD) | **✔** sin desplazamiento horizontal |
+| En producción | **Publicado** |

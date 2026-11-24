@@ -36,7 +36,7 @@ export function Torres() {
       <MensajeError error={estado.datos ? null : estado.error} reintentar={estado.refrescar} />
       {torres.length > 0 && (
         <Tarjeta etiqueta="Filtros de torres" className="tarjeta-filtros">
-          <FiltrosTorres filtro={filtro} alCambiar={cambiarFiltro} visibles={visibles.length} total={torres.length} />
+          <FiltrosTorres filtro={filtro} alCambiar={cambiarFiltro} visibles={visibles.length} total={torres.length} torres={torres} />
         </Tarjeta>
       )}
       {estado.cargando && !estado.datos ? (

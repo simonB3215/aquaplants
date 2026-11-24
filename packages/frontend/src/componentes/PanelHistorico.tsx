@@ -3,15 +3,24 @@ import type { EstadoTorre, RespuestaHistorico } from '@aquaplants/shared';
 import { api, qs, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
 import { GraficoHistorico } from './Graficos';
+import { mesesRecientes } from '../util/formato';
 import { Campo, Esqueleto, MensajeError, Segmentado, Selector, Vacio } from './ui';
 import { ChartLine } from 'lucide-react';
 
-export type Rango = '24h' | '7d' | '30d' | 'personalizado';
-const HORAS: Record<Exclude<Rango, 'personalizado'>, number> = { '24h': 24, '7d': 168, '30d': 720 };
+export type Rango = '24h' | '7d' | '30d' | 'mes' | 'personalizado';
+const HORAS: Record<Exclude<Rango, 'personalizado' | 'mes'>, number> = { '24h': 24, '7d': 168, '30d': 720 };
 
 const aLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
-/** CU-05: selector de torre, sensor/variable y rango (24 h, 7 d, 30 d o personalizado) con validación previa. */
+/** Mes completo en hora local: del día 1 a las 00:00 hasta el día siguiente al último (o ahora, si es el mes en curso). */
+export function rangoDeMes(valor: string): { desde: Date; hasta: Date } {
+  const [a, m] = valor.split('-').map(Number);
+  const fin = new Date(a, m, 1);
+  const ahora = new Date();
+  return { desde: new Date(a, m - 1, 1), hasta: fin > ahora ? ahora : fin };
+}
+
+/** CU-05: selector de torre, sensor/variable y rango (24 h, 7 d, 30 d, un mes o fechas) con validación previa. */
 export function PanelHistorico({ torres, torreInicial, sensorInicial, compacto }: { torres: EstadoTorre[]; torreInicial?: number; sensorInicial?: number; compacto?: boolean }) {
   const [idTorre, setTorre] = useState<number | undefined>(torreInicial ?? torres[0]?.id_instalacion);
   const torre = torres.find((t) => t.id_instalacion === idTorre) ?? torres[0];
@@ -19,6 +28,8 @@ export function PanelHistorico({ torres, torreInicial, sensorInicial, compacto }
   const [rango, setRango] = useState<Rango>('24h');
   const [desdeP, setDesdeP] = useState(aLocal(new Date(Date.now() - 48 * 3600_000)));
   const [hastaP, setHastaP] = useState(aLocal(new Date()));
+  const meses = useMemo(() => mesesRecientes(12), []);
+  const [mes, setMes] = useState(meses[0].valor);
 
   useEffect(() => {
     if (!torre) return;
@@ -38,12 +49,16 @@ export function PanelHistorico({ torres, torreInicial, sensorInicial, compacto }
   // Rango relativo: se recalcula en cada refresco (cada 60 s) para incluir lecturas nuevas.
   const { datos, error, cargando } = useDatos<RespuestaHistorico>(
     (s) => {
+      if (rango === 'mes') {
+        const m = rangoDeMes(mes);
+        return api.get(`/mediciones/historico${qs({ sensor: idSensor, desde: m.desde.toISOString(), hasta: m.hasta.toISOString() })}`, s);
+      }
       const hasta = rango === 'personalizado' ? new Date(hastaP) : new Date();
       const desde = rango === 'personalizado' ? new Date(desdeP) : new Date(hasta.getTime() - HORAS[rango] * 3600_000);
       return api.get(`/mediciones/historico${qs({ sensor: idSensor, desde: desde.toISOString(), hasta: hasta.toISOString() })}`, s);
     },
-    [idSensor, rango, desdeP, hastaP, ventana],
-    { activo: !!idSensor && !errorRango, cadaMs: rango === 'personalizado' ? undefined : 60_000 },
+    [idSensor, rango, desdeP, hastaP, mes, ventana],
+    { activo: !!idSensor && !errorRango, cadaMs: rango === 'personalizado' || (rango === 'mes' && mes !== meses[0].valor) ? undefined : 60_000 },
   );
 
   if (!torres.length) return <Vacio titulo="No hay torres visibles para su usuario" />;
@@ -77,11 +92,22 @@ export function PanelHistorico({ torres, torreInicial, sensorInicial, compacto }
               { valor: '24h', texto: '24 h' },
               { valor: '7d', texto: '7 días' },
               { valor: '30d', texto: '30 días' },
-              ...(compacto ? [] : [{ valor: 'personalizado' as Rango, texto: 'Otro' }]),
+              ...(compacto ? [] : [{ valor: 'mes' as Rango, texto: 'Mes' }, { valor: 'personalizado' as Rango, texto: 'Fechas' }]),
             ]}
           />
         </div>
       </div>
+      {rango === 'mes' && (
+        <div className="filtros" style={{ marginBottom: 12, maxWidth: 320 }}>
+          <Selector etiqueta="Mes" value={mes} onChange={(e) => setMes(e.target.value)}>
+            {meses.map((m) => (
+              <option key={m.valor} value={m.valor}>
+                {m.texto}
+              </option>
+            ))}
+          </Selector>
+        </div>
+      )}
       {rango === 'personalizado' && (
         <div className="filtros" style={{ marginBottom: 12 }}>
           <Campo etiqueta="Desde" type="datetime-local" value={desdeP} onChange={(e) => setDesdeP(e.target.value)} error={errorRango ?? undefined} />

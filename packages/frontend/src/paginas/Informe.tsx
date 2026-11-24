@@ -6,7 +6,7 @@ import { useSesion } from '../estado/sesion';
 import { BarraSuperior } from '../componentes/Layout';
 import { Boton, Campo, Encabezado, Esqueleto, Kpi, MensajeError, Selector, Tarjeta, Vacio } from '../componentes/ui';
 import { GraficoConteoDiario } from '../componentes/Graficos';
-import { descargarBlob, fechaHora, hoyISO } from '../util/formato';
+import { descargarBlob, fechaHora, hoyISO, mesesRecientes } from '../util/formato';
 
 export interface InformeGestion {
   generado_en: string;
@@ -99,6 +99,8 @@ export function Informe() {
   const [desde, setDesde] = useState(restarDias(hoy, 29));
   const [hasta, setHasta] = useState(hoy);
   const [cliente, setCliente] = useState('');
+  const meses = mesesRecientes(12, hoy);
+  const mesElegido = meses.find((m) => m.desde === desde && m.hasta === hasta)?.valor ?? '';
   const [informe, setInforme] = useState<InformeGestion | null>(null);
   const [error, setError] = useState<{ message: string } | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -139,6 +141,14 @@ export function Informe() {
     void generar(undefined, d, hoy);
   }
 
+  function elegirMes(valor: string) {
+    const m = meses.find((x) => x.valor === valor);
+    if (!m) return;
+    setDesde(m.desde);
+    setHasta(m.hasta);
+    void generar(undefined, m.desde, m.hasta);
+  }
+
   const inf = informe;
   return (
     <>
@@ -162,6 +172,14 @@ export function Informe() {
 
       <Tarjeta className="no-imprimir" etiqueta="Periodo del informe">
         <form className="filtros" onSubmit={generar} noValidate style={{ alignItems: 'flex-end' }}>
+          <Selector etiqueta="Mes" value={mesElegido} onChange={(e) => elegirMes(e.target.value)}>
+            <option value="">Por fechas</option>
+            {meses.map((m) => (
+              <option key={m.valor} value={m.valor}>
+                {m.texto}
+              </option>
+            ))}
+          </Selector>
           <Campo etiqueta="Desde" type="date" max={hoy} value={desde} onChange={(e) => setDesde(e.target.value)} error={errores.desde} />
           <Campo etiqueta="Hasta" type="date" max={hoy} value={hasta} onChange={(e) => setHasta(e.target.value)} error={errores.hasta} />
           {esAdmin && (

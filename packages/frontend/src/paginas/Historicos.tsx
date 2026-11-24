@@ -7,10 +7,10 @@ import { useDatos } from '../hooks/useDatos';
 import { useSesion } from '../estado/sesion';
 import { useAvisos } from '../estado/avisos';
 import { BarraSuperior } from '../componentes/Layout';
-import { PanelHistorico } from '../componentes/PanelHistorico';
+import { PanelHistorico, rangoDeMes } from '../componentes/PanelHistorico';
 import { GraficoComparar } from '../componentes/Graficos';
 import { Aviso, Boton, Campo, Encabezado, Esqueleto, MensajeError, Selector, Tarjeta, Vacio } from '../componentes/ui';
-import { descargarBlob } from '../util/formato';
+import { descargarBlob, mesesRecientes } from '../util/formato';
 
 const aLocal = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
@@ -50,6 +50,16 @@ function CompararExportar({ torres }: { torres: { id: number; nombre: string }[]
   const [desde, setDesde] = useState(aLocal(new Date(Date.now() - 24 * 3600_000)));
   const [hasta, setHasta] = useState(aLocal(new Date()));
   const [consulta, setConsulta] = useState(0);
+  const meses = useMemo(() => mesesRecientes(12), []);
+  // Al elegir un mes se llenan Desde y Hasta; si después se editan a mano, vuelve a «Por fechas».
+  const [mesElegido, setMesElegido] = useState('');
+  function elegirMes(valor: string) {
+    setMesElegido(valor);
+    if (!valor) return;
+    const r = rangoDeMes(valor);
+    setDesde(aLocal(r.desde));
+    setHasta(aLocal(r.hasta));
+  }
   const [exportando, setExportando] = useState(false);
 
   const errorRango = useMemo(() => {
@@ -92,8 +102,16 @@ function CompararExportar({ torres }: { torres: { id: number; nombre: string }[]
             </option>
           ))}
         </Selector>
-        <Campo etiqueta="Desde" type="datetime-local" value={desde} onChange={(e) => setDesde(e.target.value)} error={errorRango ?? undefined} />
-        <Campo etiqueta="Hasta" type="datetime-local" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+        <Selector etiqueta="Mes" value={mesElegido} onChange={(e) => elegirMes(e.target.value)}>
+          <option value="">Por fechas</option>
+          {meses.map((m) => (
+            <option key={m.valor} value={m.valor}>
+              {m.texto}
+            </option>
+          ))}
+        </Selector>
+        <Campo etiqueta="Desde" type="datetime-local" value={desde} onChange={(e) => { setDesde(e.target.value); setMesElegido(''); }} error={errorRango ?? undefined} />
+        <Campo etiqueta="Hasta" type="datetime-local" value={hasta} onChange={(e) => { setHasta(e.target.value); setMesElegido(''); }} />
       </div>
       <fieldset style={{ border: 0, padding: 0, margin: '12px 0' }}>
         <legend style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 6 }}>Torres (máximo 4)</legend>

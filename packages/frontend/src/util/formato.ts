@@ -37,6 +37,31 @@ export const hoyISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+export interface Mes {
+  /** AAAA-MM */
+  valor: string;
+  /** «Noviembre 2026» */
+  texto: string;
+  /** Primer día AAAA-MM-DD */
+  desde: string;
+  /** Último día del mes, o hoy si es el mes en curso (AAAA-MM-DD) */
+  hasta: string;
+}
+
+/** Los últimos `n` meses (el actual primero) para los filtros por mes. */
+export function mesesRecientes(n = 12, hoy = hoyISO()): Mes[] {
+  const [a, m] = hoy.split('-').map(Number);
+  return Array.from({ length: n }, (_, i) => {
+    const fecha = new Date(a, m - 1 - i, 1);
+    const anio = fecha.getFullYear();
+    const mes = fecha.getMonth() + 1;
+    const valor = `${anio}-${String(mes).padStart(2, '0')}`;
+    const ultimo = `${valor}-${String(new Date(anio, mes, 0).getDate()).padStart(2, '0')}`;
+    const nombre = fecha.toLocaleDateString('es-CL', { month: 'long' });
+    return { valor, texto: `${nombre[0].toUpperCase()}${nombre.slice(1)} ${anio}`, desde: `${valor}-01`, hasta: ultimo > hoy ? hoy : ultimo };
+  });
+}
+
 export function descargarBlob(blob: Blob, nombre: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

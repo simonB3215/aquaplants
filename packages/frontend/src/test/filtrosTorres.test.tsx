@@ -158,3 +158,35 @@ describe('Filtros de torres', () => {
     expect(nombres()).toEqual(['Torre A', 'Torre B']);
   });
 });
+
+describe('Filtro por lectura (temperatura, pH…)', () => {
+  const temp = (valor: number | null, sensor_activo = true) => ({
+    variables: [{ id_sensor: 1, tipo_variable: 'Temperatura', id_tipo_variable: 2, unidad: '°C', valor, ts: null, estado: 'normal' as EstadoVariable, umbrales: [], sensor_activo }],
+  });
+  beforeEach(() => {
+    torres = [
+      t(1, 'Torre A', 'Lechuga', 'normal', ['conectado'], 0, temp(21.5)),
+      t(2, 'Torre B', 'Albahaca', 'normal', ['conectado'], 0, temp(26)),
+      t(3, 'Torre C', 'Rúcula', 'normal', ['conectado'], 0, temp(null)),
+      t(4, 'Torre D', 'Espinaca', 'normal', ['conectado'], 0, temp(18.2)),
+    ];
+  });
+
+  test('más alta y más baja primero (sin dato al final); mayor/menor o igual que un valor con coma decimal', async () => {
+    await mostrar();
+    fireEvent.change(filtros().getByLabelText('Variable'), { target: { value: 'Temperatura' } });
+    expect(nombres()).toEqual(['Torre B', 'Torre A', 'Torre D', 'Torre C']);
+    fireEvent.change(filtros().getByLabelText('Mostrar'), { target: { value: 'baja' } });
+    expect(nombres()).toEqual(['Torre D', 'Torre A', 'Torre B', 'Torre C']);
+    fireEvent.change(filtros().getByLabelText('Mostrar'), { target: { value: 'mayor' } });
+    fireEvent.change(filtros().getByLabelText('Valor (°C)'), { target: { value: '21,5' } });
+    expect(nombres()).toEqual(['Torre B', 'Torre A']);
+    expect(resumen()).toBe('2 de 4 torres');
+    fireEvent.change(filtros().getByLabelText('Mostrar'), { target: { value: 'menor' } });
+    expect(nombres()).toEqual(['Torre D', 'Torre A']);
+    fireEvent.change(filtros().getByLabelText('Valor (°C)'), { target: { value: 'abc' } });
+    expect(filtros().getByText('Ingrese un número')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(nombres()).toEqual(['Torre A', 'Torre B', 'Torre C', 'Torre D']);
+  });
+});

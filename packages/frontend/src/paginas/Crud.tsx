@@ -8,7 +8,7 @@ import { useSesion } from '../estado/sesion';
 import { useAvisos } from '../estado/avisos';
 import { BarraSuperior } from '../componentes/Layout';
 import { Boton, Campo, Encabezado, Esqueleto, Incrustado, MensajeError, Modal, Selector, Tarjeta, Vacio } from '../componentes/ui';
-import { hoyISO } from '../util/formato';
+import { hoyISO, mesesRecientes } from '../util/formato';
 import { Auditoria, Clientes, Infraestructura, Umbrales, Usuarios } from './Gestion';
 import { Especies } from './Especies';
 import { Incidencias } from './Incidencias';
@@ -133,6 +133,29 @@ export function CultivosTodos() {
   const [fecha, setFecha] = useState(hoyISO());
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
+  // Filtros de la lista por fecha de inicio (creación) del cultivo y por especie.
+  const meses = mesesRecientes(12);
+  const [fMes, setFMes] = useState('');
+  const [fDesde, setFDesde] = useState('');
+  const [fHasta, setFHasta] = useState('');
+  const [fEspecie, setFEspecie] = useState('');
+  const errorFiltro = fDesde && fHasta && fDesde > fHasta ? 'Debe ser igual o posterior a «Iniciado desde»' : undefined;
+  const filtrados = (lista.datos ?? []).filter(
+    (c) => (!fEspecie || String(c.id_especie) === fEspecie) && (!!errorFiltro || ((!fDesde || c.fecha_inicio >= fDesde) && (!fHasta || c.fecha_inicio <= fHasta))),
+  );
+  const hayFiltro = !!(fDesde || fHasta || fEspecie);
+  function elegirMes(valor: string) {
+    setFMes(valor);
+    const m = meses.find((x) => x.valor === valor);
+    setFDesde(m?.desde ?? '');
+    setFHasta(m?.hasta ?? '');
+  }
+  function limpiar() {
+    setFMes('');
+    setFDesde('');
+    setFHasta('');
+    setFEspecie('');
+  }
 
   const conCultivo = new Set(lista.datos?.filter((c) => c.estado === 'en_curso').map((c) => c.id_instalacion));
   const libres = (torres.datos ?? []).filter((t) => t.estado === 'activo' && !conCultivo.has(t.id_instalacion));
@@ -195,6 +218,38 @@ export function CultivosTodos() {
         ) : !lista.datos.length ? (
           <Vacio titulo="Sin cultivos registrados" icono={Sprout} />
         ) : (
+          <>
+            <div className="filtros" role="search" aria-label="Filtrar cultivos" style={{ marginBottom: 12, alignItems: 'flex-end' }}>
+              <Selector etiqueta="Mes de inicio" value={fMes} onChange={(e) => elegirMes(e.target.value)}>
+                <option value="">Todos / por fechas</option>
+                {meses.map((m) => (
+                  <option key={m.valor} value={m.valor}>
+                    {m.texto}
+                  </option>
+                ))}
+              </Selector>
+              <Campo etiqueta="Iniciado desde" type="date" value={fDesde} onChange={(e) => (setFDesde(e.target.value), setFMes(''))} error={errorFiltro} />
+              <Campo etiqueta="Iniciado hasta" type="date" value={fHasta} onChange={(e) => (setFHasta(e.target.value), setFMes(''))} />
+              <Selector etiqueta="Especie" value={fEspecie} onChange={(e) => setFEspecie(e.target.value)}>
+                <option value="">Todas</option>
+                {cat.datos?.especies.map((s) => (
+                  <option key={s.id_especie} value={s.id_especie}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </Selector>
+              {hayFiltro && (
+                <Boton variante="fantasma" onClick={limpiar}>
+                  Limpiar filtros
+                </Boton>
+              )}
+            </div>
+            <p className="muted pequeno" role="status" style={{ margin: '0 0 8px' }}>
+              {hayFiltro ? `${filtrados.length} de ${lista.datos.length} cultivos` : `${lista.datos.length} cultivos`}
+            </p>
+            {!filtrados.length ? (
+              <Vacio titulo="Ningún cultivo coincide con los filtros" icono={Sprout} />
+            ) : (
           <div className="tabla-contenedor">
             <table className="tabla">
               <thead>
@@ -210,7 +265,7 @@ export function CultivosTodos() {
                 </tr>
               </thead>
               <tbody>
-                {lista.datos.map((c) => (
+                {filtrados.map((c) => (
                   <tr key={c.id_cultivo}>
                     <td>
                       <strong>{c.torre}</strong>
@@ -238,6 +293,8 @@ export function CultivosTodos() {
               </tbody>
             </table>
           </div>
+            )}
+          </>
         )}
       </Tarjeta>
 

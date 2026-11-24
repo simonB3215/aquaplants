@@ -20,7 +20,7 @@ vi.mock('../componentes/Graficos', () => ({
 }));
 
 import { Informe, type InformeGestion } from '../paginas/Informe';
-import { hoyISO } from '../util/formato';
+import { hoyISO, mesesRecientes } from '../util/formato';
 
 const base = (desde: string, hasta: string, auditoria = true): InformeGestion => ({
   generado_en: '2026-11-23T15:00:00.000Z',
@@ -61,7 +61,32 @@ const mostrar = async () => {
 };
 const ultimaRuta = () => m.get.mock.calls.map((c) => c[0] as string).filter((r) => r.startsWith('/informes')).at(-1)!;
 
+describe('mesesRecientes', () => {
+  test('mes en curso hasta hoy, meses anteriores completos y cambio de año', () => {
+    const m = mesesRecientes(13, '2026-11-24');
+    expect(m[0]).toEqual({ valor: '2026-11', texto: 'Noviembre 2026', desde: '2026-11-01', hasta: '2026-11-24' });
+    expect(m[1]).toMatchObject({ valor: '2026-10', desde: '2026-10-01', hasta: '2026-10-31' });
+    expect(m.find((x) => x.valor === '2026-02')!.hasta).toBe('2026-02-28');
+    expect(m[11]).toMatchObject({ valor: '2025-12', texto: 'Diciembre 2025', hasta: '2025-12-31' });
+    expect(m).toHaveLength(13);
+  });
+});
+
 describe('Informe de gestión', () => {
+  test('elegir un mes genera el informe de ese mes y editar las fechas vuelve a «Por fechas»', async () => {
+    await mostrar();
+    const anterior = mesesRecientes(2)[1];
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Mes'), { target: { value: anterior.valor } });
+    });
+    const q = new URLSearchParams(ultimaRuta().split('?')[1]);
+    expect([q.get('desde'), q.get('hasta')]).toEqual([anterior.desde, anterior.hasta]);
+    expect((screen.getByLabelText('Desde') as HTMLInputElement).value).toBe(anterior.desde);
+    expect((screen.getByLabelText('Mes') as HTMLSelectElement).value).toBe(anterior.valor);
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: anterior.desde.replace(/01$/, '05') } });
+    expect((screen.getByLabelText('Mes') as HTMLSelectElement).value).toBe('');
+  });
+
   test('al entrar genera los últimos 30 días y muestra indicadores, gráfico, torres y actividad', async () => {
     await mostrar();
     const q = new URLSearchParams(ultimaRuta().split('?')[1]);

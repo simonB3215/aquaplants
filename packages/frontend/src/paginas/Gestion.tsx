@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Ban, Building2, KeyRound, Link2, MapPin, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
-import { ETIQUETA_ROL, esAdministracion, puedeGestionarRol, rolConCliente, rolesAsignables, siguienteNombreTorre, type AvisoAlertas, type Rol } from '@aquaplants/shared';
+import { ETIQUETA_ROL, esAdministracion, puedeGestionarRol, rolConCliente, rolesAsignables, siguienteNombreTorre, type AvisoAlertas, type RespuestaEstado, type Rol } from '@aquaplants/shared';
+import { BarraFiltros } from '../componentes/BarraFiltros';
+import { CamposFiltroValor } from '../componentes/FiltrosTorres';
+import { aplicarFiltroValor, SIN_FILTRO_VALOR, valorActual, type FiltroValor } from '../util/torres';
 import { EnlaceGps, leerGps } from '../componentes/Ubicacion';
 import { api, qs, ApiError } from '../api/cliente';
 import { useDatos } from '../hooks/useDatos';
@@ -654,6 +657,11 @@ export function Infraestructura() {
   const torres = useDatos<TorreFila[]>((s) => api.get('/torres', s), []);
   const disps = useDatos<DispositivoFila[]>((s) => api.get('/dispositivos', s), []);
   const usuarios = useDatos<UsuarioFila[]>((s) => api.get('/usuarios', s), [], { activo: puede('usuarios.gestionar') });
+  // Lecturas actuales para filtrar/ordenar por temperatura, pH, etc. (mismo filtro que en Torres).
+  const lecturas = useDatos<RespuestaEstado>((s) => api.get('/torres/estado', s), [], { cadaMs: 30_000 });
+  const [filtroValor, setFiltroValor] = useState<FiltroValor>(SIN_FILTRO_VALOR);
+  const estadoDe = (id: number) => lecturas.datos?.torres.find((e) => e.id_instalacion === id);
+  const unidadFiltro = lecturas.datos?.torres.flatMap((e) => e.variables).find((v) => v.tipo_variable === filtroValor.variable)?.unidad ?? '';
   const cat = useDatos<{ tipos_variable: { id_tipo_variable: number; nombre: string; unidad: string }[] }>((s) => api.get('/catalogos', s), []);
   const [modal, setModal] = useState<null | { tipo: 'torre' | 'dispositivo' | 'sensor' | 'baja' | 'asignar' | 'gps'; datos: Record<string, unknown> }>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -744,17 +752,41 @@ export function Infraestructura() {
         }
       />
       <MensajeError error={torres.error ?? disps.error} />
+      {!!torres.datos?.length && !!lecturas.datos?.torres.length && (
+        <Tarjeta etiqueta="Filtrar torres por lectura" className="tarjeta-filtros">
+          <BarraFiltros
+            etiqueta="Filtrar torres por lectura"
+            activos={!!filtroValor.variable}
+            visibles={aplicarFiltroValor(torres.datos, (t) => estadoDe(t.id_instalacion), filtroValor).length}
+            total={torres.datos.length}
+            unidad={['torre', 'torres']}
+            alLimpiar={() => setFiltroValor(SIN_FILTRO_VALOR)}
+          >
+            <CamposFiltroValor filtro={filtroValor} alCambiar={setFiltroValor} torres={lecturas.datos.torres} />
+          </BarraFiltros>
+        </Tarjeta>
+      )}
       {!torres.datos || !disps.datos ? (
         <Esqueleto n={3} alto={140} />
+      ) : filtroValor.variable && !aplicarFiltroValor(torres.datos, (t) => estadoDe(t.id_instalacion), filtroValor).length ? (
+        <Tarjeta etiqueta="Sin resultados">
+          <Vacio titulo="Ninguna torre coincide">Pruebe con otro valor o use «Limpiar filtros».</Vacio>
+        </Tarjeta>
       ) : (
         <div className="rejilla rejilla-torres">
-          {torres.datos.map((t) => (
+          {aplicarFiltroValor(torres.datos, (t) => estadoDe(t.id_instalacion), filtroValor).map((t) => (
             <Tarjeta
               key={t.id_instalacion}
               titulo={t.nombre}
               descripcion={`ID ${t.id_instalacion} · ${verCliente ? `${t.cliente} · ` : ''}${t.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'} · ${t.ubicacion || 'sin ubicación'}`}
               acciones={<span className={`insignia ${t.estado === 'activo' ? 'e-normal' : 'e-neutro'}`}>{t.estado === 'activo' ? 'Activa' : 'De baja'}</span>}
             >
+              {filtroValor.variable && (
+                <p className="pequeno" style={{ marginBottom: 4 }}>
+                  {filtroValor.variable} actual:{' '}
+                  <strong className="dato">{valorActual(estadoDe(t.id_instalacion), filtroValor.variable) === null ? 'sin dato' : `${numero(valorActual(estadoDe(t.id_instalacion), filtroValor.variable))} ${unidadFiltro}`}</strong>
+                </p>
+              )}
               <p className="pequeno muted" style={{ marginBottom: 8 }}>
                 Responsables: {t.responsables.map((r) => r.nombre).join(', ') || 'sin asignar'}
               </p>

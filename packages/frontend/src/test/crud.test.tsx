@@ -80,6 +80,27 @@ describe('Cultivos de todas las torres', () => {
     await screen.findByText('Torre A');
   };
 
+  test('filtra por fecha de inicio (rango y mes) y por especie', async () => {
+    await mostrar();
+    expect(screen.getByRole('status').textContent).toBe('2 cultivos');
+    fireEvent.change(screen.getByLabelText('Iniciado desde'), { target: { value: '2026-09-01' } });
+    expect(screen.getByRole('status').textContent).toBe('1 de 2 cultivos');
+    expect(screen.queryByText('Torre B')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Iniciado hasta'), { target: { value: '2026-08-01' } });
+    expect(screen.getByText('Debe ser igual o posterior a «Iniciado desde»')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(screen.getByRole('status').textContent).toBe('2 cultivos');
+    const junio = (screen.getByLabelText('Mes de inicio') as HTMLSelectElement).querySelector('option[value="2026-06"]');
+    if (junio) {
+      fireEvent.change(screen.getByLabelText('Mes de inicio'), { target: { value: '2026-06' } });
+      expect(screen.getByRole('status').textContent).toBe('1 de 2 cultivos');
+      expect(screen.queryByText('Torre A')).toBeNull();
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    fireEvent.change(screen.getByLabelText('Especie'), { target: { value: '2' } });
+    expect(screen.getByText('Ningún cultivo coincide con los filtros')).toBeTruthy();
+  });
+
   test('nuevo cultivo: solo ofrece torres activas sin cultivo en curso', async () => {
     await mostrar();
     expect(within(fila('2026-08-01')).queryByRole('button', { name: 'Cerrar' })).toBeNull();

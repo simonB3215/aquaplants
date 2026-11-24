@@ -3,7 +3,7 @@ import { Bell, Building2, ChartLine, Clock, Cpu, Sprout, TriangleAlert } from 'l
 import type { EstadoTorre } from '@aquaplants/shared';
 import { InsigniaConectividad, InsigniaEstado, InsigniaSenal } from './ui';
 import { EnlaceGps } from './Ubicacion';
-import { duracion, fechaHora, hace, numero } from '../util/formato';
+import { diasDeCultivo, duracion, fechaHora, hace, numero, textoDias } from '../util/formato';
 
 /**
  * Tarjeta de estado por torre (CU-03): cultivo, variables, unidades, estados, umbrales y timestamps.
@@ -18,7 +18,7 @@ export function TarjetaTorre({ torre, servidorCaido, mostrarCliente, veAlertas =
           <h3 id={`torre-${torre.id_instalacion}`}>{torre.nombre}</h3>
           <p className="muted pequeno" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <Sprout size={14} aria-hidden />
-            {torre.cultivo ? `${torre.cultivo.especie} desde ${torre.cultivo.fecha_inicio}` : 'Sin cultivo en curso'} · {torre.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'}
+            {torre.cultivo ? `${torre.cultivo.especie} desde ${torre.cultivo.fecha_inicio} (${textoDias(diasDeCultivo(torre.cultivo.fecha_inicio))})` : 'Sin cultivo en curso'} · {torre.tipo === 'aeroponica' ? 'Aeropónica' : 'Hidropónica'}
           </p>
           {mostrarCliente && torre.cliente && (
             <p className="muted pequeno" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

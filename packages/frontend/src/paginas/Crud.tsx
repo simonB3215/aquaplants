@@ -301,6 +301,9 @@ export function CultivosTodos() {
       <Modal titulo={titulo} abierto={!!modal} onCerrar={() => setModal(null)}>
         {modal && (
           <form className="formulario" onSubmit={guardar} noValidate>
+            {modal.tipo === 'nuevo' && (
+              <p className="muted pequeno">Solo aparecen torres sin cultivo en curso. Para otro lote al mismo tiempo (por ejemplo, otra lechuga), registre otra torre con su dispositivo en «Torres y equipos».</p>
+            )}
             {modal.tipo === 'nuevo' ? (
               <Selector etiqueta="Torre" value={torre} onChange={(e) => setTorre(e.target.value)} error={errores.torre}>
                 <option value="">{libres.length ? 'Seleccione…' : 'Todas las torres tienen un cultivo en curso'}</option>

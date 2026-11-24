@@ -12,7 +12,7 @@ import { TarjetaTorre } from '../componentes/TarjetaTorre';
 import { PanelHistorico } from '../componentes/PanelHistorico';
 import { Boton, Campo, Encabezado, Esqueleto, MensajeError, Modal, Selector, Tarjeta, Vacio } from '../componentes/ui';
 import { FiltrosTorres } from '../componentes/FiltrosTorres';
-import { hoyISO } from '../util/formato';
+import { diasDeCultivo, hoyISO, textoDias } from '../util/formato';
 import { filtrarTorres, guardarFiltroTorres, leerFiltroTorres, type FiltroTorres } from '../util/torres';
 
 export function Torres() {
@@ -160,6 +160,11 @@ export function FichaTorre() {
             }
           >
             {!escribir && <p className="muted pequeno" style={{ marginBottom: 8 }}>Solo lectura para su rol.</p>}
+            {escribir && enCurso && (
+              <p className="muted pequeno" style={{ marginBottom: 8 }}>
+                Todos los dispositivos de la torre miden la misma solución, por eso admite un solo cultivo en curso. Para otro lote al mismo tiempo (por ejemplo, otra lechuga), registre otra torre con su dispositivo.
+              </p>
+            )}
             {cultivos.datos?.length ? (
               <ul className="lista-items">
                 {cultivos.datos.map((c) => (
@@ -171,6 +176,11 @@ export function FichaTorre() {
                       </div>
                       <p className="muted pequeno">
                         {c.fecha_inicio} → {c.fecha_fin ?? 'actualidad'}
+                      </p>
+                      <p className="pequeno">
+                        {c.fecha_fin ? 'Tiempo de cosecha: ' : 'En cultivo: '}
+                        <strong className="dato">{textoDias(diasDeCultivo(c.fecha_inicio, c.fecha_fin))}</strong>
+                        {!c.fecha_fin && ' (aún sin cosechar)'}
                       </p>
                     </div>
                   </li>

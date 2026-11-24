@@ -1,5 +1,9 @@
 import type { EstadoConectividad, EstadoTorre, EstadoVariable } from '@aquaplants/shared';
 import { normalizar } from './texto';
+import { diasDeCultivo } from './formato';
+
+/** Opción extra del filtro (solo en Torres): días del cultivo en curso. */
+export const DIAS_CULTIVO = 'Días de cultivo';
 
 export const ESTADOS_TORRE: EstadoVariable[] = ['critico', 'advertencia', 'normal', 'sin_clasificar', 'sin_datos'];
 export const CONEXIONES_TORRE: EstadoConectividad[] = ['conectado', 'sin_senal', 'sincronizando', 'nunca_conectado'];
@@ -30,6 +34,7 @@ export function variablesDeTorres(torres: EstadoTorre[]): { nombre: string; unid
 
 /** Lectura actual de la variable en la torre (sensor activo con dato; si hay varios, el primero). */
 export function valorActual(t: EstadoTorre | undefined, variable: string): number | null {
+  if (variable === DIAS_CULTIVO) return t?.cultivo ? diasDeCultivo(t.cultivo.fecha_inicio) : null;
   const v = t?.variables.find((x) => x.tipo_variable === variable && x.sensor_activo && x.valor !== null);
   return v?.valor ?? null;
 }

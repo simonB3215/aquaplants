@@ -1,6 +1,6 @@
 import { NOMBRE_CONECTIVIDAD, NOMBRE_ESTADO_VARIABLE } from '@aquaplants/shared';
 import type { EstadoTorre } from '@aquaplants/shared';
-import { CONEXIONES_TORRE, errorFiltroValor, ESTADOS_TORRE, hayFiltrosTorres, MODOS_VALOR, SIN_FILTROS_TORRES, variablesDeTorres, type FiltroTorres, type FiltroValor, type ModoValor } from '../util/torres';
+import { CONEXIONES_TORRE, DIAS_CULTIVO, errorFiltroValor, ESTADOS_TORRE, hayFiltrosTorres, MODOS_VALOR, SIN_FILTROS_TORRES, variablesDeTorres, type FiltroTorres, type FiltroValor, type ModoValor } from '../util/torres';
 import { BarraFiltros } from './BarraFiltros';
 import { Campo, Selector } from './ui';
 
@@ -26,7 +26,7 @@ export function FiltrosTorres({ filtro, alCambiar, visibles, total, torres }: { 
           </option>
         ))}
       </Selector>
-      <CamposFiltroValor filtro={filtro} alCambiar={(v) => alCambiar({ ...filtro, ...v })} torres={torres} />
+      <CamposFiltroValor filtro={filtro} alCambiar={(v) => alCambiar({ ...filtro, ...v })} torres={torres} conDiasCultivo />
     </BarraFiltros>
   );
 }
@@ -35,8 +35,8 @@ export function FiltrosTorres({ filtro, alCambiar, visibles, total, torres }: { 
  * Variable (temperatura, pH…) + «más alta / más baja primero» o «mayor / menor o igual que» un valor.
  * Usa la última lectura de cada torre. Se comparte entre Torres y el CRUD (Torres y equipos).
  */
-export function CamposFiltroValor({ filtro, alCambiar, torres }: { filtro: FiltroValor; alCambiar: (f: FiltroValor) => void; torres: EstadoTorre[] }) {
-  const variables = variablesDeTorres(torres);
+export function CamposFiltroValor({ filtro, alCambiar, torres, conDiasCultivo }: { filtro: FiltroValor; alCambiar: (f: FiltroValor) => void; torres: EstadoTorre[]; conDiasCultivo?: boolean }) {
+  const variables = [...variablesDeTorres(torres), ...(conDiasCultivo ? [{ nombre: DIAS_CULTIVO, unidad: 'días' }] : [])];
   const unidad = variables.find((v) => v.nombre === filtro.variable)?.unidad;
   const conValor = filtro.modo === 'mayor' || filtro.modo === 'menor';
   return (

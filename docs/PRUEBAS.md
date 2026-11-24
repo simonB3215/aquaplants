@@ -462,3 +462,18 @@ Pedido del usuario: filtrar por mes y por fechas. Selector «Mes» (últimos 12 
 | API simulada, CRUD → Torres y equipos: mismo orden, «Temperatura actual: 25,8 °C… sin dato»; ≥ 21 → 2 de 4 | **✔** |
 | Móvil 375 px (Torres y CRUD) | **✔** sin desplazamiento horizontal |
 | En producción | **Publicado** |
+
+**Tiempo de cosecha** (pedido del usuario, solo en la app principal, no en el CRUD): días desde el inicio del cultivo hasta su fecha de fin (cosecha), o hasta hoy si sigue en curso (`diasDeCultivo`, días de calendario). Tarjetas de torre (Inicio y Torres): «Lechuga desde 2026-11-01 (23 días)». Ficha de la torre: «Tiempo de cosecha: 69 días» en los cultivos finalizados y «En cultivo: 37 días (aún sin cosechar)» en el que está en curso. Filtro de Torres: nueva opción «Días de cultivo» (más alta/baja primero, mayor/menor que N días; sin cultivo al final). No aparece en CRUD → Torres y equipos. Sin cambios en el backend.
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` (frontend) | **✔** |
+| frontend (nuevas: `diasDeCultivo` con cosecha, cambio de mes, en curso y fecha futura; tarjeta con días y orden por «Días de cultivo») | **88/88 ✔** |
+| API simulada: Torres → «Días de cultivo», más alta primero: Demo (35 días), Lechugas (23 días), y después las torres sin cultivo; ficha: 37 y 21 días en curso, 69 días de cosecha | **✔** |
+| En producción | **Publicado** |
+
+**Un cultivo en curso por torre, explicado en pantalla** (el usuario eligió mantener el modelo: otro lote en paralelo = otra torre). Ficha de la torre (con cultivo en curso y permiso de escritura) y CRUD → Cultivos → «Nuevo cultivo» muestran que la torre admite un solo cultivo en curso y que para otro lote al mismo tiempo se registra otra torre con su dispositivo. Sin cambios en el backend ni en la base.
+| Verificación | Resultado |
+|---|---|
+| `npm run typecheck` y frontend | **✔** 88/88 |
+| API simulada (Administrador): ficha de «Torre Lechugas» muestra el aviso junto a «Corregir» y «Cerrar cultivo» | **✔** |
+| En producción | **Publicado** |

@@ -37,6 +37,16 @@ export const hoyISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+/**
+ * Tiempo de cosecha: días desde el inicio del cultivo hasta su fecha de fin (cosecha),
+ * o hasta hoy si sigue en curso. Fechas AAAA-MM-DD; cuenta días de calendario.
+ */
+export function diasDeCultivo(inicio: string, fin?: string | null, hoy = hoyISO()): number {
+  const ms = (s: string) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
+  return Math.max(0, Math.round((ms(fin ?? hoy) - ms(inicio)) / 86_400_000));
+}
+export const textoDias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
+
 export interface Mes {
   /** AAAA-MM */
   valor: string;

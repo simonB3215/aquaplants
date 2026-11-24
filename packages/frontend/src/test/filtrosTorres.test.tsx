@@ -190,3 +190,30 @@ describe('Filtro por lectura (temperatura, pH…)', () => {
     expect(nombres()).toEqual(['Torre A', 'Torre B', 'Torre C', 'Torre D']);
   });
 });
+
+describe('Tiempo de cosecha (días de cultivo)', () => {
+  test('diasDeCultivo: hasta la cosecha o hasta hoy, sin negativos', async () => {
+    const { diasDeCultivo, textoDias } = await import('../util/formato');
+    expect(diasDeCultivo('2026-10-01', '2026-11-20')).toBe(50);
+    expect(diasDeCultivo('2026-02-27', '2026-03-01')).toBe(2);
+    expect(diasDeCultivo('2026-11-01', null, '2026-11-24')).toBe(23);
+    expect(diasDeCultivo('2026-11-25', null, '2026-11-24')).toBe(0);
+    expect([textoDias(1), textoDias(23)]).toEqual(['1 día', '23 días']);
+  });
+
+  test('la tarjeta muestra los días y el filtro ordena por días de cultivo (sin cultivo al final)', async () => {
+    const { diasDeCultivo } = await import('../util/formato');
+    torres = [
+      t(1, 'Torre A', 'Lechuga', 'normal', ['conectado'], 0, { cultivo: { id_cultivo: 1, especie: 'Lechuga', fecha_inicio: '2026-11-10' } }),
+      t(2, 'Torre B', 'Albahaca', 'normal', ['conectado'], 0, { cultivo: { id_cultivo: 2, especie: 'Albahaca', fecha_inicio: '2026-10-01' } }),
+      t(3, 'Torre C', null, 'normal', ['conectado']),
+    ];
+    await mostrar();
+    const dias = diasDeCultivo('2026-11-10');
+    expect(document.querySelector('article.torre p')!.textContent).toContain('Lechuga desde 2026-11-10 (' + dias + (dias === 1 ? ' día)' : ' días)'));
+    fireEvent.change(filtros().getByLabelText('Variable'), { target: { value: 'Días de cultivo' } });
+    expect(nombres()).toEqual(['Torre B', 'Torre A', 'Torre C']);
+    fireEvent.change(filtros().getByLabelText('Mostrar'), { target: { value: 'baja' } });
+    expect(nombres()).toEqual(['Torre A', 'Torre B', 'Torre C']);
+  });
+});

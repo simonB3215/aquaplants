@@ -222,6 +222,18 @@ textarea {
 .nav-pie {
   margin-top: auto;
 }
+/* Con muchas opciones (Administrador) la lista no cabe: el logo y «Cerrar sesión» quedan fijos y solo la lista se desplaza. */
+.lateral > nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(21, 128, 61, 0.3) transparent;
+  /* espacio para que no se recorte la sombra de la opción activa */
+  margin: -6px calc(-1 * var(--space-sm)) 0;
+  padding: 6px var(--space-sm) 12px;
+}
 
 /* Navegación inferior (teléfono/tablet), píldora flotante como en la referencia */
 .nav-inferior {

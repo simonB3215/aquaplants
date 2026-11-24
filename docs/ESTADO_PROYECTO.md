@@ -2,6 +2,9 @@
 
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
+## Sesión 9 — Menú lateral con desplazamiento (2026-11-24)
+Con muchas opciones (Administrador) el menú lateral de escritorio no se desplazaba y «Perfil» y «Cerrar sesión» quedaban fuera de la pantalla. Ahora solo la lista se desplaza y el logo y «Cerrar sesión» quedan fijos (`app.css`). Pruebas en `docs/PRUEBAS.md` (sesión 9).
+
 ## Sesión 8 — Nombre automático de torre (2026-11-23, D-40)
 - Al crear una torre el nombre es automático y de solo lectura («Torre C») y el ID lo da la base; se muestra «ID n» en cada torre. Probado: typecheck, shared 9/9, frontend 82/82, backend sin base 97/97, pantalla con la API simulada. 
 

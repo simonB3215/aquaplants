@@ -17,6 +17,8 @@ const api = () => request(app);
 const H = (t: string) => ({ authorization: `Bearer ${t}` });
 
 let idNorte: number;
+/** Torres creadas con nombre automático en el Cliente Norte (D-40). */
+const torresAuto: number[] = [];
 let torreNorte: number;
 let dispNorte: number;
 
@@ -59,6 +61,7 @@ describe('RN-11 clientes y aislamiento', () => {
     expect(auto1.body.id_instalacion).toBeGreaterThan(torreNorte);
     const auto2 = await api().post('/api/v1/torres').set(H(admin)).send({ tipo: 'hidroponica', id_cliente: idNorte });
     expect(auto2.body.nombre).toBe('Torre 2');
+    torresAuto.push(auto1.body.id_instalacion, auto2.body.id_instalacion);
     const d = await api().post('/api/v1/dispositivos').set(H(admin)).send({ nombre: 'AquaBrain-Norte', id_instalacion: torreNorte, latitud: -33.45, longitud: -70.66 });
     expect(d.status).toBe(201);
     expect(d.body).toMatchObject({ latitud: -33.45, longitud: -70.66 });
@@ -142,7 +145,7 @@ describe('RN-13 Técnico e incidencias', () => {
     expect(r.status).toBe(201);
     tec = await login(app, 'tecnico@aquaplants.cl', r.body.password_temporal);
     const est = await api().get('/api/v1/torres/estado').set(H(tec));
-    expect(est.body.torres.map((x: { id_instalacion: number }) => x.id_instalacion)).toEqual([torreNorte]);
+    expect(est.body.torres.map((x: { id_instalacion: number }) => x.id_instalacion).sort((a: number, b: number) => a - b)).toEqual([torreNorte, ...torresAuto]);
     expect((await api().get('/api/v1/alertas').set(H(tec))).status).toBe(403);
     expect((await api().get(`/api/v1/cultivos?torre=${torreNorte}`).set(H(tec))).status).toBe(403);
     expect((await api().get('/api/v1/usuarios').set(H(tec))).status).toBe(403);

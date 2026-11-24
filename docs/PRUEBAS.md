@@ -377,7 +377,7 @@ Página única `/crud` (menú Gestión → CRUD, solo Administrador) con una pes
 | frontend completo (incluye `crud.test.tsx`, 4 pruebas nuevas: pestañas según permisos, `?tab=`, un solo h1, flechas del teclado; nuevo cultivo solo en torres activas sin cultivo en curso; corregir y cerrar con validación de fecha) | **76/76 ✔** |
 | Con la API simulada local (Administrador) | **✔** Las 8 pestañas cargan sin errores, cada una con su título h2 y una sola barra superior. «Nuevo cultivo» ofrece solo torres sin cultivo en curso. Móvil 375 px: las pestañas se desplazan en horizontal (44 px de alto), sin desplazamiento horizontal de la página |
 | Backend | Sin cambios (usa `GET /cultivos`, `/torres`, `/catalogos` ya existentes) |
-| En producción | **Publicado** |
+| En producción | **Pendiente** de publicar |
 
 ### Defecto: el foco saltaba a la «X» al escribir en un formulario (2026-11-23)
 Reportado por el usuario al revisar el CRUD en producción: al escribir un número en un campo de una ventana (modal), el cursor pasaba al botón «X» y no se podía seguir escribiendo. Afectaba a **todos** los formularios en ventana (especies, cultivos, usuarios, torres, etc.).
@@ -387,7 +387,7 @@ Causa: el efecto del `Modal` dependía de `onCerrar`, que es una función nueva 
 | `modal.test.tsx`: foco en el primer campo y se mantiene al escribir; Escape usa la función más reciente | **✔** (la primera **falla sin la corrección**, comprobado) |
 | frontend completo | **78/78 ✔** |
 | API simulada: «Nueva especie», escribir «Tomate» y «5,8» en pH mín. | **✔** el texto queda completo y el foco sigue en el campo |
-| En producción | **Publicado** |
+| En producción | **Pendiente** de publicar |
 
 ### Especies: rango permitido visible en el formulario (2026-11-23)
 Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de una especie. Bajo cada variable se muestra «Permitido: mín a máx unidad» (límites físicos de `tipo_variable`, los mismos que valida el backend) y el formulario avisa antes de enviar si un valor queda fuera.
@@ -395,7 +395,7 @@ Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de
 |---|---|
 | `especies.test.tsx` (nueva: muestra «Permitido: 0 a 14 pH» y rechaza pH máx. 15 sin llamar a la API) | **4/4 ✔** |
 | API simulada: «Nueva especie» | **✔** «Permitido: 0 a 14 pH» y «Permitido: 0 a 10 mS/cm» bajo cada variable |
-| En producción | **Publicado** |
+| En producción | **Pendiente** de publicar |
 
 ## Sesión 8 — Informe de gestión (2026-11-23, D-39)
 | Verificación | Resultado |
@@ -411,7 +411,7 @@ Pedido del usuario: ver el mínimo (y máximo) posible al escribir los rangos de
 | Móvil 375 px | **✔** sin desplazamiento horizontal de la página |
 | Colores del gráfico (`validate_palette.js`, #0369a1 y #a16207 sobre blanco) | **✔** todas las verificaciones (CVD ΔE 20,1; contraste ≥ 3:1) |
 | Impresión real a PDF | **Sin probar** (los estilos de impresión ocultan menú, filtros y botones) |
-| En producción | **Publicado** |
+| En producción | **Pendiente** de publicar |
 
 ## Sesión 8 — Nombre automático de torre (2026-11-23, D-40)
 | Verificación | Resultado |

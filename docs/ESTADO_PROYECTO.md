@@ -3,7 +3,7 @@
 _Última actualización: 2026-11-23 (sesión 8, PC Windows del usuario). Abrir este archivo al comenzar cada sesión._
 
 ## Sesión 8 — Nombre automático de torre (2026-11-23, D-40)
-- Al crear una torre el nombre se propone solo («Torre C») y el ID lo da la base; se muestra «ID n» en cada torre. Probado: typecheck, shared 9/9, frontend 82/82, backend sin base 97/97, pantalla con la API simulada. 
+- Al crear una torre el nombre es automático y de solo lectura («Torre C») y el ID lo da la base; se muestra «ID n» en cada torre. Probado: typecheck, shared 9/9, frontend 82/82, backend sin base 97/97, pantalla con la API simulada. 
 
 ## Sesión 8 — Evaluación 3: informe de gestión y presentación (2026-11-23, D-39)
 - **Informe de gestión** (`/informe`, Supervisor y Administradores): periodo, cliente, 6 indicadores, gráfico diario de alertas e incidencias, detalle por torre, cultivos por especie, actividad de usuarios (solo Administrador); «Imprimir o PDF» y CSV. API `GET /informes/gestion`.

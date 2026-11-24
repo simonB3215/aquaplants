@@ -674,7 +674,7 @@ export function Infraestructura() {
         if (!d.id_cliente && clientesActivos.length > 1) return setErrores({ id_cliente: 'Seleccione el cliente' });
         if (d.id_instalacion) await api.patch(`/torres/${d.id_instalacion}`, { nombre: d.nombre, tipo: d.tipo, ubicacion: d.ubicacion, ...cliente });
         else {
-          const r = await api.post<{ id_instalacion: number; nombre: string }>('/torres', { nombre: String(d.nombre ?? '').trim(), tipo: d.tipo ?? 'aeroponica', ubicacion: d.ubicacion ?? '', ...cliente });
+          const r = await api.post<{ id_instalacion: number; nombre: string }>('/torres', { tipo: d.tipo ?? 'aeroponica', ubicacion: d.ubicacion ?? '', ...cliente });
           avisar(`Torre «${r.nombre}» creada con ID ${r.id_instalacion}`);
         }
         if (d.id_instalacion) avisar('Torre guardada');
@@ -732,7 +732,7 @@ export function Infraestructura() {
             <>
               <Boton variante="secundario" icono={Plus} onClick={() => {
                   const idCliente = clientesActivos.length === 1 ? clientesActivos[0].id_cliente : undefined;
-                  abrir('torre', { tipo: 'aeroponica', id_cliente: idCliente, nombre: nombreSugerido(idCliente) });
+                  abrir('torre', { tipo: 'aeroponica', id_cliente: idCliente });
                 }}>
                 Torre
               </Boton>
@@ -834,13 +834,24 @@ export function Infraestructura() {
           <form className="formulario" onSubmit={enviar} noValidate>
             {modal.tipo === 'torre' && (
               <>
-                <Campo
-                  etiqueta="Nombre"
-                  value={String(modal.datos.nombre ?? '')}
-                  onChange={(e) => set('nombre', e.target.value)}
-                  error={errores.nombre || undefined}
-                  ayuda={modal.datos.id_instalacion ? `ID ${String(modal.datos.id_instalacion)} (no cambia)` : 'Propuesto según las torres del cliente. El ID lo asigna el sistema al guardar.'}
-                />
+                {modal.datos.id_instalacion ? (
+                  <Campo
+                    etiqueta="Nombre"
+                    value={String(modal.datos.nombre ?? '')}
+                    onChange={(e) => set('nombre', e.target.value)}
+                    error={errores.nombre || undefined}
+                    ayuda={`ID ${String(modal.datos.id_instalacion)} (no cambia)`}
+                  />
+                ) : (
+                  // D-40: en una torre nueva el nombre y el ID los asigna el sistema; no se escriben.
+                  <Campo
+                    etiqueta="Nombre (automático)"
+                    readOnly
+                    value={nombreSugerido(modal.datos.id_cliente)}
+                    error={errores.nombre || undefined}
+                    ayuda="El nombre sigue la serie del cliente y el ID se asigna al guardar. Puede renombrarla después con «Editar»."
+                  />
+                )}
                 <Selector etiqueta="Tipo" value={String(modal.datos.tipo ?? 'aeroponica')} onChange={(e) => set('tipo', e.target.value)}>
                   <option value="aeroponica">Aeropónica</option>
                   <option value="hidroponica">Hidropónica</option>
@@ -853,7 +864,6 @@ export function Infraestructura() {
                     onChange={(e) => {
                       const id = e.target.value ? Number(e.target.value) : undefined;
                       // Torre nueva con el nombre propuesto sin tocar: proponer el del cliente elegido.
-                      if (!modal.datos.id_instalacion && modal.datos.nombre === nombreSugerido(modal.datos.id_cliente)) set('nombre', nombreSugerido(id));
                       set('id_cliente', id);
                     }}
                     error={errores.id_cliente || undefined}

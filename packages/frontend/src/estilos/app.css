@@ -732,6 +732,13 @@ textarea {
   outline: none;
   box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.2);
 }
+/* Valor que asigna el sistema (p. ej. nombre de torre nueva, D-40): se lee, no se escribe. */
+.campo input[readonly] {
+  background: #f1f5f4;
+  border-style: dashed;
+  font-weight: 600;
+  cursor: default;
+}
 .campo [aria-invalid='true'] {
   border-color: var(--estado-critico);
 }
